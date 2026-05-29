@@ -1,0 +1,9 @@
+[
+  { "id": "plan_cand_45", "type": "candidate", "priceInr": 333, "durationDays": 45, "gstApplicable": false },
+  { "id": "plan_sme_9",   "type": "employer_sme",   "priceInr": 1701,  "durationDays": 9,   "gstApplicable": true },
+  { "id": "plan_sme_18",  "type": "employer_sme",   "priceInr": 3402,  "durationDays": 18,  "gstApplicable": true },
+  { "id": "plan_sme_27",  "type": "employer_sme",   "priceInr": 6804,  "durationDays": 27,  "gstApplicable": true },
+  { "id": "plan_lg_54",   "type": "employer_large", "priceInr": 13608, "durationDays": 54,  "gstApplicable": true },
+  { "id": "plan_lg_108",  "type": "employer_large", "priceInr": 27216, "durationDays": 108, "gstApplicable": true },
+  { "id": "plan_lg_216",  "type": "employer_large", "priceInr": 54432, "durationDays": 216, "gstApplicable": true }
+]

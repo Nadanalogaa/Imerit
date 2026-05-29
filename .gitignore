@@ -1,0 +1,43 @@
+# Dependencies
+node_modules/
+**/node_modules/
+
+# Web build output
+web/dist/
+dist/
+
+# Vercel
+.vercel/
+**/.vercel/
+
+# Flutter / Dart
+mobile/.dart_tool/
+mobile/build/
+mobile/.flutter-plugins
+mobile/.flutter-plugins-dependencies
+**/.dart_tool/
+**/build/
+
+# Android / iOS local artifacts
+mobile/android/.gradle/
+mobile/android/app/debug/
+mobile/android/app/profile/
+mobile/android/app/release/
+mobile/ios/Pods/
+mobile/ios/.symlinks/
+*.apk
+*.aab
+*.ipa
+
+# IDE / OS
+.idea/
+.vscode/
+*.iml
+.DS_Store
+**/.DS_Store
+
+# Logs / env
+*.log
+.env
+.env.local
+**/.env.local

@@ -1,0 +1,42 @@
+[
+  {
+    "id": "job_001",
+    "employerId": "emp_demo_1",
+    "title": "Junior React Developer",
+    "description": "Looking for a fresher with strong JS fundamentals. Training provided.",
+    "location": "Chennai",
+    "postedAt": "2026-04-20T09:00:00Z"
+  },
+  {
+    "id": "job_002",
+    "employerId": "emp_demo_1",
+    "title": "Senior Node.js Engineer",
+    "description": "5+ years experience required. Must know MySQL, AWS.",
+    "location": "Coimbatore",
+    "postedAt": "2026-04-22T10:30:00Z"
+  },
+  {
+    "id": "job_003",
+    "employerId": "emp_demo_2",
+    "title": "HR Executive",
+    "description": "Manage end-to-end recruitment for SME clients.",
+    "location": "Madurai",
+    "postedAt": "2026-04-25T08:15:00Z"
+  },
+  {
+    "id": "job_004",
+    "employerId": "emp_demo_2",
+    "title": "BPO Voice Process",
+    "description": "Excellent English communication required. Night shift.",
+    "location": "Chennai",
+    "postedAt": "2026-04-28T14:00:00Z"
+  },
+  {
+    "id": "job_005",
+    "employerId": "emp_demo_3",
+    "title": "AI/ML Intern",
+    "description": "6-month internship with stipend. Final-year students preferred.",
+    "location": "Bangalore",
+    "postedAt": "2026-05-01T11:00:00Z"
+  }
+]

@@ -1,0 +1,507 @@
+{
+  "version": "2024.1",
+  "lastUpdated": "2024-05-14",
+  "state": "Tamil Nadu",
+  "districts": [
+    {
+      "id": "ariyalur", "name": "Ariyalur", "nameTa": "", "synonyms": [],
+      "lat": 11.1397, "lng": 79.0786,
+      "taluks": [
+        { "id": "ariyalur_ariyalur", "name": "Ariyalur", "nameTa": "", "lat": 11.1397, "lng": 79.0786, "pincodes": ["621704", "621713"] },
+        { "id": "ariyalur_sendurai", "name": "Sendurai", "nameTa": "", "lat": 11.2486, "lng": 79.0539, "pincodes": ["621714"] },
+        { "id": "ariyalur_udayarpalayam", "name": "Udayarpalayam", "nameTa": "", "lat": 11.2147, "lng": 79.2392, "pincodes": ["621715"] },
+        { "id": "ariyalur_andimadam", "name": "Andimadam", "nameTa": "", "lat": 11.1133, "lng": 79.2700, "pincodes": ["621801"] }
+      ]
+    },
+    {
+      "id": "chengalpattu", "name": "Chengalpattu", "nameTa": "", "synonyms": ["chengalpet", "kanchipuram"],
+      "lat": 12.6919, "lng": 79.9760,
+      "taluks": [
+        { "id": "chengalpattu_chengalpattu", "name": "Chengalpattu", "nameTa": "", "lat": 12.6919, "lng": 79.9760, "pincodes": ["603001", "603002", "603003"] },
+        { "id": "chengalpattu_tambaram", "name": "Tambaram", "nameTa": "", "lat": 12.9249, "lng": 80.1000, "pincodes": ["600045", "600059", "600073"] },
+        { "id": "chengalpattu_pallavaram", "name": "Pallavaram", "nameTa": "", "lat": 12.9675, "lng": 80.1491, "pincodes": ["600043", "600044"] },
+        { "id": "chengalpattu_thiruporur", "name": "Thiruporur", "nameTa": "", "lat": 12.7222, "lng": 80.1908, "pincodes": ["603110"] },
+        { "id": "chengalpattu_thirukalukundram", "name": "Thirukalukundram", "nameTa": "", "lat": 12.6056, "lng": 80.0681, "pincodes": ["603109"] },
+        { "id": "chengalpattu_madurantakam", "name": "Madurantakam", "nameTa": "", "lat": 12.5117, "lng": 79.8847, "pincodes": ["603306"] },
+        { "id": "chengalpattu_cheyyur", "name": "Cheyyur", "nameTa": "", "lat": 12.3567, "lng": 80.0167, "pincodes": ["603302"] }
+      ]
+    },
+    {
+      "id": "chennai", "name": "Chennai", "nameTa": "", "synonyms": ["madras"],
+      "lat": 13.0827, "lng": 80.2707,
+      "taluks": [
+        { "id": "chennai_egmore", "name": "Egmore", "nameTa": "", "lat": 13.0732, "lng": 80.2602, "pincodes": ["600008", "600014", "600105"] },
+        { "id": "chennai_t_nagar", "name": "T. Nagar", "nameTa": "", "lat": 13.0418, "lng": 80.2341, "pincodes": ["600017", "600035"] },
+        { "id": "chennai_anna_nagar", "name": "Anna Nagar", "nameTa": "", "lat": 13.0850, "lng": 80.2101, "pincodes": ["600040", "600102", "600101"] },
+        { "id": "chennai_adyar", "name": "Adyar", "nameTa": "", "lat": 13.0067, "lng": 80.2206, "pincodes": ["600020", "600028", "600041"] },
+        { "id": "chennai_velachery", "name": "Velachery", "nameTa": "", "lat": 12.9784, "lng": 80.2207, "pincodes": ["600042", "600100"] },
+        { "id": "chennai_mylapore", "name": "Mylapore", "nameTa": "", "lat": 13.0339, "lng": 80.2696, "pincodes": ["600004", "600005"] },
+        { "id": "chennai_guindy", "name": "Guindy", "nameTa": "", "lat": 13.0067, "lng": 80.2206, "pincodes": ["600032", "600088"] },
+        { "id": "chennai_perambur", "name": "Perambur", "nameTa": "", "lat": 13.1149, "lng": 80.2329, "pincodes": ["600011", "600012", "600039"] },
+        { "id": "chennai_royapettah", "name": "Royapettah", "nameTa": "", "lat": 13.0556, "lng": 80.2647, "pincodes": ["600014"] },
+        { "id": "chennai_purasawalkam", "name": "Purasawalkam", "nameTa": "", "lat": 13.0850, "lng": 80.2535, "pincodes": ["600007", "600010"] },
+        { "id": "chennai_ambattur", "name": "Ambattur", "nameTa": "", "lat": 13.0982, "lng": 80.1622, "pincodes": ["600053", "600058"] },
+        { "id": "chennai_madhavaram", "name": "Madhavaram", "nameTa": "", "lat": 13.1487, "lng": 80.2330, "pincodes": ["600051", "600060"] },
+        { "id": "chennai_tondiarpet", "name": "Tondiarpet", "nameTa": "", "lat": 13.1245, "lng": 80.2873, "pincodes": ["600081"] },
+        { "id": "chennai_alandur", "name": "Alandur", "nameTa": "", "lat": 12.9986, "lng": 80.2068, "pincodes": ["600016"] },
+        { "id": "chennai_sholinganallur", "name": "Sholinganallur (OMR)", "nameTa": "", "lat": 12.9010, "lng": 80.2279, "pincodes": ["600097", "600119"] },
+        { "id": "chennai_porur", "name": "Porur", "nameTa": "", "lat": 13.0381, "lng": 80.1565, "pincodes": ["600116", "600125"] }
+      ]
+    },
+    {
+      "id": "coimbatore", "name": "Coimbatore", "nameTa": "", "synonyms": ["kovai", "kovaipudur"],
+      "lat": 11.0168, "lng": 76.9558,
+      "taluks": [
+        { "id": "coimbatore_north", "name": "Coimbatore North", "nameTa": "", "lat": 11.0510, "lng": 76.9558, "pincodes": ["641002", "641009", "641011", "641025"] },
+        { "id": "coimbatore_south", "name": "Coimbatore South", "nameTa": "", "lat": 10.9925, "lng": 76.9554, "pincodes": ["641001", "641018", "641028"] },
+        { "id": "coimbatore_mettupalayam", "name": "Mettupalayam", "nameTa": "", "lat": 11.2989, "lng": 76.9358, "pincodes": ["641301", "641302"] },
+        { "id": "coimbatore_pollachi", "name": "Pollachi", "nameTa": "", "lat": 10.6589, "lng": 77.0086, "pincodes": ["642001", "642002"] },
+        { "id": "coimbatore_valparai", "name": "Valparai", "nameTa": "", "lat": 10.3275, "lng": 76.9622, "pincodes": ["642127"] },
+        { "id": "coimbatore_sulur", "name": "Sulur", "nameTa": "", "lat": 11.0247, "lng": 77.1281, "pincodes": ["641402"] },
+        { "id": "coimbatore_kinathukadavu", "name": "Kinathukadavu", "nameTa": "", "lat": 10.8222, "lng": 77.0258, "pincodes": ["642109"] },
+        { "id": "coimbatore_madukkarai", "name": "Madukkarai", "nameTa": "", "lat": 10.9100, "lng": 76.9544, "pincodes": ["641105"] }
+      ]
+    },
+    {
+      "id": "cuddalore", "name": "Cuddalore", "nameTa": "", "synonyms": [],
+      "lat": 11.7480, "lng": 79.7714,
+      "taluks": [
+        { "id": "cuddalore_cuddalore", "name": "Cuddalore", "nameTa": "", "lat": 11.7480, "lng": 79.7714, "pincodes": ["607001", "607002", "607003"] },
+        { "id": "cuddalore_panruti", "name": "Panruti", "nameTa": "", "lat": 11.7717, "lng": 79.5544, "pincodes": ["607106"] },
+        { "id": "cuddalore_chidambaram", "name": "Chidambaram", "nameTa": "", "lat": 11.4000, "lng": 79.6917, "pincodes": ["608001", "608002"] },
+        { "id": "cuddalore_kattumannarkoil", "name": "Kattumannarkoil", "nameTa": "", "lat": 11.4581, "lng": 79.5642, "pincodes": ["608301"] },
+        { "id": "cuddalore_kurinjipadi", "name": "Kurinjipadi", "nameTa": "", "lat": 11.5444, "lng": 79.6128, "pincodes": ["607302"] },
+        { "id": "cuddalore_virudhachalam", "name": "Virudhachalam", "nameTa": "", "lat": 11.5167, "lng": 79.3167, "pincodes": ["606001"] },
+        { "id": "cuddalore_tittakudi", "name": "Tittakudi", "nameTa": "", "lat": 11.5894, "lng": 79.2400, "pincodes": ["606106"] }
+      ]
+    },
+    {
+      "id": "dharmapuri", "name": "Dharmapuri", "nameTa": "", "synonyms": [],
+      "lat": 12.1357, "lng": 78.1577,
+      "taluks": [
+        { "id": "dharmapuri_dharmapuri", "name": "Dharmapuri", "nameTa": "", "lat": 12.1357, "lng": 78.1577, "pincodes": ["636701", "636702"] },
+        { "id": "dharmapuri_palacode", "name": "Palacode", "nameTa": "", "lat": 12.3275, "lng": 78.0700, "pincodes": ["636808"] },
+        { "id": "dharmapuri_pennagaram", "name": "Pennagaram", "nameTa": "", "lat": 12.1342, "lng": 77.8950, "pincodes": ["636810"] },
+        { "id": "dharmapuri_pappireddipatti", "name": "Pappireddipatti", "nameTa": "", "lat": 11.9425, "lng": 78.3553, "pincodes": ["635302"] },
+        { "id": "dharmapuri_harur", "name": "Harur", "nameTa": "", "lat": 12.0500, "lng": 78.4833, "pincodes": ["636903"] },
+        { "id": "dharmapuri_karimangalam", "name": "Karimangalam", "nameTa": "", "lat": 12.3144, "lng": 78.2058, "pincodes": ["635111"] }
+      ]
+    },
+    {
+      "id": "dindigul", "name": "Dindigul", "nameTa": "", "synonyms": [],
+      "lat": 10.3673, "lng": 77.9803,
+      "taluks": [
+        { "id": "dindigul_dindigul_east", "name": "Dindigul East", "nameTa": "", "lat": 10.3673, "lng": 77.9803, "pincodes": ["624001", "624003"] },
+        { "id": "dindigul_dindigul_west", "name": "Dindigul West", "nameTa": "", "lat": 10.3300, "lng": 77.9500, "pincodes": ["624002"] },
+        { "id": "dindigul_palani", "name": "Palani", "nameTa": "", "lat": 10.4533, "lng": 77.5202, "pincodes": ["624601", "624602"] },
+        { "id": "dindigul_kodaikanal", "name": "Kodaikanal", "nameTa": "", "lat": 10.2381, "lng": 77.4892, "pincodes": ["624101", "624103"] },
+        { "id": "dindigul_oddanchatram", "name": "Oddanchatram", "nameTa": "", "lat": 10.4881, "lng": 77.7669, "pincodes": ["624619"] },
+        { "id": "dindigul_natham", "name": "Natham", "nameTa": "", "lat": 10.2231, "lng": 78.2392, "pincodes": ["624401"] },
+        { "id": "dindigul_nilakottai", "name": "Nilakottai", "nameTa": "", "lat": 10.1681, "lng": 77.8550, "pincodes": ["624208"] },
+        { "id": "dindigul_athoor", "name": "Athoor", "nameTa": "", "lat": 10.2422, "lng": 77.7800, "pincodes": ["624702"] },
+        { "id": "dindigul_vedasandur", "name": "Vedasandur", "nameTa": "", "lat": 10.5311, "lng": 77.9494, "pincodes": ["624710"] },
+        { "id": "dindigul_gujiliamparai", "name": "Gujiliamparai", "nameTa": "", "lat": 10.6633, "lng": 78.0150, "pincodes": ["624703"] }
+      ]
+    },
+    {
+      "id": "erode", "name": "Erode", "nameTa": "", "synonyms": [],
+      "lat": 11.3410, "lng": 77.7172,
+      "taluks": [
+        { "id": "erode_erode", "name": "Erode", "nameTa": "", "lat": 11.3410, "lng": 77.7172, "pincodes": ["638001", "638002", "638003", "638009"] },
+        { "id": "erode_perundurai", "name": "Perundurai", "nameTa": "", "lat": 11.2747, "lng": 77.5867, "pincodes": ["638052"] },
+        { "id": "erode_bhavani", "name": "Bhavani", "nameTa": "", "lat": 11.4444, "lng": 77.6817, "pincodes": ["638301", "638316"] },
+        { "id": "erode_anthiyur", "name": "Anthiyur", "nameTa": "", "lat": 11.5797, "lng": 77.5953, "pincodes": ["638501"] },
+        { "id": "erode_gobichettipalayam", "name": "Gobichettipalayam", "nameTa": "", "lat": 11.4544, "lng": 77.4392, "pincodes": ["638452", "638453"] },
+        { "id": "erode_sathyamangalam", "name": "Sathyamangalam", "nameTa": "", "lat": 11.5078, "lng": 77.2378, "pincodes": ["638401"] },
+        { "id": "erode_kodumudi", "name": "Kodumudi", "nameTa": "", "lat": 11.0792, "lng": 77.8775, "pincodes": ["638151"] },
+        { "id": "erode_modakkurichi", "name": "Modakkurichi", "nameTa": "", "lat": 11.2333, "lng": 77.8167, "pincodes": ["638104"] }
+      ]
+    },
+    {
+      "id": "kallakurichi", "name": "Kallakurichi", "nameTa": "", "synonyms": [],
+      "lat": 11.7385, "lng": 78.9594,
+      "taluks": [
+        { "id": "kallakurichi_kallakurichi", "name": "Kallakurichi", "nameTa": "", "lat": 11.7385, "lng": 78.9594, "pincodes": ["606202"] },
+        { "id": "kallakurichi_chinnasalem", "name": "Chinnasalem", "nameTa": "", "lat": 11.6492, "lng": 78.8767, "pincodes": ["606201"] },
+        { "id": "kallakurichi_sankarapuram", "name": "Sankarapuram", "nameTa": "", "lat": 11.9794, "lng": 79.0011, "pincodes": ["606402"] },
+        { "id": "kallakurichi_tirukkoyilur", "name": "Tirukkoyilur", "nameTa": "", "lat": 11.9667, "lng": 79.2000, "pincodes": ["605757"] },
+        { "id": "kallakurichi_ulundurpet", "name": "Ulundurpet", "nameTa": "", "lat": 11.6722, "lng": 79.2400, "pincodes": ["606107"] }
+      ]
+    },
+    {
+      "id": "kanchipuram", "name": "Kanchipuram", "nameTa": "", "synonyms": ["kanchi", "kancheepuram"],
+      "lat": 12.8342, "lng": 79.7036,
+      "taluks": [
+        { "id": "kanchipuram_kanchipuram", "name": "Kanchipuram", "nameTa": "", "lat": 12.8342, "lng": 79.7036, "pincodes": ["631501", "631502", "631551"] },
+        { "id": "kanchipuram_walajabad", "name": "Walajabad", "nameTa": "", "lat": 12.8208, "lng": 79.8253, "pincodes": ["631605"] },
+        { "id": "kanchipuram_uthiramerur", "name": "Uthiramerur", "nameTa": "", "lat": 12.6189, "lng": 79.7575, "pincodes": ["603406"] },
+        { "id": "kanchipuram_sriperumbudur", "name": "Sriperumbudur", "nameTa": "", "lat": 12.9700, "lng": 79.9436, "pincodes": ["602105", "602117"] },
+        { "id": "kanchipuram_kundrathur", "name": "Kundrathur", "nameTa": "", "lat": 13.0017, "lng": 80.0689, "pincodes": ["600069"] }
+      ]
+    },
+    {
+      "id": "kanyakumari", "name": "Kanyakumari", "nameTa": "", "synonyms": ["nagercoil"],
+      "lat": 8.0883, "lng": 77.5385,
+      "taluks": [
+        { "id": "kanyakumari_agastheeswaram", "name": "Agastheeswaram (Nagercoil)", "nameTa": "", "lat": 8.1833, "lng": 77.4119, "pincodes": ["629001", "629002", "629003"] },
+        { "id": "kanyakumari_thovala", "name": "Thovala", "nameTa": "", "lat": 8.2392, "lng": 77.3494, "pincodes": ["629157"] },
+        { "id": "kanyakumari_kalkulam", "name": "Kalkulam", "nameTa": "", "lat": 8.2333, "lng": 77.3000, "pincodes": ["629252"] },
+        { "id": "kanyakumari_vilavancode", "name": "Vilavancode", "nameTa": "", "lat": 8.3667, "lng": 77.1167, "pincodes": ["629169"] },
+        { "id": "kanyakumari_killiyoor", "name": "Killiyoor", "nameTa": "", "lat": 8.2667, "lng": 77.2167, "pincodes": ["629167"] },
+        { "id": "kanyakumari_munchirai", "name": "Munchirai", "nameTa": "", "lat": 8.3000, "lng": 77.2167, "pincodes": ["629171"] }
+      ]
+    },
+    {
+      "id": "karur", "name": "Karur", "nameTa": "", "synonyms": [],
+      "lat": 10.9601, "lng": 78.0766,
+      "taluks": [
+        { "id": "karur_karur", "name": "Karur", "nameTa": "", "lat": 10.9601, "lng": 78.0766, "pincodes": ["639001", "639002", "639003"] },
+        { "id": "karur_aravakurichi", "name": "Aravakurichi", "nameTa": "", "lat": 10.7444, "lng": 77.9433, "pincodes": ["639201"] },
+        { "id": "karur_kulithalai", "name": "Kulithalai", "nameTa": "", "lat": 10.9333, "lng": 78.4167, "pincodes": ["639104"] },
+        { "id": "karur_krishnarayapuram", "name": "Krishnarayapuram", "nameTa": "", "lat": 10.8889, "lng": 78.2792, "pincodes": ["639102"] },
+        { "id": "karur_kadavur", "name": "Kadavur", "nameTa": "", "lat": 10.7858, "lng": 78.1894, "pincodes": ["621311"] }
+      ]
+    },
+    {
+      "id": "krishnagiri", "name": "Krishnagiri", "nameTa": "", "synonyms": [],
+      "lat": 12.5266, "lng": 78.2150,
+      "taluks": [
+        { "id": "krishnagiri_krishnagiri", "name": "Krishnagiri", "nameTa": "", "lat": 12.5266, "lng": 78.2150, "pincodes": ["635001", "635002"] },
+        { "id": "krishnagiri_hosur", "name": "Hosur", "nameTa": "", "lat": 12.7409, "lng": 77.8253, "pincodes": ["635109", "635110", "635126"] },
+        { "id": "krishnagiri_pochampalli", "name": "Pochampalli", "nameTa": "", "lat": 12.3361, "lng": 78.3417, "pincodes": ["635206"] },
+        { "id": "krishnagiri_uthangarai", "name": "Uthangarai", "nameTa": "", "lat": 12.3056, "lng": 78.5547, "pincodes": ["635207"] },
+        { "id": "krishnagiri_bargur", "name": "Bargur", "nameTa": "", "lat": 12.5567, "lng": 78.3722, "pincodes": ["635104"] },
+        { "id": "krishnagiri_anchetty", "name": "Anchetty", "nameTa": "", "lat": 12.4011, "lng": 77.8783, "pincodes": ["635152"] }
+      ]
+    },
+    {
+      "id": "madurai", "name": "Madurai", "nameTa": "", "synonyms": [],
+      "lat": 9.9252, "lng": 78.1198,
+      "taluks": [
+        { "id": "madurai_madurai_north", "name": "Madurai North", "nameTa": "", "lat": 9.9667, "lng": 78.1167, "pincodes": ["625001", "625006", "625014"] },
+        { "id": "madurai_madurai_south", "name": "Madurai South", "nameTa": "", "lat": 9.9000, "lng": 78.1167, "pincodes": ["625002", "625009", "625020"] },
+        { "id": "madurai_madurai_east", "name": "Madurai East", "nameTa": "", "lat": 9.9500, "lng": 78.1500, "pincodes": ["625003", "625012"] },
+        { "id": "madurai_madurai_west", "name": "Madurai West", "nameTa": "", "lat": 9.9333, "lng": 78.0833, "pincodes": ["625004", "625016"] },
+        { "id": "madurai_melur", "name": "Melur", "nameTa": "", "lat": 10.0344, "lng": 78.3392, "pincodes": ["625106"] },
+        { "id": "madurai_usilampatti", "name": "Usilampatti", "nameTa": "", "lat": 9.9700, "lng": 77.7900, "pincodes": ["625532"] },
+        { "id": "madurai_peraiyur", "name": "Peraiyur", "nameTa": "", "lat": 9.6997, "lng": 77.7733, "pincodes": ["625703"] },
+        { "id": "madurai_thirumangalam", "name": "Thirumangalam", "nameTa": "", "lat": 9.8200, "lng": 77.9789, "pincodes": ["625706"] },
+        { "id": "madurai_kallikudi", "name": "Kallikudi", "nameTa": "", "lat": 9.8419, "lng": 77.7861, "pincodes": ["625704"] },
+        { "id": "madurai_vadipatti", "name": "Vadipatti", "nameTa": "", "lat": 10.1067, "lng": 77.9544, "pincodes": ["625218"] }
+      ]
+    },
+    {
+      "id": "mayiladuthurai", "name": "Mayiladuthurai", "nameTa": "", "synonyms": [],
+      "lat": 11.1018, "lng": 79.6552,
+      "taluks": [
+        { "id": "mayiladuthurai_mayiladuthurai", "name": "Mayiladuthurai", "nameTa": "", "lat": 11.1018, "lng": 79.6552, "pincodes": ["609001", "609002"] },
+        { "id": "mayiladuthurai_sirkali", "name": "Sirkali", "nameTa": "", "lat": 11.2389, "lng": 79.7339, "pincodes": ["609110"] },
+        { "id": "mayiladuthurai_kuthalam", "name": "Kuthalam", "nameTa": "", "lat": 11.0917, "lng": 79.5092, "pincodes": ["609801"] },
+        { "id": "mayiladuthurai_tharangambadi", "name": "Tharangambadi", "nameTa": "", "lat": 11.0297, "lng": 79.8567, "pincodes": ["609313"] }
+      ]
+    },
+    {
+      "id": "nagapattinam", "name": "Nagapattinam", "nameTa": "", "synonyms": [],
+      "lat": 10.7672, "lng": 79.8424,
+      "taluks": [
+        { "id": "nagapattinam_nagapattinam", "name": "Nagapattinam", "nameTa": "", "lat": 10.7672, "lng": 79.8424, "pincodes": ["611001", "611002", "611003"] },
+        { "id": "nagapattinam_kilvelur", "name": "Kilvelur", "nameTa": "", "lat": 10.7872, "lng": 79.7458, "pincodes": ["611104"] },
+        { "id": "nagapattinam_thirukkuvalai", "name": "Thirukkuvalai", "nameTa": "", "lat": 10.7044, "lng": 79.7472, "pincodes": ["614702"] },
+        { "id": "nagapattinam_vedaranyam", "name": "Vedaranyam", "nameTa": "", "lat": 10.3667, "lng": 79.8500, "pincodes": ["614810"] }
+      ]
+    },
+    {
+      "id": "namakkal", "name": "Namakkal", "nameTa": "", "synonyms": [],
+      "lat": 11.2189, "lng": 78.1677,
+      "taluks": [
+        { "id": "namakkal_namakkal", "name": "Namakkal", "nameTa": "", "lat": 11.2189, "lng": 78.1677, "pincodes": ["637001", "637002"] },
+        { "id": "namakkal_tiruchengode", "name": "Tiruchengode", "nameTa": "", "lat": 11.3789, "lng": 77.8964, "pincodes": ["637211"] },
+        { "id": "namakkal_rasipuram", "name": "Rasipuram", "nameTa": "", "lat": 11.4622, "lng": 78.1814, "pincodes": ["637408"] },
+        { "id": "namakkal_paramathi_velur", "name": "Paramathi-Velur", "nameTa": "", "lat": 11.1717, "lng": 78.0214, "pincodes": ["637207"] },
+        { "id": "namakkal_kolli_hills", "name": "Kolli Hills", "nameTa": "", "lat": 11.2417, "lng": 78.3500, "pincodes": ["637411"] },
+        { "id": "namakkal_mohanur", "name": "Mohanur", "nameTa": "", "lat": 11.0606, "lng": 78.1369, "pincodes": ["637305"] }
+      ]
+    },
+    {
+      "id": "nilgiris", "name": "The Nilgiris", "nameTa": "", "synonyms": ["ooty", "udhagamandalam"],
+      "lat": 11.4102, "lng": 76.6950,
+      "taluks": [
+        { "id": "nilgiris_udhagamandalam", "name": "Udhagamandalam (Ooty)", "nameTa": "", "lat": 11.4102, "lng": 76.6950, "pincodes": ["643001", "643002"] },
+        { "id": "nilgiris_coonoor", "name": "Coonoor", "nameTa": "", "lat": 11.3530, "lng": 76.7959, "pincodes": ["643101", "643102"] },
+        { "id": "nilgiris_kotagiri", "name": "Kotagiri", "nameTa": "", "lat": 11.4214, "lng": 76.8606, "pincodes": ["643217"] },
+        { "id": "nilgiris_gudalur", "name": "Gudalur", "nameTa": "", "lat": 11.4969, "lng": 76.4853, "pincodes": ["643212"] },
+        { "id": "nilgiris_pandalur", "name": "Pandalur", "nameTa": "", "lat": 11.5083, "lng": 76.3367, "pincodes": ["643253"] }
+      ]
+    },
+    {
+      "id": "perambalur", "name": "Perambalur", "nameTa": "", "synonyms": [],
+      "lat": 11.2342, "lng": 78.8814,
+      "taluks": [
+        { "id": "perambalur_perambalur", "name": "Perambalur", "nameTa": "", "lat": 11.2342, "lng": 78.8814, "pincodes": ["621212", "621713"] },
+        { "id": "perambalur_kunnam", "name": "Kunnam", "nameTa": "", "lat": 11.2722, "lng": 78.7700, "pincodes": ["621104"] },
+        { "id": "perambalur_veppanthattai", "name": "Veppanthattai", "nameTa": "", "lat": 11.3056, "lng": 78.7239, "pincodes": ["621116"] },
+        { "id": "perambalur_alathur", "name": "Alathur", "nameTa": "", "lat": 11.2522, "lng": 78.9542, "pincodes": ["621730"] }
+      ]
+    },
+    {
+      "id": "pudukkottai", "name": "Pudukkottai", "nameTa": "", "synonyms": [],
+      "lat": 10.3833, "lng": 78.8211,
+      "taluks": [
+        { "id": "pudukkottai_pudukkottai", "name": "Pudukkottai", "nameTa": "", "lat": 10.3833, "lng": 78.8211, "pincodes": ["622001", "622003"] },
+        { "id": "pudukkottai_tirumayam", "name": "Tirumayam", "nameTa": "", "lat": 10.2333, "lng": 78.7667, "pincodes": ["622507"] },
+        { "id": "pudukkottai_alangudi", "name": "Alangudi", "nameTa": "", "lat": 10.3608, "lng": 78.9819, "pincodes": ["622301"] },
+        { "id": "pudukkottai_aranthangi", "name": "Aranthangi", "nameTa": "", "lat": 10.1722, "lng": 78.9942, "pincodes": ["614616"] },
+        { "id": "pudukkottai_avudaiyarkoil", "name": "Avudaiyarkoil", "nameTa": "", "lat": 10.0289, "lng": 79.0833, "pincodes": ["614618"] },
+        { "id": "pudukkottai_manamelkudi", "name": "Manamelkudi", "nameTa": "", "lat": 10.0339, "lng": 79.2722, "pincodes": ["614623"] },
+        { "id": "pudukkottai_gandarvakottai", "name": "Gandarvakottai", "nameTa": "", "lat": 10.4317, "lng": 78.9667, "pincodes": ["613301"] },
+        { "id": "pudukkottai_karambakudi", "name": "Karambakudi", "nameTa": "", "lat": 10.4906, "lng": 79.0764, "pincodes": ["622302"] },
+        { "id": "pudukkottai_kulathur", "name": "Kulathur", "nameTa": "", "lat": 10.2483, "lng": 78.6856, "pincodes": ["622104"] }
+      ]
+    },
+    {
+      "id": "ramanathapuram", "name": "Ramanathapuram", "nameTa": "", "synonyms": ["ramnad"],
+      "lat": 9.3716, "lng": 78.8308,
+      "taluks": [
+        { "id": "ramanathapuram_ramanathapuram", "name": "Ramanathapuram", "nameTa": "", "lat": 9.3716, "lng": 78.8308, "pincodes": ["623501", "623502"] },
+        { "id": "ramanathapuram_rameswaram", "name": "Rameswaram", "nameTa": "", "lat": 9.2876, "lng": 79.3129, "pincodes": ["623526"] },
+        { "id": "ramanathapuram_paramakudi", "name": "Paramakudi", "nameTa": "", "lat": 9.5450, "lng": 78.5867, "pincodes": ["623707"] },
+        { "id": "ramanathapuram_kamuthi", "name": "Kamuthi", "nameTa": "", "lat": 9.4250, "lng": 78.3681, "pincodes": ["623603"] },
+        { "id": "ramanathapuram_mudukulathur", "name": "Mudukulathur", "nameTa": "", "lat": 9.3500, "lng": 78.5500, "pincodes": ["623704"] },
+        { "id": "ramanathapuram_kadaladi", "name": "Kadaladi", "nameTa": "", "lat": 9.3733, "lng": 78.6914, "pincodes": ["623703"] },
+        { "id": "ramanathapuram_tiruvadanai", "name": "Tiruvadanai", "nameTa": "", "lat": 9.7942, "lng": 78.9000, "pincodes": ["623407"] }
+      ]
+    },
+    {
+      "id": "ranipet", "name": "Ranipet", "nameTa": "", "synonyms": [],
+      "lat": 12.9326, "lng": 79.3320,
+      "taluks": [
+        { "id": "ranipet_ranipet", "name": "Ranipet", "nameTa": "", "lat": 12.9326, "lng": 79.3320, "pincodes": ["632401", "632402"] },
+        { "id": "ranipet_arakkonam", "name": "Arakkonam", "nameTa": "", "lat": 13.0833, "lng": 79.6669, "pincodes": ["631001", "631004"] },
+        { "id": "ranipet_walajah", "name": "Walajah", "nameTa": "", "lat": 12.9244, "lng": 79.3672, "pincodes": ["632513"] },
+        { "id": "ranipet_arcot", "name": "Arcot", "nameTa": "", "lat": 12.9069, "lng": 79.3206, "pincodes": ["632503"] },
+        { "id": "ranipet_nemili", "name": "Nemili", "nameTa": "", "lat": 13.0567, "lng": 79.5733, "pincodes": ["631051"] },
+        { "id": "ranipet_kalavai", "name": "Kalavai", "nameTa": "", "lat": 12.8639, "lng": 79.4942, "pincodes": ["632506"] }
+      ]
+    },
+    {
+      "id": "salem", "name": "Salem", "nameTa": "", "synonyms": [],
+      "lat": 11.6643, "lng": 78.1460,
+      "taluks": [
+        { "id": "salem_salem", "name": "Salem", "nameTa": "", "lat": 11.6643, "lng": 78.1460, "pincodes": ["636001", "636004", "636006"] },
+        { "id": "salem_salem_west", "name": "Salem West", "nameTa": "", "lat": 11.6500, "lng": 78.1100, "pincodes": ["636007", "636009"] },
+        { "id": "salem_salem_south", "name": "Salem South", "nameTa": "", "lat": 11.6311, "lng": 78.1444, "pincodes": ["636005", "636008"] },
+        { "id": "salem_attur", "name": "Attur", "nameTa": "", "lat": 11.5950, "lng": 78.5972, "pincodes": ["636102"] },
+        { "id": "salem_yercaud", "name": "Yercaud", "nameTa": "", "lat": 11.7747, "lng": 78.2069, "pincodes": ["636601"] },
+        { "id": "salem_omalur", "name": "Omalur", "nameTa": "", "lat": 11.7406, "lng": 78.0464, "pincodes": ["636455"] },
+        { "id": "salem_mettur", "name": "Mettur", "nameTa": "", "lat": 11.7894, "lng": 77.8033, "pincodes": ["636401", "636402"] },
+        { "id": "salem_edappadi", "name": "Edappadi", "nameTa": "", "lat": 11.5938, "lng": 77.8378, "pincodes": ["637101"] },
+        { "id": "salem_sankari", "name": "Sankari", "nameTa": "", "lat": 11.4856, "lng": 77.8731, "pincodes": ["637301"] },
+        { "id": "salem_vazhapadi", "name": "Vazhapadi", "nameTa": "", "lat": 11.6864, "lng": 78.4022, "pincodes": ["636115"] }
+      ]
+    },
+    {
+      "id": "sivaganga", "name": "Sivaganga", "nameTa": "", "synonyms": [],
+      "lat": 9.8434, "lng": 78.4809,
+      "taluks": [
+        { "id": "sivaganga_sivaganga", "name": "Sivaganga", "nameTa": "", "lat": 9.8434, "lng": 78.4809, "pincodes": ["630561"] },
+        { "id": "sivaganga_karaikudi", "name": "Karaikudi", "nameTa": "", "lat": 10.0667, "lng": 78.7833, "pincodes": ["630001", "630002"] },
+        { "id": "sivaganga_devakottai", "name": "Devakottai", "nameTa": "", "lat": 9.9508, "lng": 78.8203, "pincodes": ["630302"] },
+        { "id": "sivaganga_manamadurai", "name": "Manamadurai", "nameTa": "", "lat": 9.6917, "lng": 78.4750, "pincodes": ["630606"] },
+        { "id": "sivaganga_tirupathur", "name": "Tirupathur (Sivaganga)", "nameTa": "", "lat": 9.8278, "lng": 78.5000, "pincodes": ["630211"] },
+        { "id": "sivaganga_ilayangudi", "name": "Ilayangudi", "nameTa": "", "lat": 9.6650, "lng": 78.6311, "pincodes": ["630702"] },
+        { "id": "sivaganga_kalaiyarkoil", "name": "Kalaiyarkoil", "nameTa": "", "lat": 9.7600, "lng": 78.6789, "pincodes": ["630551"] }
+      ]
+    },
+    {
+      "id": "tenkasi", "name": "Tenkasi", "nameTa": "", "synonyms": [],
+      "lat": 8.9590, "lng": 77.3132,
+      "taluks": [
+        { "id": "tenkasi_tenkasi", "name": "Tenkasi", "nameTa": "", "lat": 8.9590, "lng": 77.3132, "pincodes": ["627811"] },
+        { "id": "tenkasi_shenkottai", "name": "Shenkottai", "nameTa": "", "lat": 8.9694, "lng": 77.2592, "pincodes": ["627809"] },
+        { "id": "tenkasi_sankarankoil", "name": "Sankarankoil", "nameTa": "", "lat": 9.1719, "lng": 77.5450, "pincodes": ["627756"] },
+        { "id": "tenkasi_kadayanallur", "name": "Kadayanallur", "nameTa": "", "lat": 9.0747, "lng": 77.3422, "pincodes": ["627751"] },
+        { "id": "tenkasi_alangulam", "name": "Alangulam", "nameTa": "", "lat": 8.8625, "lng": 77.4978, "pincodes": ["627851"] },
+        { "id": "tenkasi_vasudevanallur", "name": "Vasudevanallur", "nameTa": "", "lat": 9.2333, "lng": 77.4167, "pincodes": ["627758"] },
+        { "id": "tenkasi_kuruvikulam", "name": "Kuruvikulam", "nameTa": "", "lat": 9.0719, "lng": 77.6217, "pincodes": ["627754"] }
+      ]
+    },
+    {
+      "id": "thanjavur", "name": "Thanjavur", "nameTa": "", "synonyms": ["tanjore"],
+      "lat": 10.7870, "lng": 79.1378,
+      "taluks": [
+        { "id": "thanjavur_thanjavur", "name": "Thanjavur", "nameTa": "", "lat": 10.7870, "lng": 79.1378, "pincodes": ["613001", "613002", "613007"] },
+        { "id": "thanjavur_kumbakonam", "name": "Kumbakonam", "nameTa": "", "lat": 10.9601, "lng": 79.3845, "pincodes": ["612001", "612002"] },
+        { "id": "thanjavur_papanasam", "name": "Papanasam", "nameTa": "", "lat": 10.9244, "lng": 79.2697, "pincodes": ["614205"] },
+        { "id": "thanjavur_pattukkottai", "name": "Pattukkottai", "nameTa": "", "lat": 10.4244, "lng": 79.3175, "pincodes": ["614601", "614602"] },
+        { "id": "thanjavur_orathanadu", "name": "Orathanadu", "nameTa": "", "lat": 10.6308, "lng": 79.2256, "pincodes": ["614625"] },
+        { "id": "thanjavur_thiruvaiyaru", "name": "Thiruvaiyaru", "nameTa": "", "lat": 10.8633, "lng": 79.1336, "pincodes": ["613204"] },
+        { "id": "thanjavur_peravurani", "name": "Peravurani", "nameTa": "", "lat": 10.2939, "lng": 79.2042, "pincodes": ["614804"] },
+        { "id": "thanjavur_thiruvonam", "name": "Thiruvonam", "nameTa": "", "lat": 10.6967, "lng": 79.4475, "pincodes": ["613302"] }
+      ]
+    },
+    {
+      "id": "theni", "name": "Theni", "nameTa": "", "synonyms": [],
+      "lat": 10.0104, "lng": 77.4768,
+      "taluks": [
+        { "id": "theni_theni", "name": "Theni", "nameTa": "", "lat": 10.0104, "lng": 77.4768, "pincodes": ["625531"] },
+        { "id": "theni_periyakulam", "name": "Periyakulam", "nameTa": "", "lat": 10.1239, "lng": 77.5478, "pincodes": ["625601", "625605"] },
+        { "id": "theni_andipatti", "name": "Andipatti", "nameTa": "", "lat": 9.9817, "lng": 77.6314, "pincodes": ["625512"] },
+        { "id": "theni_bodinayakanur", "name": "Bodinayakanur", "nameTa": "", "lat": 10.0186, "lng": 77.3478, "pincodes": ["625513"] },
+        { "id": "theni_cumbum", "name": "Cumbum", "nameTa": "", "lat": 9.7286, "lng": 77.2856, "pincodes": ["625516"] },
+        { "id": "theni_uthamapalayam", "name": "Uthamapalayam", "nameTa": "", "lat": 9.8000, "lng": 77.3333, "pincodes": ["625533"] }
+      ]
+    },
+    {
+      "id": "thoothukudi", "name": "Thoothukudi", "nameTa": "", "synonyms": ["tuticorin"],
+      "lat": 8.7642, "lng": 78.1348,
+      "taluks": [
+        { "id": "thoothukudi_thoothukudi", "name": "Thoothukudi", "nameTa": "", "lat": 8.7642, "lng": 78.1348, "pincodes": ["628001", "628002", "628008"] },
+        { "id": "thoothukudi_kovilpatti", "name": "Kovilpatti", "nameTa": "", "lat": 9.1714, "lng": 77.8716, "pincodes": ["628501", "628502"] },
+        { "id": "thoothukudi_kayathar", "name": "Kayathar", "nameTa": "", "lat": 8.9694, "lng": 77.7497, "pincodes": ["628952"] },
+        { "id": "thoothukudi_ottapidaram", "name": "Ottapidaram", "nameTa": "", "lat": 8.9133, "lng": 78.0258, "pincodes": ["628401"] },
+        { "id": "thoothukudi_srivaikuntam", "name": "Srivaikuntam", "nameTa": "", "lat": 8.6311, "lng": 77.9133, "pincodes": ["628619"] },
+        { "id": "thoothukudi_tiruchendur", "name": "Tiruchendur", "nameTa": "", "lat": 8.4961, "lng": 78.1247, "pincodes": ["628215"] },
+        { "id": "thoothukudi_sathankulam", "name": "Sathankulam", "nameTa": "", "lat": 8.4231, "lng": 77.9217, "pincodes": ["628704"] },
+        { "id": "thoothukudi_vilathikulam", "name": "Vilathikulam", "nameTa": "", "lat": 9.2056, "lng": 78.1622, "pincodes": ["628907"] }
+      ]
+    },
+    {
+      "id": "tiruchirappalli", "name": "Tiruchirappalli", "nameTa": "", "synonyms": ["trichy", "tiruchi"],
+      "lat": 10.7905, "lng": 78.7047,
+      "taluks": [
+        { "id": "tiruchirappalli_srirangam", "name": "Srirangam", "nameTa": "", "lat": 10.8589, "lng": 78.6890, "pincodes": ["620006", "620024"] },
+        { "id": "tiruchirappalli_tiruchirappalli_west", "name": "Tiruchirappalli West", "nameTa": "", "lat": 10.7800, "lng": 78.6800, "pincodes": ["620001", "620008"] },
+        { "id": "tiruchirappalli_tiruchirappalli_east", "name": "Tiruchirappalli East", "nameTa": "", "lat": 10.7800, "lng": 78.7300, "pincodes": ["620002", "620003"] },
+        { "id": "tiruchirappalli_lalgudi", "name": "Lalgudi", "nameTa": "", "lat": 10.8694, "lng": 78.8047, "pincodes": ["621601"] },
+        { "id": "tiruchirappalli_manapparai", "name": "Manapparai", "nameTa": "", "lat": 10.6072, "lng": 78.4264, "pincodes": ["621306"] },
+        { "id": "tiruchirappalli_musiri", "name": "Musiri", "nameTa": "", "lat": 10.9558, "lng": 78.4406, "pincodes": ["621211"] },
+        { "id": "tiruchirappalli_thuraiyur", "name": "Thuraiyur", "nameTa": "", "lat": 11.1419, "lng": 78.5972, "pincodes": ["621010"] },
+        { "id": "tiruchirappalli_thottiam", "name": "Thottiam", "nameTa": "", "lat": 11.0667, "lng": 78.3056, "pincodes": ["621215"] },
+        { "id": "tiruchirappalli_thiruverumbur", "name": "Thiruverumbur (BHEL)", "nameTa": "", "lat": 10.7806, "lng": 78.7956, "pincodes": ["620013", "620014"] },
+        { "id": "tiruchirappalli_manachanallur", "name": "Manachanallur", "nameTa": "", "lat": 10.9131, "lng": 78.7958, "pincodes": ["621005"] }
+      ]
+    },
+    {
+      "id": "tirunelveli", "name": "Tirunelveli", "nameTa": "", "synonyms": ["nellai"],
+      "lat": 8.7139, "lng": 77.7567,
+      "taluks": [
+        { "id": "tirunelveli_palayamkottai", "name": "Palayamkottai", "nameTa": "", "lat": 8.7269, "lng": 77.7311, "pincodes": ["627001", "627002", "627007"] },
+        { "id": "tirunelveli_tirunelveli", "name": "Tirunelveli", "nameTa": "", "lat": 8.7139, "lng": 77.7567, "pincodes": ["627001", "627358"] },
+        { "id": "tirunelveli_ambasamudram", "name": "Ambasamudram", "nameTa": "", "lat": 8.7156, "lng": 77.4500, "pincodes": ["627401"] },
+        { "id": "tirunelveli_nanguneri", "name": "Nanguneri", "nameTa": "", "lat": 8.4889, "lng": 77.6711, "pincodes": ["627108"] },
+        { "id": "tirunelveli_radhapuram", "name": "Radhapuram", "nameTa": "", "lat": 8.2750, "lng": 77.7569, "pincodes": ["627111"] },
+        { "id": "tirunelveli_sankarankoil", "name": "Cheranmadevi", "nameTa": "", "lat": 8.6889, "lng": 77.5800, "pincodes": ["627414"] },
+        { "id": "tirunelveli_manur", "name": "Manur", "nameTa": "", "lat": 8.8000, "lng": 77.6500, "pincodes": ["627009"] }
+      ]
+    },
+    {
+      "id": "tirupathur", "name": "Tirupathur", "nameTa": "", "synonyms": [],
+      "lat": 12.4980, "lng": 78.5654,
+      "taluks": [
+        { "id": "tirupathur_tirupathur", "name": "Tirupathur", "nameTa": "", "lat": 12.4980, "lng": 78.5654, "pincodes": ["635601", "635602"] },
+        { "id": "tirupathur_vaniyambadi", "name": "Vaniyambadi", "nameTa": "", "lat": 12.6833, "lng": 78.6167, "pincodes": ["635751", "635752"] },
+        { "id": "tirupathur_ambur", "name": "Ambur", "nameTa": "", "lat": 12.7906, "lng": 78.7156, "pincodes": ["635802"] },
+        { "id": "tirupathur_natrampalli", "name": "Natrampalli", "nameTa": "", "lat": 12.5417, "lng": 78.6633, "pincodes": ["635854"] },
+        { "id": "tirupathur_jolarpet", "name": "Jolarpet", "nameTa": "", "lat": 12.5694, "lng": 78.5825, "pincodes": ["635851"] }
+      ]
+    },
+    {
+      "id": "tiruppur", "name": "Tiruppur", "nameTa": "", "synonyms": ["tirupur"],
+      "lat": 11.1085, "lng": 77.3411,
+      "taluks": [
+        { "id": "tiruppur_tiruppur_north", "name": "Tiruppur North", "nameTa": "", "lat": 11.1085, "lng": 77.3411, "pincodes": ["641601", "641602", "641603"] },
+        { "id": "tiruppur_tiruppur_south", "name": "Tiruppur South", "nameTa": "", "lat": 11.0800, "lng": 77.3500, "pincodes": ["641604", "641605"] },
+        { "id": "tiruppur_palladam", "name": "Palladam", "nameTa": "", "lat": 10.9928, "lng": 77.2858, "pincodes": ["641664"] },
+        { "id": "tiruppur_avanashi", "name": "Avanashi", "nameTa": "", "lat": 11.1731, "lng": 77.2731, "pincodes": ["641654"] },
+        { "id": "tiruppur_uthukuli", "name": "Uthukuli", "nameTa": "", "lat": 11.1750, "lng": 77.5275, "pincodes": ["638752"] },
+        { "id": "tiruppur_dharapuram", "name": "Dharapuram", "nameTa": "", "lat": 10.7361, "lng": 77.5269, "pincodes": ["638656", "638657"] },
+        { "id": "tiruppur_kangeyam", "name": "Kangeyam", "nameTa": "", "lat": 11.0067, "lng": 77.5611, "pincodes": ["638701"] },
+        { "id": "tiruppur_madathukulam", "name": "Madathukulam", "nameTa": "", "lat": 10.5275, "lng": 77.3625, "pincodes": ["642113"] },
+        { "id": "tiruppur_udumalaipettai", "name": "Udumalaipettai", "nameTa": "", "lat": 10.5853, "lng": 77.2486, "pincodes": ["642126"] }
+      ]
+    },
+    {
+      "id": "tiruvallur", "name": "Tiruvallur", "nameTa": "", "synonyms": ["thiruvallur"],
+      "lat": 13.1429, "lng": 79.9097,
+      "taluks": [
+        { "id": "tiruvallur_tiruvallur", "name": "Tiruvallur", "nameTa": "", "lat": 13.1429, "lng": 79.9097, "pincodes": ["602001", "602002"] },
+        { "id": "tiruvallur_poonamallee", "name": "Poonamallee", "nameTa": "", "lat": 13.0467, "lng": 80.1131, "pincodes": ["600056"] },
+        { "id": "tiruvallur_avadi", "name": "Avadi", "nameTa": "", "lat": 13.1147, "lng": 80.0996, "pincodes": ["600054", "600055"] },
+        { "id": "tiruvallur_gummidipoondi", "name": "Gummidipoondi", "nameTa": "", "lat": 13.4072, "lng": 80.1097, "pincodes": ["601201"] },
+        { "id": "tiruvallur_ponneri", "name": "Ponneri", "nameTa": "", "lat": 13.3331, "lng": 80.1872, "pincodes": ["601204"] },
+        { "id": "tiruvallur_uthukottai", "name": "Uthukottai", "nameTa": "", "lat": 13.3306, "lng": 79.8869, "pincodes": ["602026"] },
+        { "id": "tiruvallur_pallipattu", "name": "Pallipattu", "nameTa": "", "lat": 13.3464, "lng": 79.4525, "pincodes": ["631204"] },
+        { "id": "tiruvallur_tiruttani", "name": "Tiruttani", "nameTa": "", "lat": 13.1758, "lng": 79.6111, "pincodes": ["631209"] },
+        { "id": "tiruvallur_red_hills", "name": "Red Hills", "nameTa": "", "lat": 13.1933, "lng": 80.1858, "pincodes": ["600052"] }
+      ]
+    },
+    {
+      "id": "tiruvannamalai", "name": "Tiruvannamalai", "nameTa": "", "synonyms": [],
+      "lat": 12.2253, "lng": 79.0747,
+      "taluks": [
+        { "id": "tiruvannamalai_tiruvannamalai", "name": "Tiruvannamalai", "nameTa": "", "lat": 12.2253, "lng": 79.0747, "pincodes": ["606601", "606602", "606603"] },
+        { "id": "tiruvannamalai_polur", "name": "Polur", "nameTa": "", "lat": 12.5067, "lng": 79.1239, "pincodes": ["606803"] },
+        { "id": "tiruvannamalai_arani", "name": "Arani", "nameTa": "", "lat": 12.6700, "lng": 79.2828, "pincodes": ["632301"] },
+        { "id": "tiruvannamalai_cheyyar", "name": "Cheyyar", "nameTa": "", "lat": 12.6650, "lng": 79.5436, "pincodes": ["604407"] },
+        { "id": "tiruvannamalai_vandavasi", "name": "Vandavasi", "nameTa": "", "lat": 12.5044, "lng": 79.6056, "pincodes": ["604408"] },
+        { "id": "tiruvannamalai_chengam", "name": "Chengam", "nameTa": "", "lat": 12.3056, "lng": 78.7967, "pincodes": ["606701"] },
+        { "id": "tiruvannamalai_thandarampattu", "name": "Thandarampattu", "nameTa": "", "lat": 12.3833, "lng": 79.0167, "pincodes": ["606708"] },
+        { "id": "tiruvannamalai_kalasapakkam", "name": "Kalasapakkam", "nameTa": "", "lat": 12.4683, "lng": 79.0481, "pincodes": ["606751"] },
+        { "id": "tiruvannamalai_kilpennathur", "name": "Kilpennathur", "nameTa": "", "lat": 12.3500, "lng": 79.2500, "pincodes": ["604601"] }
+      ]
+    },
+    {
+      "id": "tiruvarur", "name": "Tiruvarur", "nameTa": "", "synonyms": [],
+      "lat": 10.7726, "lng": 79.6368,
+      "taluks": [
+        { "id": "tiruvarur_tiruvarur", "name": "Tiruvarur", "nameTa": "", "lat": 10.7726, "lng": 79.6368, "pincodes": ["610001", "610002"] },
+        { "id": "tiruvarur_nannilam", "name": "Nannilam", "nameTa": "", "lat": 10.7569, "lng": 79.5950, "pincodes": ["610105"] },
+        { "id": "tiruvarur_thiruthuraipoondi", "name": "Thiruthuraipoondi", "nameTa": "", "lat": 10.5247, "lng": 79.6469, "pincodes": ["614713"] },
+        { "id": "tiruvarur_mannargudi", "name": "Mannargudi", "nameTa": "", "lat": 10.6606, "lng": 79.4564, "pincodes": ["614001", "614002"] },
+        { "id": "tiruvarur_needamangalam", "name": "Needamangalam", "nameTa": "", "lat": 10.7833, "lng": 79.4083, "pincodes": ["614404"] },
+        { "id": "tiruvarur_kodavasal", "name": "Kodavasal", "nameTa": "", "lat": 10.8500, "lng": 79.4500, "pincodes": ["612601"] },
+        { "id": "tiruvarur_valangaiman", "name": "Valangaiman", "nameTa": "", "lat": 10.8911, "lng": 79.3622, "pincodes": ["612804"] }
+      ]
+    },
+    {
+      "id": "vellore", "name": "Vellore", "nameTa": "", "synonyms": [],
+      "lat": 12.9165, "lng": 79.1325,
+      "taluks": [
+        { "id": "vellore_vellore", "name": "Vellore", "nameTa": "", "lat": 12.9165, "lng": 79.1325, "pincodes": ["632001", "632002", "632004"] },
+        { "id": "vellore_anaicut", "name": "Anaicut", "nameTa": "", "lat": 12.7167, "lng": 79.1167, "pincodes": ["632106"] },
+        { "id": "vellore_gudiyatham", "name": "Gudiyatham", "nameTa": "", "lat": 12.9447, "lng": 78.8742, "pincodes": ["632602"] },
+        { "id": "vellore_pernambut", "name": "Pernambut", "nameTa": "", "lat": 12.9333, "lng": 78.7167, "pincodes": ["635810"] },
+        { "id": "vellore_katpadi", "name": "Katpadi", "nameTa": "", "lat": 12.9694, "lng": 79.1411, "pincodes": ["632007"] },
+        { "id": "vellore_k_v_kuppam", "name": "K. V. Kuppam", "nameTa": "", "lat": 12.9650, "lng": 79.0367, "pincodes": ["632201"] }
+      ]
+    },
+    {
+      "id": "viluppuram", "name": "Viluppuram", "nameTa": "", "synonyms": ["villupuram"],
+      "lat": 11.9401, "lng": 79.4861,
+      "taluks": [
+        { "id": "viluppuram_viluppuram", "name": "Viluppuram", "nameTa": "", "lat": 11.9401, "lng": 79.4861, "pincodes": ["605401", "605402"] },
+        { "id": "viluppuram_tindivanam", "name": "Tindivanam", "nameTa": "", "lat": 12.2358, "lng": 79.6517, "pincodes": ["604001", "604002"] },
+        { "id": "viluppuram_gingee", "name": "Gingee", "nameTa": "", "lat": 12.2531, "lng": 79.4119, "pincodes": ["604202"] },
+        { "id": "viluppuram_vanur", "name": "Vanur", "nameTa": "", "lat": 12.0078, "lng": 79.7400, "pincodes": ["605103"] },
+        { "id": "viluppuram_marakkanam", "name": "Marakkanam", "nameTa": "", "lat": 12.2031, "lng": 79.9419, "pincodes": ["604303"] },
+        { "id": "viluppuram_kandachipuram", "name": "Kandachipuram", "nameTa": "", "lat": 11.9050, "lng": 79.2233, "pincodes": ["605701"] },
+        { "id": "viluppuram_melmalayanur", "name": "Melmalayanur", "nameTa": "", "lat": 12.2356, "lng": 79.3219, "pincodes": ["604204"] }
+      ]
+    },
+    {
+      "id": "virudhunagar", "name": "Virudhunagar", "nameTa": "", "synonyms": [],
+      "lat": 9.5810, "lng": 77.9610,
+      "taluks": [
+        { "id": "virudhunagar_virudhunagar", "name": "Virudhunagar", "nameTa": "", "lat": 9.5810, "lng": 77.9610, "pincodes": ["626001", "626003"] },
+        { "id": "virudhunagar_sivakasi", "name": "Sivakasi", "nameTa": "", "lat": 9.4533, "lng": 77.7956, "pincodes": ["626123", "626124"] },
+        { "id": "virudhunagar_sattur", "name": "Sattur", "nameTa": "", "lat": 9.3567, "lng": 77.9311, "pincodes": ["626203"] },
+        { "id": "virudhunagar_aruppukottai", "name": "Aruppukottai", "nameTa": "", "lat": 9.5083, "lng": 78.0950, "pincodes": ["626101"] },
+        { "id": "virudhunagar_rajapalayam", "name": "Rajapalayam", "nameTa": "", "lat": 9.4533, "lng": 77.5536, "pincodes": ["626117", "626118"] },
+        { "id": "virudhunagar_srivilliputhur", "name": "Srivilliputhur", "nameTa": "", "lat": 9.5128, "lng": 77.6322, "pincodes": ["626125"] },
+        { "id": "virudhunagar_tiruchuli", "name": "Tiruchuli", "nameTa": "", "lat": 9.5333, "lng": 78.2167, "pincodes": ["626129"] },
+        { "id": "virudhunagar_watrap", "name": "Watrap", "nameTa": "", "lat": 9.5778, "lng": 77.6406, "pincodes": ["626132"] },
+        { "id": "virudhunagar_kariapatti", "name": "Kariapatti", "nameTa": "", "lat": 9.6764, "lng": 78.0928, "pincodes": ["626106"] }
+      ]
+    }
+  ]
+}
