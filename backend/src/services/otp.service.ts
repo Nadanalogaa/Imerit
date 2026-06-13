@@ -1,3 +1,4 @@
+import { randomInt } from "node:crypto";
 import bcrypt from "bcryptjs";
 import { type OtpPurpose, type Prisma } from "@prisma/client";
 import { prisma } from "../lib/prisma.js";
@@ -24,8 +25,6 @@ const RESEND_COOLDOWN_SECONDS = 60;
 
 function generateCode(): string {
   // crypto.randomInt is unbiased, unlike Math.random.
-  // eslint-disable-next-line @typescript-eslint/no-require-imports
-  const { randomInt } = require("node:crypto");
   return String(randomInt(0, 1_000_000)).padStart(CODE_LENGTH, "0");
 }
 
