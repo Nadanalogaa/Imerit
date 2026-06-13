@@ -1,8 +1,14 @@
-# Render Blueprint — provisions the backend + MySQL with one click.
-# Push this file in the repo, then on Render dashboard pick
-# "New Blueprint" and point at this file's path.
+# Render Blueprint — provisions the backend + a free Postgres with one click.
 #
-# https://render.com/docs/blueprint-spec
+# How to use:
+#   1. Push this file in the repo (already done).
+#   2. On Render dashboard → "New" → "Blueprint" → pick the GitHub repo
+#      → Render reads this file and creates both services.
+#   3. Wait ~3 min for the first deploy.
+#   4. Update CORS_ORIGINS below to your real frontend URL after Vercel
+#      gives you the production link.
+#
+# Spec: https://render.com/docs/blueprint-spec
 
 services:
   - type: web
@@ -20,7 +26,7 @@ services:
         value: 4000
       - key: DATABASE_URL
         fromDatabase:
-          name: itamil-mysql
+          name: itamil-postgres
           property: connectionString
       - key: JWT_ACCESS_SECRET
         generateValue: true
@@ -31,17 +37,19 @@ services:
       - key: JWT_REFRESH_TTL_DAYS
         value: 30
       - key: CORS_ORIGINS
-        value: https://itamil-recruit.vercel.app  # update once you know the real URL
+        # IMPORTANT: update this once you know your real Vercel URL.
+        # Multiple origins comma-separated.
+        value: https://itamil-recruit.vercel.app,http://localhost:5173
       - key: OTP_TTL_MIN
         value: 10
       - key: COOKIE_SECURE
         value: true
 
 databases:
-  - name: itamil-mysql
+  - name: itamil-postgres
     databaseName: itamil_recruit
     user: itamil
-    # NOTE: Render's managed MySQL is a paid product; on the free tier you
-    # can swap this for a PostgreSQL instance (and change the Prisma
-    # provider) — see backend/README.md for the Postgres switch.
     plan: free
+    # Render's free Postgres tier is suspended after 30 days of inactivity
+    # and dropped after 90 — fine for demo + early dev. Upgrade to paid once
+    # you have real users.

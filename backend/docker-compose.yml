@@ -1,22 +1,21 @@
 services:
-  mysql:
-    image: mysql:8.4
-    container_name: itamil-recruit-mysql
+  postgres:
+    image: postgres:16-alpine
+    container_name: itamil-recruit-postgres
     restart: unless-stopped
     environment:
-      MYSQL_ROOT_PASSWORD: root_dev
-      MYSQL_DATABASE: itamil_recruit
-      MYSQL_USER: itamil
-      MYSQL_PASSWORD: itamil_dev
+      POSTGRES_DB: itamil_recruit
+      POSTGRES_USER: itamil
+      POSTGRES_PASSWORD: itamil_dev
     ports:
-      - "3306:3306"
+      - "5432:5432"
     volumes:
-      - mysql-data:/var/lib/mysql
+      - pg-data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-proot_dev"]
+      test: ["CMD-SHELL", "pg_isready -U itamil -d itamil_recruit"]
       interval: 10s
       timeout: 5s
       retries: 10
 
 volumes:
-  mysql-data:
+  pg-data:

@@ -1,6 +1,8 @@
 # i-Tamil Recruit — Backend
 
-Node 20 + Express 5 + Prisma + MySQL 8 + Zod + JWT. Ships from `backend/` as a self-contained service.
+Node 20 + Express 5 + Prisma + PostgreSQL 16 + Zod + JWT. Ships from `backend/` as a self-contained service.
+
+> **Why Postgres?** Switched from MySQL during early dev because Render's free hosting tier supports Postgres but not MySQL. Prisma supports both providers; the rest of the code is identical. If you later need MySQL, change `provider` in [prisma/schema.prisma](./prisma/schema.prisma) and the docker-compose image.
 
 ## Quick start (local)
 
@@ -9,7 +11,7 @@ Node 20 + Express 5 + Prisma + MySQL 8 + Zod + JWT. Ships from `backend/` as a s
 cd backend
 npm install
 
-# 2. Start MySQL via Docker (one-time download ~600 MB)
+# 2. Start Postgres via Docker (one-time image download ~250 MB)
 npm run db:up
 
 # 3. Copy env template and tweak if needed
@@ -43,7 +45,7 @@ curl http://localhost:4000/readyz    # readiness — DB reachable
 | `npm run dev`       | Hot-reload dev server (tsx) |
 | `npm run build`     | Compile TypeScript to `dist/` |
 | `npm start`         | Run compiled server (production mode) |
-| `npm run db:up`     | Start the local MySQL container |
+| `npm run db:up`     | Start the local Postgres container |
 | `npm run db:down`   | Stop it (data persists in a docker volume) |
 | `npm run db:migrate` | Create + apply a new migration during development |
 | `npm run db:deploy` | Apply pending migrations (used in production / Docker) |
@@ -85,16 +87,15 @@ backend/
 
 ### Render (recommended for demo)
 1. Push `backend/` to GitHub (already done).
-2. On Render dashboard → **New → Blueprint** → select the repo → it reads [render.yaml](./render.yaml) and provisions both the web service and MySQL.
-3. After first deploy, set `CORS_ORIGINS` to your real frontend URL (e.g. `https://itamil-recruit.vercel.app`).
-4. Update the frontend's `VITE_API_URL` to point at the Render URL.
+2. On Render dashboard → **New → Blueprint** → select the repo → it reads [render.yaml](./render.yaml) and provisions both the web service and a free Postgres database.
+3. Wait ~3 min for the first deploy.
+4. Update `CORS_ORIGINS` in the Render dashboard to include your real frontend URL (e.g. `https://itamil-recruit.vercel.app`).
+5. Set `VITE_API_URL` in your Vercel project to the Render service URL so the frontend talks to it.
 
-Note: Render's managed MySQL is paid. For the free tier we can either:
-   * Use Render's free Postgres + switch the Prisma `provider` to `postgresql`, or
-   * Use [PlanetScale](https://planetscale.com) for free MySQL.
+> **Free-tier caveat**: Render's free Postgres is suspended after 30 days of inactivity and dropped after 90. Upgrade to paid once you have real users.
 
 ### AWS (production)
-EC2 / ECS for the API + RDS for MySQL. The Dockerfile is production-ready — point ECS / EKS at it.
+EC2 / ECS for the API + RDS for Postgres (or MySQL — change the Prisma provider). The Dockerfile is production-ready — point ECS / EKS at it.
 
 ## Phase 0 status
 
