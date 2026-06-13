@@ -27,6 +27,16 @@ const EnvSchema = z.object({
   OTP_PROVIDER: z.string().optional().default(""),
   OTP_TTL_MIN: z.coerce.number().int().positive().default(10),
 
+  /**
+   * TEST ONLY — when "true", the API echoes the plaintext OTP code in the
+   * register/login response body. Convenient for curl/Postman demos before
+   * a real mail provider is wired up. MUST be unset before production launch.
+   */
+  ENABLE_DEV_OTP: z
+    .string()
+    .default("false")
+    .transform((s) => s === "true"),
+
   COOKIE_SECURE: z
     .string()
     .default("false")

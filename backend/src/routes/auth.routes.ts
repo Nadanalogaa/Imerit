@@ -55,7 +55,7 @@ router.post(
     }
 
     const user = await createUser({ role, name, email, mobile });
-    await issueOtp({
+    const otp = await issueOtp({
       email,
       purpose: OtpPurpose.REGISTER,
       userId: user.id,
@@ -67,6 +67,7 @@ router.post(
     res.status(201).json({
       message: "OTP sent — check the email inbox (in development, it's logged to the server console).",
       userId: user.id,
+      devCode: otp.devCode, // present only when ENABLE_DEV_OTP=true
     });
   }),
 );
@@ -85,14 +86,17 @@ router.post(
       throw new HttpError(404, "No account with that email. Please register first.", "USER_NOT_FOUND");
     }
 
-    await issueOtp({
+    const otp = await issueOtp({
       email,
       purpose: OtpPurpose.LOGIN,
       userId: user.id,
       ip: req.ip,
       userAgent: req.headers["user-agent"],
     });
-    res.json({ message: "OTP sent — check the email inbox." });
+    res.json({
+      message: "OTP sent — check the email inbox.",
+      devCode: otp.devCode, // present only when ENABLE_DEV_OTP=true
+    });
   }),
 );
 

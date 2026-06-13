@@ -39,8 +39,12 @@ interface IssueArgs {
 /**
  * Generate, store, and dispatch a new OTP. Enforces the resend cooldown so a
  * user (or script) can't spam the email queue.
+ *
+ * Returns `devCode` (plaintext OTP) **only** when env.ENABLE_DEV_OTP is set —
+ * never in real production. Callers (the auth routes) forward that field into
+ * the response body so demo/curl flows don't need to dig through server logs.
  */
-export async function issueOtp(args: IssueArgs): Promise<{ expiresAt: Date }> {
+export async function issueOtp(args: IssueArgs): Promise<{ expiresAt: Date; devCode?: string }> {
   const email = args.email.toLowerCase().trim();
 
   const since = new Date(Date.now() - RESEND_COOLDOWN_SECONDS * 1000);
@@ -69,7 +73,7 @@ export async function issueOtp(args: IssueArgs): Promise<{ expiresAt: Date }> {
   });
 
   await dispatch(email, code, args.purpose);
-  return { expiresAt };
+  return { expiresAt, devCode: env.ENABLE_DEV_OTP ? code : undefined };
 }
 
 /**
