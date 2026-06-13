@@ -1,0 +1,488 @@
+// i-Tamil Recruit — database schema
+//
+// Source of truth for every entity the API and admin module need.
+// Run `npm run db:migrate` after editing to generate a migration.
+//
+// Conventions:
+//   * Every table has id (cuid), createdAt, updatedAt. Soft-delete via deletedAt.
+//   * Money is stored in paise (integer) to avoid floating-point drift.
+//   * Lists of strings (skills, languages, departments) are JSON columns
+//     because MySQL doesn't have native scalar arrays. Normalize later if
+//     filter/search performance demands it.
+//   * Moderation status lives on the entity itself, not a separate queue
+//     table — the admin queue is just `WHERE moderationStatus = PENDING`.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+// -------------------------------------------------------------------- //
+// Users & auth
+// -------------------------------------------------------------------- //
+
+enum UserRole {
+  CANDIDATE
+  EMPLOYER
+  ADMIN
+  SUPER_ADMIN
+}
+
+enum ModerationStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+model User {
+  id             String    @id @default(cuid())
+  role           UserRole
+  email          String    @unique
+  emailVerified  Boolean   @default(false)
+  mobile         String?
+  mobileVerified Boolean   @default(false)
+  name           String
+  passwordHash   String? // optional — OTP-only flow leaves this null
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+  deletedAt      DateTime?
+  lastSeenAt     DateTime?
+
+  candidateProfile CandidateProfile?
+  employerProfile  EmployerProfile?
+  jobsPosted       Job[]             @relation("EmployerJobs")
+  applications     Application[]     @relation("CandidateApplications")
+  savedJobs        SavedJob[]
+  subscriptions    Subscription[]
+  auditLogs        AuditLog[]        @relation("ActorLogs")
+  otps             OtpToken[]
+
+  @@index([role])
+  @@index([deletedAt])
+  @@map("users")
+}
+
+enum OtpPurpose {
+  REGISTER
+  LOGIN
+  EMAIL_VERIFY
+  MOBILE_VERIFY
+  PASSWORD_RESET
+}
+
+model OtpToken {
+  id        String     @id @default(cuid())
+  userId    String?
+  user      User?      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  email     String
+  purpose   OtpPurpose
+  codeHash  String
+  expiresAt DateTime
+  usedAt    DateTime?
+  attempts  Int        @default(0)
+  ip        String?
+  userAgent String?    @db.VarChar(512)
+  createdAt DateTime   @default(now())
+
+  @@index([email, purpose])
+  @@index([expiresAt])
+  @@map("otp_tokens")
+}
+
+// -------------------------------------------------------------------- //
+// Candidate
+// -------------------------------------------------------------------- //
+
+enum CandidateType {
+  FRESHER
+  EXPERIENCED
+}
+
+enum FieldKind {
+  IT
+  NON_IT
+}
+
+enum InternOrJob {
+  INTERN
+  JOB
+}
+
+enum TemplateId {
+  CLASSIC
+  MODERN
+  CREATIVE
+  CORPORATE
+  TECH_MONO
+}
+
+model CandidateProfile {
+  id        String   @id @default(cuid())
+  userId    String   @unique
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Photo — store URL, not base64
+  photoUrl        String? @db.VarChar(512)
+  alternateMobile String?
+
+  // Current address — structured location
+  currentDistrictId String?
+  currentTalukId    String?
+  currentLat        Float?
+  currentLng        Float?
+  currentPincode    String?
+  currentStreet     String?   @db.VarChar(255) // private; never returned in public views
+
+  // Preferred work location
+  preferredDistrictId String?
+  preferredTalukId    String?
+  preferredLat        Float?
+  preferredLng        Float?
+  preferredPincode    String?
+  preferredLocation   String? // legacy display label, derived from structured pickers
+
+  // Ambitions
+  shortTermAmbition String? @db.Text
+  longTermAmbition  String? @db.Text
+
+  // Fresher vs experienced branching
+  type              CandidateType?
+  internOrJob       InternOrJob?
+  field             FieldKind?
+  itSpecialization  String?
+  itLanguages       Json? // string[]
+  nonItDepartments  Json? // string[]
+  yearsOfExperience Int?
+  topSkills         Json? // string[]
+
+  // Template picked on preview step
+  selectedTemplateId TemplateId?
+
+  // Admin moderation
+  moderationStatus ModerationStatus @default(PENDING)
+  moderationNotes  String?          @db.Text
+  moderatedAt      DateTime?
+  moderatedById    String?
+
+  education    Education[]
+  experiences  Experience[]
+  applications Application[] @relation("CandidateAppsViaProfile")
+
+  @@index([moderationStatus])
+  @@index([type, field])
+  @@index([currentDistrictId])
+  @@index([preferredDistrictId])
+  @@map("candidate_profiles")
+}
+
+enum EducationLevel {
+  TENTH
+  TWELFTH
+  DIPLOMA
+  UG
+  PG
+  MPHIL
+  PHD
+  OTHER
+}
+
+model Education {
+  id          String           @id @default(cuid())
+  profileId   String
+  profile     CandidateProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  level       EducationLevel
+  enabled     Boolean          @default(true)
+  percentage  Float?
+  passedOutYear Int?
+  thesis      String? @db.Text // PhD only
+  courseName  String? // OTHER only
+  institution String?
+  createdAt   DateTime @default(now())
+
+  @@unique([profileId, level])
+  @@map("education")
+}
+
+model Experience {
+  id        String           @id @default(cuid())
+  profileId String
+  profile   CandidateProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  company   String
+  role      String
+  fromDate  String // YYYY-MM (keep loose — we render it back as-is)
+  toDate    String? // null = present
+  createdAt DateTime         @default(now())
+
+  @@index([profileId])
+  @@map("experiences")
+}
+
+// -------------------------------------------------------------------- //
+// Employer
+// -------------------------------------------------------------------- //
+
+enum CompanySize {
+  SME       // 1–50 employees
+  LARGE     // >50 employees
+}
+
+model EmployerProfile {
+  id          String   @id @default(cuid())
+  userId      String   @unique
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  companyName String
+  companySize CompanySize @default(SME)
+  industry    String?
+  website     String?
+  about       String?  @db.Text
+  logoUrl     String?  @db.VarChar(512)
+
+  // Address
+  districtId  String?
+  talukId     String?
+  lat         Float?
+  lng         Float?
+  pincode     String?
+
+  // Admin moderation
+  moderationStatus ModerationStatus @default(PENDING)
+  moderationNotes  String?          @db.Text
+  moderatedAt      DateTime?
+  moderatedById    String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([moderationStatus])
+  @@map("employer_profiles")
+}
+
+// -------------------------------------------------------------------- //
+// Jobs
+// -------------------------------------------------------------------- //
+
+enum JobField {
+  IT
+  NON_IT
+}
+
+enum JobType {
+  INTERNSHIP
+  FULL_TIME
+  PART_TIME
+  CONTRACT
+}
+
+enum JobExperience {
+  FRESHER
+  EXPERIENCED
+  ANY
+}
+
+enum JobStatus {
+  DRAFT
+  ACTIVE
+  PAUSED
+  CLOSED
+}
+
+model Job {
+  id           String        @id @default(cuid())
+  employerId   String
+  employer     User          @relation("EmployerJobs", fields: [employerId], references: [id], onDelete: Cascade)
+  employerName String        // denormalized for fast list rendering
+  title        String
+  description  String        @db.Text
+  // Location
+  location     String        // legacy display label
+  districtId   String?
+  talukId      String?
+  lat          Float?
+  lng          Float?
+  pincode      String?
+  street       String?       @db.VarChar(255) // private
+  // Categorisation
+  field        JobField
+  type         JobType
+  experience   JobExperience
+  yearsMin     Int?
+  yearsMax     Int?
+  salaryRange  String?
+  skills       Json          // string[]
+  // Lifecycle
+  status            JobStatus        @default(ACTIVE)
+  moderationStatus  ModerationStatus @default(PENDING)
+  moderationNotes   String?          @db.Text
+  moderatedAt       DateTime?
+  moderatedById     String?
+  postedAt          DateTime         @default(now())
+  closedAt          DateTime?
+  createdAt         DateTime         @default(now())
+  updatedAt         DateTime         @updatedAt
+  deletedAt         DateTime?
+
+  applications Application[]
+  savedBy      SavedJob[]
+
+  @@index([status, moderationStatus])
+  @@index([field, type, experience])
+  @@index([districtId])
+  @@index([employerId])
+  @@index([postedAt])
+  @@map("jobs")
+}
+
+enum ApplicationStatus {
+  APPLIED
+  VIEWED
+  SHORTLISTED
+  INTERVIEW
+  REJECTED
+  HIRED
+  WITHDRAWN
+}
+
+model Application {
+  id          String            @id @default(cuid())
+  jobId       String
+  job         Job               @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  candidateId String
+  candidate   User              @relation("CandidateApplications", fields: [candidateId], references: [id], onDelete: Cascade)
+  profileId   String? // optional snapshot ref
+  profile     CandidateProfile? @relation("CandidateAppsViaProfile", fields: [profileId], references: [id])
+
+  status      ApplicationStatus @default(APPLIED)
+  matchScore  Int? // cached at time of apply for analytics
+  coverNote   String?           @db.Text
+  appliedAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
+
+  @@unique([jobId, candidateId])
+  @@index([candidateId])
+  @@index([status])
+  @@map("applications")
+}
+
+model SavedJob {
+  id          String   @id @default(cuid())
+  candidateId String
+  candidate   User     @relation(fields: [candidateId], references: [id], onDelete: Cascade)
+  jobId       String
+  job         Job      @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  savedAt     DateTime @default(now())
+
+  @@unique([candidateId, jobId])
+  @@map("saved_jobs")
+}
+
+// -------------------------------------------------------------------- //
+// Subscriptions & plans
+// -------------------------------------------------------------------- //
+
+enum PlanAudience {
+  CANDIDATE
+  EMPLOYER_SME
+  EMPLOYER_LARGE
+}
+
+model Plan {
+  id           String       @id @default(cuid())
+  key          String       @unique // e.g. "candidate_45d", "emp_sme_9d"
+  label        String
+  audience     PlanAudience
+  durationDays Int
+  priceInPaise Int          // base price ex-GST
+  gstApplies   Boolean      @default(true)
+  active       Boolean      @default(true)
+  sortOrder    Int          @default(0)
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+
+  subscriptions Subscription[]
+
+  @@map("plans")
+}
+
+enum PaymentStatus {
+  PENDING
+  PAID
+  FAILED
+  REFUNDED
+}
+
+model Subscription {
+  id                String        @id @default(cuid())
+  userId            String
+  user              User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  planId            String
+  plan              Plan          @relation(fields: [planId], references: [id])
+  startedAt         DateTime      @default(now())
+  expiresAt         DateTime
+  // Payment
+  paymentStatus     PaymentStatus @default(PENDING)
+  paymentRef        String?       // Razorpay order_id / payment_id
+  amountInPaise     Int
+  gstInPaise        Int           @default(0)
+  totalInPaise      Int
+  invoiceNumber     String?       @unique
+  paidAt            DateTime?
+  refundedAt        DateTime?
+  refundRef         String?
+  refundedById      String?
+  refundReason      String?       @db.Text
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId, expiresAt])
+  @@index([paymentStatus])
+  @@map("subscriptions")
+}
+
+// -------------------------------------------------------------------- //
+// Admin: audit log
+// -------------------------------------------------------------------- //
+
+enum AuditAction {
+  USER_CREATED
+  USER_LOGIN
+  USER_LOGOUT
+  USER_DELETED
+  PROFILE_APPROVED
+  PROFILE_REJECTED
+  JOB_APPROVED
+  JOB_REJECTED
+  JOB_DELETED
+  PLAN_CREATED
+  PLAN_UPDATED
+  PLAN_DELETED
+  SUBSCRIPTION_REFUNDED
+  ADMIN_NOTE_ADDED
+  PRICING_CHANGED
+  SYSTEM_SETTING_CHANGED
+}
+
+model AuditLog {
+  id         String      @id @default(cuid())
+  actorId    String?
+  actor      User?       @relation("ActorLogs", fields: [actorId], references: [id])
+  actorRole  UserRole?
+  action     AuditAction
+  targetType String? // e.g. "user", "job", "subscription"
+  targetId   String?
+  payload    Json? // freeform context (old/new values, notes, etc.)
+  ip         String?
+  userAgent  String?     @db.VarChar(512)
+  createdAt  DateTime    @default(now())
+
+  @@index([actorId, createdAt])
+  @@index([action, createdAt])
+  @@index([targetType, targetId])
+  @@map("audit_logs")
+}
