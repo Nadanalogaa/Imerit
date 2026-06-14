@@ -186,7 +186,7 @@ export function AdminLogin() {
             <KeyRound size={16} /> {submitting ? "Sending OTP..." : "Send OTP"}
           </button>
           <p className="rounded-xl border border-zinc-200 bg-zinc-50 p-3 text-[11px] text-zinc-600 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-400">
-            Admin accounts are seeded on the backend (via the <code className="font-mono">ADMIN_EMAIL</code> env var). They log in with the same OTP flow as candidates and employers — no separate password.
+            The first <strong>super admin</strong> is bootstrapped via the <code className="font-mono">SUPER_ADMIN_EMAIL</code> env var. Every other admin is created by a super admin from inside the app. All admins log in with the same one-time code flow as candidates and employers — no separate password.
           </p>
           <p className="text-center text-xs text-zinc-500 dark:text-zinc-400">
             <Link to="/" className="hover:underline">← Back to home</Link>

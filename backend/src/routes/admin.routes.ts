@@ -8,6 +8,7 @@ import {
   adminActivitySchema,
   adminProfileListSchema,
   adminUserListSchema,
+  createAdminSchema,
   moderateProfileSchema,
 } from "../schemas/admin.schemas.js";
 import {
@@ -17,12 +18,19 @@ import {
   listUsers,
   moderateProfile,
 } from "../services/admin.service.js";
+import {
+  createAdmin,
+  listAdmins,
+  softDeleteAdmin,
+} from "../services/admin-users.service.js";
 
 const router = Router();
 
 // Both ADMIN and SUPER_ADMIN can use every read-only endpoint. We tighten
-// later for SUPER_ADMIN-only actions (pricing edits, sub-admin management).
+// for SUPER_ADMIN-only actions (admin user management, pricing) using
+// `superAdminGuard` below.
 const adminGuard = [requireAuth, requireRole(UserRole.ADMIN, UserRole.SUPER_ADMIN)];
+const superAdminGuard = [requireAuth, requireRole(UserRole.SUPER_ADMIN)];
 
 router.get(
   "/admin/stats",
@@ -65,6 +73,55 @@ router.get(
     res.json(await listProfiles(args));
   }),
 );
+
+/* --------------------- SUPER_ADMIN-only: manage admin accounts --------------------- */
+
+router.get(
+  "/super-admin/admins",
+  ...superAdminGuard,
+  asyncHandler(async (_req, res) => {
+    res.json({ items: await listAdmins() });
+  }),
+);
+
+router.post(
+  "/super-admin/admins",
+  ...superAdminGuard,
+  validate({ body: createAdminSchema }),
+  asyncHandler(async (req, res) => {
+    const { email, name, role } = req.body as { email: string; name: string; role: UserRole };
+    const created = await createAdmin({
+      actorId: req.user!.sub,
+      actorRole: req.user!.role,
+      email,
+      name,
+      role,
+      ip: req.ip,
+      userAgent: req.headers["user-agent"],
+    });
+    res.status(201).json({ user: created });
+  }),
+);
+
+router.delete(
+  "/super-admin/admins/:id",
+  ...superAdminGuard,
+  asyncHandler(async (req, res) => {
+    const rawId = req.params.id;
+    const targetId = Array.isArray(rawId) ? rawId[0] : rawId;
+    if (!targetId) throw new HttpError(400, "id is required", "ID_REQUIRED");
+    const result = await softDeleteAdmin({
+      actorId: req.user!.sub,
+      actorRole: req.user!.role,
+      targetId,
+      ip: req.ip,
+      userAgent: req.headers["user-agent"],
+    });
+    res.json({ user: result });
+  }),
+);
+
+/* ------------------------------ Moderation ------------------------------ */
 
 router.patch(
   "/admin/profiles/:userId/moderate",

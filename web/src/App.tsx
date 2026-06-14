@@ -33,6 +33,7 @@ import { AdminEmployers } from "./pages/AdminEmployers";
 import { AdminSubscriptions } from "./pages/AdminSubscriptions";
 import { AdminCandidateView } from "./pages/AdminCandidateView";
 import { SuperAdminDashboard } from "./pages/SuperAdminDashboard";
+import { SuperAdminAdmins } from "./pages/SuperAdminAdmins";
 import { RequireAuth, RedirectIfAuthed } from "./components/RequireAuth";
 
 export default function App() {
@@ -240,6 +241,7 @@ export default function App() {
         <Route path="/admin/subscriptions" element={<RequireAuth role="admin"><AdminSubscriptions /></RequireAuth>} />
         <Route path="/super-admin" element={<AdminLogin />} />
         <Route path="/super-admin/dashboard" element={<RequireAuth role="super_admin"><SuperAdminDashboard /></RequireAuth>} />
+        <Route path="/super-admin/admins" element={<RequireAuth role="super_admin"><SuperAdminAdmins /></RequireAuth>} />
       </Routes>
     </BrowserRouter>
   );

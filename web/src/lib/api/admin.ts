@@ -78,6 +78,16 @@ function qs(args: object): string {
   return s ? `?${s}` : "";
 }
 
+export interface AdminAccount {
+  id: string;
+  role: "ADMIN" | "SUPER_ADMIN";
+  name: string;
+  email: string;
+  mobile: string | null;
+  createdAt: string;
+  lastSeenAt: string | null;
+}
+
 export const adminApi = {
   stats: () => api<AdminStats>("/admin/stats"),
 
@@ -95,4 +105,18 @@ export const adminApi = {
       method: "PATCH",
       json: input,
     }),
+};
+
+/** Super-admin only — manage other admins. */
+export const superAdminApi = {
+  listAdmins: () => api<{ items: AdminAccount[] }>("/super-admin/admins"),
+
+  createAdmin: (input: { email: string; name: string; role: "ADMIN" | "SUPER_ADMIN" }) =>
+    api<{ user: AdminAccount }>("/super-admin/admins", { method: "POST", json: input }),
+
+  deleteAdmin: (id: string) =>
+    api<{ user: { id: string; role: string; email: string; deletedAt: string | null } }>(
+      `/super-admin/admins/${encodeURIComponent(id)}`,
+      { method: "DELETE" },
+    ),
 };

@@ -26,3 +26,10 @@ export const moderateProfileSchema = z.object({
   status: z.enum([ModerationStatus.APPROVED, ModerationStatus.REJECTED]),
   notes: z.string().max(2000).optional(),
 });
+
+/** Inputs for the super-admin's create-admin endpoint. */
+export const createAdminSchema = z.object({
+  email: z.string().trim().email(),
+  name: z.string().trim().min(2).max(120),
+  role: z.enum([UserRole.ADMIN, UserRole.SUPER_ADMIN]),
+});

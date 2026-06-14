@@ -11,6 +11,7 @@ import {
   IndianRupee,
   ScrollText,
   Briefcase,
+  ShieldCheck,
 } from "lucide-react";
 import { useAuth, allUsers } from "../store/auth";
 import { useProfile } from "../store/profile";
@@ -72,8 +73,32 @@ export function SuperAdminDashboard() {
             </p>
             <h1 className="mt-2 text-3xl font-semibold tracking-tight md:text-4xl">i-Tamil Recruit · all systems</h1>
             <p className="mt-2 text-sm text-zinc-600 dark:text-zinc-400">
-              Platform-wide metrics, plan management, and payment monitoring.
+              Platform-wide metrics, admin management, plan management, and payment monitoring.
             </p>
+          </motion.div>
+
+          {/* Admin management — primary super-admin action */}
+          <motion.div variants={itemV}>
+            <Link
+              to="/super-admin/admins"
+              className="group flex items-center gap-4 rounded-3xl border border-violet-200 bg-gradient-to-r from-violet-50 to-fuchsia-50 p-5 shadow-sm transition hover:shadow-xl dark:border-violet-500/30 dark:from-violet-500/10 dark:to-fuchsia-500/5"
+            >
+              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-violet-600 to-fuchsia-600 text-white shadow-md shadow-violet-500/40">
+                <ShieldCheck size={20} />
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className="text-xs font-bold uppercase tracking-widest text-violet-700 dark:text-violet-300">Admin accounts</p>
+                <h2 className="mt-0.5 text-lg font-semibold tracking-tight text-zinc-900 dark:text-zinc-100">
+                  Invite or revoke admins
+                </h2>
+                <p className="text-xs text-zinc-600 dark:text-zinc-400">
+                  Create new admin / super-admin accounts. They sign in with the same OTP flow — no shared passwords.
+                </p>
+              </div>
+              <span className="inline-flex items-center gap-1 rounded-full bg-violet-600 px-3 py-1.5 text-xs font-semibold text-white shadow-md shadow-violet-500/30 transition group-hover:bg-violet-700">
+                Manage <ArrowRight size={12} />
+              </span>
+            </Link>
           </motion.div>
 
           {/* Top metrics */}
