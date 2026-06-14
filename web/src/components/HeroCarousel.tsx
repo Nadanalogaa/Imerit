@@ -86,7 +86,7 @@ export function HeroCarousel() {
       // One viewport tall on common laptops, never less than 620px on md+.
       // Flex column splits the section into a flexible top (slider copy) and
       // a natural-height bottom (role panels) so both fit above the fold.
-      className="relative flex w-full flex-col overflow-hidden min-h-[calc(100svh-104px)] md:min-h-[620px] lg:min-h-[640px]"
+      className="relative flex w-full flex-col overflow-hidden min-h-[calc(100svh-104px)] md:min-h-[680px] lg:min-h-[720px]"
       onMouseEnter={() => setPaused(true)}
       onMouseLeave={() => setPaused(false)}
     >
@@ -115,9 +115,10 @@ export function HeroCarousel() {
         <div className="absolute inset-0 bg-gradient-to-b from-black/55 via-black/55 to-black/75" />
       </div>
 
-      {/* TOP — slider copy, vertically centred in the available space */}
-      <div className="relative z-10 flex flex-1 flex-col justify-center px-5 pt-8 md:px-10 md:pt-10 lg:px-14 lg:pt-12 xl:px-20">
-        <span className="mb-5 inline-flex w-fit items-center gap-2.5 rounded-full border border-white/30 bg-white/15 px-5 py-2 text-[13px] font-bold uppercase tracking-[0.25em] text-white backdrop-blur-md md:text-sm">
+      {/* TOP — slider copy, horizontally centred, pushed slightly toward
+          the top of the available space so it doesn't crowd the role cards. */}
+      <div className="relative z-10 flex flex-1 flex-col items-center justify-start px-5 pt-10 text-center md:px-10 md:pt-14 lg:px-14 lg:pt-16 xl:px-20">
+        <span className="mb-5 inline-flex items-center gap-2.5 rounded-full border border-white/30 bg-white/15 px-5 py-2 text-[13px] font-bold uppercase tracking-[0.25em] text-white backdrop-blur-md md:text-sm">
           <span className="relative flex h-2 w-2">
             <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
             <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-400" />
@@ -128,11 +129,11 @@ export function HeroCarousel() {
         <h1 className="max-w-3xl text-3xl font-semibold leading-tight tracking-tight text-white drop-shadow-lg md:text-4xl lg:text-5xl">
           {SLIDES[idx].title}
         </h1>
-        <p className="mt-4 max-w-2xl text-sm text-white/90 md:text-base">
+        <p className="mx-auto mt-4 max-w-2xl text-sm text-white/90 md:text-base">
           {SLIDES[idx].description}
         </p>
 
-        <div className="mt-6 flex items-center gap-2">
+        <div className="mt-6 flex items-center justify-center gap-2">
           {SLIDES.map((_, i) => (
             <button
               key={i}
@@ -251,53 +252,54 @@ function RoleCard({ icon, title, tagline, bullets, ctaTo, ctaLabel, signInTo, to
   return (
     <div
       className={[
-        // Solid white card with strong drop shadow so it pops against the
-        // photo overlay it's overlapping.
-        "group relative flex flex-col overflow-hidden rounded-2xl border border-zinc-200 bg-white p-4 shadow-2xl shadow-zinc-900/40 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-zinc-900/50 dark:border-zinc-700 dark:bg-zinc-900 dark:shadow-black/60 md:p-5",
+        // Solid white surface with a bold drop shadow so the card pops against
+        // the photo behind it. Plenty of inner padding for a confident,
+        // premium feel.
+        "group relative flex flex-col overflow-hidden rounded-2xl border border-zinc-200 bg-white p-6 shadow-2xl shadow-zinc-900/40 transition-all duration-300 hover:-translate-y-1 hover:shadow-zinc-900/50 dark:border-zinc-700 dark:bg-zinc-900 dark:shadow-black/60 md:p-7 lg:p-8",
       ].join(" ")}
     >
-      {/* Top accent stripe */}
-      <div className={["absolute inset-x-0 top-0 h-1.5 bg-gradient-to-r", t.stripe].join(" ")} />
+      {/* Top accent stripe — thicker for more presence */}
+      <div className={["absolute inset-x-0 top-0 h-2 bg-gradient-to-r", t.stripe].join(" ")} />
 
       {/* Soft interior tint at top-left for warmth */}
-      <div className={["pointer-events-none absolute -left-8 -top-8 h-32 w-32 rounded-full bg-gradient-to-br blur-3xl opacity-60", t.highlight].join(" ")} />
+      <div className={["pointer-events-none absolute -left-10 -top-10 h-44 w-44 rounded-full bg-gradient-to-br blur-3xl opacity-70", t.highlight].join(" ")} />
 
-      <div className="relative flex items-center gap-2.5">
-        <div className={["flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-white shadow-lg transition-transform duration-300 group-hover:scale-105", t.iconBg, t.iconGlow].join(" ")}>
+      <div className="relative flex items-center gap-3.5">
+        <div className={["flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl text-white shadow-lg transition-transform duration-300 group-hover:scale-105 md:h-16 md:w-16", t.iconBg, t.iconGlow].join(" ")}>
           {icon}
         </div>
-        <h2 className="text-lg font-semibold tracking-tight text-zinc-900 dark:text-zinc-100 md:text-xl">
+        <h2 className="text-2xl font-semibold tracking-tight text-zinc-900 dark:text-zinc-100 md:text-3xl">
           {title}
         </h2>
       </div>
 
-      <p className="mt-2.5 text-[13.5px] leading-snug text-zinc-600 dark:text-zinc-300">{tagline}</p>
+      <p className="mt-4 text-[15px] leading-relaxed text-zinc-600 dark:text-zinc-300 md:text-base">{tagline}</p>
 
-      <ul className="mt-2.5 flex flex-wrap gap-1.5">
+      <ul className="mt-4 flex flex-wrap gap-2">
         {bullets.map((b, i) => (
           <li
             key={i}
-            className="inline-flex items-center gap-1 rounded-full border border-zinc-200 bg-zinc-50 px-2 py-0.5 text-[11px] font-semibold text-zinc-700 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-300"
+            className="inline-flex items-center gap-1.5 rounded-full border border-zinc-200 bg-zinc-50 px-3 py-1 text-[12px] font-semibold text-zinc-700 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-300"
           >
             {b.icon} {b.label}
           </li>
         ))}
       </ul>
 
-      <div className="mt-3 flex flex-wrap items-center gap-3">
+      <div className="mt-5 flex flex-wrap items-center gap-4">
         <Link
           to={ctaTo}
           className={[
-            "inline-flex items-center gap-1.5 rounded-xl px-4 py-2.5 text-[13px] font-bold text-white shadow-md transition-all duration-300 hover:scale-[1.03]",
+            "inline-flex items-center gap-2 rounded-2xl px-5 py-3 text-sm font-bold text-white shadow-lg transition-all duration-300 hover:scale-[1.03]",
             t.ctaBg,
           ].join(" ")}
         >
           {ctaLabel}
-          <ArrowRight size={13} />
+          <ArrowRight size={15} />
         </Link>
         <Link
           to={signInTo}
-          className="text-[11px] font-semibold text-zinc-600 hover:underline dark:text-zinc-400"
+          className="text-[12px] font-semibold text-zinc-600 hover:underline dark:text-zinc-400"
         >
           Already a member? <span className="text-zinc-900 dark:text-zinc-100">Sign in</span>
         </Link>
