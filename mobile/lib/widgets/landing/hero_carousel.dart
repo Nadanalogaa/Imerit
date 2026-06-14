@@ -23,23 +23,23 @@ class HeroSlide {
 const slides = <HeroSlide>[
   HeroSlide(
     bg: 'assets/images/background-04.jpg',
-    eyebrow: "Tamil Nadu's modern recruitment platform",
-    titleStart: 'Where talent meets ',
-    titleAccent: 'opportunity',
-    titleEnd: '',
+    eyebrow: 'The Vision',
+    titleStart: 'Making Tamil Nadu a ',
+    titleAccent: '0% unemployment',
+    titleEnd: ' state by 2031',
     accentColors: [Color(0xFFFB923C), Color(0xFFFCD34D)],
     description:
-        'Build a beautiful candidate profile, browse jobs across Tamil Nadu, or post openings — all in one elegant place.',
+        'To play a significant role in making Tamil Nadu a 0% unemployment state by 2031.',
   ),
   HeroSlide(
     bg: 'assets/images/background-02.jpg',
-    eyebrow: 'Every field. Every district.',
-    titleStart: 'Built for every ',
-    titleAccent: 'Tamil Nadu professional',
+    eyebrow: 'The Mission',
+    titleStart: 'Train, place, and ',
+    titleAccent: 'empower the youth',
     titleEnd: '',
     accentColors: [Color(0xFF6EE7B7), Color(0xFF67E8F9)],
     description:
-        'IT, HR, Sales, Finance, BPO, voice process, supply chain, vocational trades — every field belongs here. We don\'t favor one.',
+        'To empower job aspirants and youth by facilitating training and placing them in the right jobs near to their home locations.',
   ),
   HeroSlide(
     bg: 'assets/images/background-03.jpg',
@@ -105,7 +105,7 @@ class _HeroCarouselState extends State<HeroCarousel> {
   @override
   Widget build(BuildContext context) {
     return SizedBox(
-      height: 580,
+      height: 460,
       child: Stack(
         fit: StackFit.expand,
         children: [
@@ -168,7 +168,7 @@ class _SlideContent extends StatelessWidget {
         ),
         SafeArea(
           child: Padding(
-            padding: const EdgeInsets.fromLTRB(24, 80, 24, 60),
+            padding: const EdgeInsets.fromLTRB(24, 48, 24, 48),
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
@@ -207,10 +207,10 @@ class _SlideContent extends StatelessWidget {
                   textAlign: TextAlign.center,
                   text: TextSpan(
                     style: const TextStyle(
-                      fontSize: 32,
+                      fontSize: 26,
                       height: 1.15,
                       fontWeight: FontWeight.w600,
-                      letterSpacing: -0.8,
+                      letterSpacing: -0.6,
                       color: Colors.white,
                     ),
                     children: [

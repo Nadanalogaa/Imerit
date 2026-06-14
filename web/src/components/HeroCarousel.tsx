@@ -10,31 +10,32 @@ interface Slide {
 const SLIDES: Slide[] = [
   {
     bg: "/images/background-04.jpg",
-    eyebrow: "Tamil Nadu's modern recruitment platform",
+    eyebrow: "The Vision",
     title: (
       <>
-        Where talent meets{" "}
+        Making Tamil Nadu a{" "}
         <span className="bg-gradient-to-r from-brand-400 to-amber-300 bg-clip-text text-transparent">
-          opportunity
-        </span>
+          0% unemployment
+        </span>{" "}
+        state by 2031
       </>
     ),
     description:
-      "Build a beautiful candidate profile, browse jobs across Tamil Nadu, or post openings — all in one elegant place.",
+      "To play a significant role in making Tamil Nadu a 0% unemployment state by 2031.",
   },
   {
     bg: "/images/background-02.jpg",
-    eyebrow: "Every field. Every district.",
+    eyebrow: "The Mission",
     title: (
       <>
-        Built for every{" "}
+        Train, place, and{" "}
         <span className="bg-gradient-to-r from-emerald-300 to-cyan-300 bg-clip-text text-transparent">
-          Tamil Nadu professional
+          empower the youth
         </span>
       </>
     ),
     description:
-      "IT, HR, Sales, Finance, BPO, voice process, supply chain, vocational trades — every field belongs here. We don't favor one.",
+      "To empower job aspirants and youth by facilitating training and placing them in the right jobs near to their home locations.",
   },
   {
     bg: "/images/background-03.jpg",
@@ -80,7 +81,7 @@ export function HeroCarousel() {
   return (
     <section
       id="home"
-      className="relative h-[640px] w-full overflow-hidden md:h-[720px]"
+      className="relative h-[460px] w-full overflow-hidden sm:h-[500px] md:h-[560px]"
       onMouseEnter={() => setPaused(true)}
       onMouseLeave={() => setPaused(false)}
     >
@@ -103,20 +104,20 @@ export function HeroCarousel() {
       ))}
 
       {/* Content */}
-      <div className="relative z-10 flex h-full flex-col items-center justify-center px-6 pt-20 text-center">
+      <div className="relative z-10 flex h-full flex-col items-center justify-center px-6 pt-14 text-center">
         <span className="mb-5 inline-flex items-center gap-2 rounded-full border border-white/25 bg-white/10 px-4 py-1.5 text-xs font-medium text-white backdrop-blur-md">
           <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
           {SLIDES[idx].eyebrow}
         </span>
 
-        <h1 className="max-w-4xl text-4xl font-semibold tracking-tight text-white drop-shadow md:text-6xl">
+        <h1 className="max-w-4xl text-3xl font-semibold tracking-tight text-white drop-shadow md:text-5xl">
           {SLIDES[idx].title}
         </h1>
-        <p className="mt-5 max-w-2xl text-base text-white/85 md:text-lg">
+        <p className="mt-4 max-w-2xl text-sm text-white/85 md:text-base">
           {SLIDES[idx].description}
         </p>
 
-        <div className="mt-8 flex flex-col gap-3 sm:flex-row">
+        <div className="mt-6 flex flex-col gap-3 sm:flex-row">
           <a
             href="#entry"
             className="inline-flex items-center justify-center gap-2 rounded-full bg-white px-6 py-3 text-sm font-semibold text-zinc-900 shadow-lg transition hover:scale-[1.02]"
