@@ -63,9 +63,16 @@ export const errorHandler: ErrorRequestHandler = (err, req, res, _next) => {
     return;
   }
 
-  // Unknown — log full stack but DON'T leak internals to the client.
+  // Unknown — log full stack and (TEMPORARY) echo the error message in the
+  // response so we can diagnose live issues without scraping Render logs.
+  // Revert this `debug` field once Phase 3 is verified.
   logger.error({ err, path: req.path, method: req.method }, "Unhandled error");
-  res.status(500).json({ error: { code: "INTERNAL_ERROR", message: "Internal server error" } });
+  const message = err instanceof Error ? err.message : String(err);
+  const stack = err instanceof Error ? err.stack?.split("\n").slice(0, 6).join("\n") : undefined;
+  res.status(500).json({
+    error: { code: "INTERNAL_ERROR", message: "Internal server error" },
+    debug: { message, stack, name: err instanceof Error ? err.name : typeof err },
+  });
 };
 
 /** Wraps async route handlers so thrown errors land in errorHandler. */
