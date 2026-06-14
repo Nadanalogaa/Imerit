@@ -8,7 +8,6 @@ import '../widgets/bottom_nav.dart';
 import '../widgets/welcome_banner.dart';
 import '../widgets/sign_in_chip.dart';
 import '../widgets/user_avatar_menu.dart';
-import '../widgets/landing/hero_carousel.dart';
 import '../widgets/landing/entry_cards.dart';
 import '../widgets/landing/why_us.dart';
 import '../widgets/landing/about_us.dart';
@@ -143,7 +142,10 @@ class _LandingPageState extends ConsumerState<LandingPage> {
               ),
               onEmployer: (_) => context.go('/employer'),
             ),
-            HeroCarousel(onPrimary: () => context.go('/candidate/register')),
+            // Carousel is intentionally not shown on mobile — vertical real
+            // estate is precious and the role cards below are the only thing
+            // a visitor actually needs to decide. Vision / mission copy
+            // surfaces in the AboutUs section further down the page.
             EntryCards(
               isDark: isDark,
               onCandidate: () => context.go('/candidate/register'),
