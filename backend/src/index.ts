@@ -10,6 +10,7 @@ import { logger } from "./lib/logger.js";
 import { errorHandler, notFoundHandler } from "./middleware/error.js";
 import healthRouter from "./routes/health.js";
 import authRouter from "./routes/auth.routes.js";
+import profileRouter from "./routes/profile.routes.js";
 
 const app = express();
 
@@ -41,8 +42,10 @@ app.use(
 );
 
 app.use(cookieParser());
-app.use(express.json({ limit: "5mb" })); // large enough for embedded base64 photos during dev
-app.use(express.urlencoded({ extended: true }));
+// 8MB ceiling — a base64-encoded 4MB photo is ~5.4MB, plus a little room for
+// the other profile fields when the frontend PATCHes the whole step at once.
+app.use(express.json({ limit: "8mb" }));
+app.use(express.urlencoded({ extended: true, limit: "8mb" }));
 
 // Per-request structured logger. The cast works around pino-http's overly
 // strict generic on `logger`; runtime behaviour is identical.
@@ -72,6 +75,7 @@ app.use(
 // Routes
 app.use(healthRouter);
 app.use(authRouter);
+app.use(profileRouter);
 app.get("/", (_req, res) => {
   res.json({ name: "itamil-recruit-backend", version: "0.1.0", env: env.NODE_ENV });
 });

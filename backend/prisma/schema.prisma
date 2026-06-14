@@ -127,8 +127,9 @@ model CandidateProfile {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  // Photo — store URL, not base64
-  photoUrl        String? @db.VarChar(512)
+  // Photo — currently base64 data URL (matches frontend). Migrate to S3/
+  // Cloudinary later and revert to a short URL column.
+  photoUrl        String? @db.Text
   alternateMobile String?
 
   // Current address — structured location
