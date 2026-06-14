@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link, Navigate, useNavigate, useParams } from "react-router-dom";
 import { AnimatePresence, motion } from "framer-motion";
 import {
@@ -24,16 +24,39 @@ export function JobDetail() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const job = useJobs((s) => s.byId)(id ?? "");
+  const fetchById = useJobs((s) => s.fetchById);
   const user = useAuth((s) => s.currentUser)!;
-  const apply = useApplications((s) => s.apply);
+  const applyAsync = useApplications((s) => s.applyAsync);
+  const toggleSaveAsync = useApplications((s) => s.toggleSaveAsync);
   const hasApplied = useApplications((s) => s.hasApplied)(user.id, id ?? "");
   const isSaved = useApplications((s) => s.isSaved)(user.id, id ?? "");
-  const toggleSave = useApplications((s) => s.toggleSave);
   const activeSub = useSubscriptions((s) => s.activeFor)(user.id, "candidate");
 
   const [showApplied, setShowApplied] = useState(false);
+  const [applying, setApplying] = useState(false);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [notFound, setNotFound] = useState(false);
 
-  if (!job) return <Navigate to="/candidate/jobs" replace />;
+  // Cold-start path: if the cache doesn't have the job (deep link or new tab),
+  // pull it from the API. fetchById is a no-op when the job is already cached.
+  useEffect(() => {
+    if (!id || job) return;
+    let alive = true;
+    void fetchById(id).then((j) => {
+      if (alive && !j) setNotFound(true);
+    });
+    return () => { alive = false; };
+  }, [id, job, fetchById]);
+
+  if (notFound) return <Navigate to="/candidate/jobs" replace />;
+  if (!job) {
+    return (
+      <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950">
+        <Navbar />
+        <main className="mx-auto max-w-3xl px-5 py-12 text-center text-sm text-zinc-500 dark:text-zinc-400">Loading job…</main>
+      </div>
+    );
+  }
 
   const initials = job.employerName
     .split(/\s+/)
@@ -41,16 +64,30 @@ export function JobDetail() {
     .map((p) => p[0]?.toUpperCase() ?? "")
     .join("");
 
-  const onApply = () => {
+  const onApply = async () => {
     if (hasApplied) return;
     if (!activeSub) {
       navigate(
-        `/candidate/subscribe?return=${encodeURIComponent(`/candidate/jobs/${job.id}`)}&apply=${job.id}`
+        `/candidate/subscribe?return=${encodeURIComponent(`/candidate/jobs/${job.id}`)}&apply=${job.id}`,
       );
       return;
     }
-    apply(user.id, job.id);
-    setShowApplied(true);
+    setErrorMsg(null);
+    setApplying(true);
+    try {
+      await applyAsync(user.id, job.id);
+      setShowApplied(true);
+    } catch (err) {
+      setErrorMsg(err instanceof Error ? err.message : "Could not submit application. Try again.");
+    } finally {
+      setApplying(false);
+    }
+  };
+
+  const onToggleSave = () => {
+    void toggleSaveAsync(user.id, job.id).catch((err) => {
+      setErrorMsg(err instanceof Error ? err.message : "Could not update saved jobs.");
+    });
   };
 
   return (
@@ -66,7 +103,7 @@ export function JobDetail() {
             <ArrowLeft size={14} /> Back to jobs
           </Link>
           <button
-            onClick={() => toggleSave(user.id, job.id)}
+            onClick={onToggleSave}
             className={[
               "inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-semibold transition",
               isSaved
@@ -188,12 +225,15 @@ export function JobDetail() {
             </div>
             <button
               onClick={onApply}
-              disabled={hasApplied}
+              disabled={hasApplied || applying}
               className="inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-brand-500 to-brand-600 px-6 py-3 text-sm font-semibold text-white shadow-md shadow-brand-500/30 transition hover:shadow-lg hover:shadow-brand-500/40 disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto"
             >
-              {hasApplied ? "Applied" : activeSub ? "Apply now" : "Subscribe & apply"}
+              {applying ? "Applying…" : hasApplied ? "Applied" : activeSub ? "Apply now" : "Subscribe & apply"}
             </button>
           </div>
+          {errorMsg && (
+            <p className="mt-3 rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-xs text-rose-700 dark:border-rose-500/30 dark:bg-rose-500/10 dark:text-rose-400">{errorMsg}</p>
+          )}
         </motion.div>
       </main>
 

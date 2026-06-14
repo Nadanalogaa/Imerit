@@ -9,18 +9,61 @@ import {
   ChevronRight,
   Trash2,
 } from "lucide-react";
+import { useEffect, useState } from "react";
 import { Navbar } from "../components/Navbar";
 import { useAuth } from "../store/auth";
-import { useJobs, FIELD_LABEL, TYPE_LABEL, relativeTime } from "../store/jobs";
+import { useJobs, FIELD_LABEL, TYPE_LABEL, relativeTime, type Job } from "../store/jobs";
 import { useApplications } from "../store/applications";
+import { apiEnabled } from "../lib/api";
+import { employerJobsApi } from "../lib/api/jobs";
 
 export function EmployerMyJobs() {
   const user = useAuth((s) => s.currentUser)!;
-  const myJobs = useJobs((s) => s.postedBy)(user.id);
+  const localMyJobs = useJobs((s) => s.postedBy)(user.id);
   const deleteJob = useJobs((s) => s.deleteJob);
   const apps = useApplications((s) => s.applications);
 
-  const countApps = (jobId: string) => apps.filter((a) => a.jobId === jobId).length;
+  // Live data from the API when available; counts come straight from the
+  // server's _count aggregate so it stays accurate cross-device.
+  const [apiJobs, setApiJobs] = useState<Job[] | null>(null);
+  const [apiCounts, setApiCounts] = useState<Record<string, number>>({});
+
+  useEffect(() => {
+    if (!apiEnabled) return;
+    let alive = true;
+    employerJobsApi.list()
+      .then((res) => {
+        if (!alive) return;
+        const local: Job[] = res.items.map((j) => ({
+          id: j.id,
+          employerId: j.employerId,
+          employerName: j.employerName,
+          title: j.title,
+          description: j.description,
+          location: j.location,
+          districtId: j.districtId ?? undefined,
+          talukId: j.talukId ?? undefined,
+          lat: j.lat ?? undefined,
+          lng: j.lng ?? undefined,
+          pincode: j.pincode ?? undefined,
+          field: j.field === "IT" ? "it" : "non_it",
+          type: j.type === "INTERNSHIP" ? "internship" : j.type === "FULL_TIME" ? "full_time" : j.type === "PART_TIME" ? "part_time" : "contract",
+          experience: j.experience === "FRESHER" ? "fresher" : j.experience === "EXPERIENCED" ? "experienced" : "any",
+          yearsMin: j.yearsMin ?? undefined,
+          yearsMax: j.yearsMax ?? undefined,
+          salaryRange: j.salaryRange ?? undefined,
+          skills: j.skills,
+          postedAt: j.postedAt,
+        }));
+        setApiJobs(local);
+        setApiCounts(Object.fromEntries(res.items.map((j) => [j.id, j._count.applications])));
+      })
+      .catch(() => { /* fall back to localStorage */ });
+    return () => { alive = false; };
+  }, []);
+
+  const myJobs = apiJobs ?? localMyJobs;
+  const countApps = (jobId: string) => apiCounts[jobId] ?? apps.filter((a) => a.jobId === jobId).length;
 
   return (
     <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950">
@@ -71,8 +114,17 @@ export function EmployerMyJobs() {
                       <Users size={12} /> {n} {n === 1 ? "applicant" : "applicants"}
                     </div>
                     <button
-                      onClick={() => {
-                        if (confirm(`Delete "${job.title}"? This cannot be undone.`)) deleteJob(job.id);
+                      onClick={async () => {
+                        if (!confirm(`Delete "${job.title}"? This cannot be undone.`)) return;
+                        if (apiEnabled) {
+                          try { await employerJobsApi.remove(job.id); }
+                          catch (err) {
+                            // eslint-disable-next-line no-console
+                            console.warn("[employer.delete] API call failed", err);
+                          }
+                        }
+                        deleteJob(job.id);
+                        setApiJobs((cur) => cur?.filter((j) => j.id !== job.id) ?? null);
                       }}
                       className="inline-flex h-8 w-8 items-center justify-center rounded-full text-rose-600 transition hover:bg-rose-50 dark:text-rose-400 dark:hover:bg-rose-500/10"
                       title="Delete"

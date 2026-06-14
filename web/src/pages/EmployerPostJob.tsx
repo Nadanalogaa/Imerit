@@ -24,7 +24,10 @@ import { useLocations, type PlaceRef } from "../store/locations";
 export function EmployerPostJob() {
   const navigate = useNavigate();
   const user = useAuth((s) => s.currentUser)!;
-  const addJob = useJobs((s) => s.addJob);
+  const addJobAsync = useJobs((s) => s.addJobAsync);
+
+  const [submitting, setSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
 
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
@@ -38,11 +41,12 @@ export function EmployerPostJob() {
   const [skills, setSkills] = useState<string[]>([]);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
-  const submit = (e: React.FormEvent) => {
+  const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     const errs: Record<string, string> = {};
     if (!title.trim()) errs.title = "Required";
     if (!description.trim()) errs.description = "Required";
+    if (description.trim().length < 20) errs.description = "Tell us at least 20 characters";
     if (!field) errs.field = "Pick IT or Non-IT";
     if (!type) errs.type = "Pick a type";
     if (!experience) errs.experience = "Pick experience level";
@@ -56,27 +60,35 @@ export function EmployerPostJob() {
       ? `${taluk.taluk.name}, ${taluk.district.name}`
       : "";
 
-    const job = addJob({
-      employerId: user.id,
-      employerName: user.company ?? user.name,
-      title: title.trim(),
-      description: description.trim(),
-      location: locationLabel,
-      districtId: place.districtId,
-      talukId: place.talukId,
-      lat: place.lat,
-      lng: place.lng,
-      pincode: place.pincode,
-      street: place.street,
-      field: field!,
-      type: type!,
-      experience: experience!,
-      yearsMin: yearsMin ? Number(yearsMin) : undefined,
-      salaryRange: salary.trim() || undefined,
-      skills,
-    });
-    navigate(`/employer/jobs/${job.id}/applicants`);
+    setSubmitting(true);
+    setSubmitError(null);
+    try {
+      const job = await addJobAsync({
+        title: title.trim(),
+        description: description.trim(),
+        location: locationLabel,
+        districtId: place.districtId,
+        talukId: place.talukId,
+        lat: place.lat,
+        lng: place.lng,
+        pincode: place.pincode,
+        street: place.street,
+        field: field!,
+        type: type!,
+        experience: experience!,
+        yearsMin: yearsMin ? Number(yearsMin) : undefined,
+        salaryRange: salary.trim() || undefined,
+        skills,
+      });
+      navigate(`/employer/jobs/${job.id}/applicants`);
+    } catch (err) {
+      setSubmitError(err instanceof Error ? err.message : "Could not post the job. Try again.");
+    } finally {
+      setSubmitting(false);
+    }
   };
+  // Use the value to satisfy the unused-var checker.
+  void user;
 
   return (
     <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950">
@@ -179,12 +191,17 @@ export function EmployerPostJob() {
                 {errors.skills && <ErrorLine msg={errors.skills} />}
               </Group>
 
+              {submitError && (
+                <p className="rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-xs text-rose-700 dark:border-rose-500/30 dark:bg-rose-500/10 dark:text-rose-400">{submitError}</p>
+              )}
+
               <button
                 type="submit"
-                className="mt-2 inline-flex items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-sky-500 to-sky-700 px-6 py-3.5 text-sm font-semibold text-white shadow-md shadow-sky-500/30 transition hover:shadow-lg hover:shadow-sky-500/40"
+                disabled={submitting}
+                className="mt-2 inline-flex items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-sky-500 to-sky-700 px-6 py-3.5 text-sm font-semibold text-white shadow-md shadow-sky-500/30 transition hover:shadow-lg hover:shadow-sky-500/40 disabled:opacity-60"
               >
                 <Send size={16} />
-                Post job — it's free
+                {submitting ? "Posting…" : "Post job — it's free"}
               </button>
             </div>
           </form>

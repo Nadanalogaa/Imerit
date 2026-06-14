@@ -4,6 +4,8 @@ import { Landing } from "./pages/Landing";
 import { useAuth } from "./store/auth";
 import { useProfile } from "./store/profile";
 import { usePlans } from "./store/subscriptions";
+import { useJobs } from "./store/jobs";
+import { useApplications } from "./store/applications";
 import { CandidateRegister } from "./pages/CandidateRegister";
 import { CandidateOtp } from "./pages/CandidateOtp";
 import { CandidateDashboard } from "./pages/CandidateDashboard";
@@ -45,20 +47,28 @@ export default function App() {
   const currentUser = useAuth((s) => s.currentUser);
   const fetchMyProfile = useProfile((s) => s.fetchMine);
   const fetchPlans = usePlans((s) => s.fetchPlans);
+  const fetchJobs = useJobs((s) => s.fetchJobs);
+  const fetchMyApplications = useApplications((s) => s.fetchMyApplications);
+  const fetchMySavedJobs = useApplications((s) => s.fetchMySavedJobs);
+
   useEffect(() => {
     void init();
     // Cheap, no auth needed — keeps subscribe pages on the latest pricing.
     void fetchPlans();
-  }, [init, fetchPlans]);
+    // Prime the local jobs cache so candidates see the live list immediately.
+    void fetchJobs();
+  }, [init, fetchPlans, fetchJobs]);
 
   // Once we know who's logged in (after init resolves), pull the candidate's
-  // canonical profile from the API. No-op for employer/admin roles or when
-  // the API isn't configured.
+  // canonical profile + applications + saved jobs from the API. No-op for
+  // employer/admin roles or when the API isn't configured.
   useEffect(() => {
     if (currentUser?.role === "candidate") {
       void fetchMyProfile();
+      void fetchMyApplications(currentUser.id);
+      void fetchMySavedJobs(currentUser.id);
     }
-  }, [currentUser?.id, currentUser?.role, fetchMyProfile]);
+  }, [currentUser?.id, currentUser?.role, fetchMyProfile, fetchMyApplications, fetchMySavedJobs]);
 
   return (
     <BrowserRouter>

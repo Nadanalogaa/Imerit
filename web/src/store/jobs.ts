@@ -1,5 +1,7 @@
 import { create } from "zustand";
 import { get as load, set as save, KEYS } from "../lib/storage";
+import { apiEnabled } from "../lib/api";
+import { employerJobsApi, jobsApi, type ApiJob, type ApiJobExperience, type ApiJobField, type ApiJobType } from "../lib/api/jobs";
 
 export type JobField = "it" | "non_it";
 export type JobType = "internship" | "full_time" | "part_time" | "contract";
@@ -140,10 +142,39 @@ const SEED: Job[] = [
 
 interface JobsState {
   jobs: Job[];
+  /** True while a network fetch is in flight. */
+  loading: boolean;
+
   byId: (id: string) => Job | undefined;
   addJob: (input: Omit<Job, "id" | "postedAt">) => Job;
   postedBy: (employerId: string) => Job[];
   deleteJob: (id: string) => void;
+
+  /**
+   * Pull a fresh slice from the API into local state. Filters are passed
+   * through to `/jobs`; results overwrite the cached `jobs` array. No-op when
+   * VITE_API_URL isn't configured — the localStorage seed stays in charge.
+   */
+  fetchJobs: (filters?: {
+    field?: JobField;
+    type?: JobType;
+    experience?: JobExperience;
+    districtId?: string;
+    search?: string;
+    pageSize?: number;
+  }) => Promise<void>;
+
+  /**
+   * Read a single job. Prefers cached → API. Returns undefined if neither
+   * source has it. Used by JobDetail so deep-links work even on cold start.
+   */
+  fetchById: (id: string) => Promise<Job | undefined>;
+
+  /**
+   * Server-side employer post. Returns the inserted Job (in local shape).
+   * Falls back to addJob() in localStorage mode.
+   */
+  addJobAsync: (input: Omit<Job, "id" | "postedAt" | "employerId" | "employerName">) => Promise<Job>;
 }
 
 const STORAGE_KEY = KEYS.jobs;
@@ -167,7 +198,10 @@ const seed = (): Job[] => {
 
 export const useJobs = create<JobsState>((set, get) => ({
   jobs: seed(),
+  loading: false,
+
   byId: (id) => get().jobs.find((j) => j.id === id),
+
   addJob: (input) => {
     const job: Job = {
       ...input,
@@ -185,7 +219,117 @@ export const useJobs = create<JobsState>((set, get) => ({
     save(STORAGE_KEY, next);
     set({ jobs: next });
   },
+
+  fetchJobs: async (filters = {}) => {
+    if (!apiEnabled) return;
+    set({ loading: true });
+    try {
+      const { items } = await jobsApi.list({
+        field: filters.field ? FIELD_TO_API[filters.field] : undefined,
+        type: filters.type ? TYPE_TO_API[filters.type] : undefined,
+        experience: filters.experience ? EXPERIENCE_TO_API[filters.experience] : undefined,
+        districtId: filters.districtId,
+        search: filters.search,
+        page: 1,
+        pageSize: filters.pageSize ?? 100,
+      });
+      const local = items.map(fromApiJob);
+      save(STORAGE_KEY, local);
+      set({ jobs: local });
+    } catch (err) {
+      // eslint-disable-next-line no-console
+      console.warn("[jobs.fetchJobs] failed; using local cache", err);
+    } finally {
+      set({ loading: false });
+    }
+  },
+
+  fetchById: async (id) => {
+    const cached = get().jobs.find((j) => j.id === id);
+    if (cached) return cached;
+    if (!apiEnabled) return undefined;
+    try {
+      const { job } = await jobsApi.byId(id);
+      const local = fromApiJob(job);
+      // Tuck it into the cache so subsequent visits are instant.
+      const next = [local, ...get().jobs.filter((j) => j.id !== local.id)];
+      save(STORAGE_KEY, next);
+      set({ jobs: next });
+      return local;
+    } catch {
+      return undefined;
+    }
+  },
+
+  addJobAsync: async (input) => {
+    if (!apiEnabled) {
+      return get().addJob({ ...input, employerId: "local", employerName: "Local" });
+    }
+    const { job } = await employerJobsApi.create({
+      title: input.title,
+      description: input.description,
+      location: input.location,
+      districtId: input.districtId,
+      talukId: input.talukId,
+      lat: input.lat,
+      lng: input.lng,
+      pincode: input.pincode,
+      field: FIELD_TO_API[input.field],
+      type: TYPE_TO_API[input.type],
+      experience: EXPERIENCE_TO_API[input.experience],
+      yearsMin: input.yearsMin,
+      yearsMax: input.yearsMax,
+      salaryRange: input.salaryRange,
+      skills: input.skills,
+    });
+    const local = fromApiJob(job);
+    const next = [local, ...get().jobs];
+    save(STORAGE_KEY, next);
+    set({ jobs: next });
+    return local;
+  },
 }));
+
+/* ---------- API ↔ local enum + shape mapping ---------- */
+
+const FIELD_TO_API: Record<JobField, ApiJobField> = { it: "IT", non_it: "NON_IT" };
+const FIELD_FROM_API: Record<ApiJobField, JobField> = { IT: "it", NON_IT: "non_it" };
+const TYPE_TO_API: Record<JobType, ApiJobType> = {
+  internship: "INTERNSHIP", full_time: "FULL_TIME", part_time: "PART_TIME", contract: "CONTRACT",
+};
+const TYPE_FROM_API: Record<ApiJobType, JobType> = {
+  INTERNSHIP: "internship", FULL_TIME: "full_time", PART_TIME: "part_time", CONTRACT: "contract",
+};
+const EXPERIENCE_TO_API: Record<JobExperience, ApiJobExperience> = {
+  fresher: "FRESHER", experienced: "EXPERIENCED", any: "ANY",
+};
+const EXPERIENCE_FROM_API: Record<ApiJobExperience, JobExperience> = {
+  FRESHER: "fresher", EXPERIENCED: "experienced", ANY: "any",
+};
+
+function fromApiJob(j: ApiJob): Job {
+  return {
+    id: j.id,
+    employerId: j.employerId,
+    employerName: j.employerName,
+    title: j.title,
+    description: j.description,
+    location: j.location,
+    districtId: j.districtId ?? undefined,
+    talukId: j.talukId ?? undefined,
+    lat: j.lat ?? undefined,
+    lng: j.lng ?? undefined,
+    pincode: j.pincode ?? undefined,
+    field: FIELD_FROM_API[j.field],
+    type: TYPE_FROM_API[j.type],
+    experience: EXPERIENCE_FROM_API[j.experience],
+    yearsMin: j.yearsMin ?? undefined,
+    yearsMax: j.yearsMax ?? undefined,
+    salaryRange: j.salaryRange ?? undefined,
+    skills: j.skills,
+    postedAt: j.postedAt,
+  };
+}
 
 function daysAgo(n: number): string {
   return new Date(Date.now() - n * 24 * 60 * 60 * 1000).toISOString();
