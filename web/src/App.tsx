@@ -2,6 +2,7 @@ import { useEffect } from "react";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { Landing } from "./pages/Landing";
 import { useAuth } from "./store/auth";
+import { useProfile } from "./store/profile";
 import { CandidateRegister } from "./pages/CandidateRegister";
 import { CandidateOtp } from "./pages/CandidateOtp";
 import { CandidateDashboard } from "./pages/CandidateDashboard";
@@ -38,9 +39,20 @@ export default function App() {
   // Restore the session on first paint when VITE_API_URL is set — pings
   // /auth/me, swaps any stale localStorage user for the canonical record.
   const init = useAuth((s) => s.init);
+  const currentUser = useAuth((s) => s.currentUser);
+  const fetchMyProfile = useProfile((s) => s.fetchMine);
   useEffect(() => {
     void init();
   }, [init]);
+
+  // Once we know who's logged in (after init resolves), pull the candidate's
+  // canonical profile from the API. No-op for employer/admin roles or when
+  // the API isn't configured.
+  useEffect(() => {
+    if (currentUser?.role === "candidate") {
+      void fetchMyProfile();
+    }
+  }, [currentUser?.id, currentUser?.role, fetchMyProfile]);
 
   return (
     <BrowserRouter>
