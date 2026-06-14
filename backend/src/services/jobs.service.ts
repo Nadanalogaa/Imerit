@@ -1,0 +1,148 @@
+import {
+  type Job,
+  type JobExperience,
+  type JobField,
+  JobStatus,
+  type JobType,
+  ModerationStatus,
+  type Prisma,
+} from "@prisma/client";
+import { prisma } from "../lib/prisma.js";
+import { HttpError } from "../middleware/error.js";
+
+/**
+ * Filter shape used by GET /jobs. Every property is optional — only the
+ * ones the candidate set on the browse page get applied.
+ */
+export interface JobFilters {
+  field?: JobField;
+  type?: JobType;
+  experience?: JobExperience;
+  districtId?: string;
+  search?: string;
+  page: number;
+  pageSize: number;
+}
+
+/**
+ * Public job list — what the candidate sees on /candidate/jobs. We only
+ * surface ACTIVE jobs that aren't deleted and aren't moderation-REJECTED.
+ * Sorted by `postedAt` desc so newly posted roles bubble up top.
+ */
+export async function listPublicJobs(args: JobFilters) {
+  const where: Prisma.JobWhereInput = {
+    deletedAt: null,
+    status: JobStatus.ACTIVE,
+    NOT: { moderationStatus: ModerationStatus.REJECTED },
+  };
+  if (args.field) where.field = args.field;
+  if (args.type) where.type = args.type;
+  // For experience filter we include "ANY" jobs in either bucket so a
+  // fresher who picks "fresher" still sees roles open to all experience.
+  if (args.experience === "FRESHER") where.experience = { in: ["FRESHER", "ANY"] };
+  else if (args.experience === "EXPERIENCED") where.experience = { in: ["EXPERIENCED", "ANY"] };
+  if (args.districtId) where.districtId = args.districtId;
+  if (args.search?.trim()) {
+    const q = args.search.trim();
+    where.OR = [
+      { title: { contains: q, mode: "insensitive" } },
+      { employerName: { contains: q, mode: "insensitive" } },
+      { description: { contains: q, mode: "insensitive" } },
+    ];
+  }
+
+  const skip = (args.page - 1) * args.pageSize;
+  const [items, total] = await Promise.all([
+    prisma.job.findMany({
+      where,
+      orderBy: { postedAt: "desc" },
+      skip,
+      take: args.pageSize,
+    }),
+    prisma.job.count({ where }),
+  ]);
+  return { items, total, page: args.page, pageSize: args.pageSize };
+}
+
+export async function getJobById(id: string): Promise<Job> {
+  const job = await prisma.job.findUnique({ where: { id } });
+  if (!job || job.deletedAt) throw new HttpError(404, "Job not found", "JOB_NOT_FOUND");
+  return job;
+}
+
+export async function listEmployerJobs(employerId: string) {
+  return prisma.job.findMany({
+    where: { employerId, deletedAt: null },
+    orderBy: { postedAt: "desc" },
+    include: {
+      _count: { select: { applications: true, savedBy: true } },
+    },
+  });
+}
+
+interface CreateJobArgs {
+  employerId: string;
+  employerName: string;
+  data: {
+    title: string;
+    description: string;
+    location: string;
+    districtId?: string;
+    talukId?: string;
+    lat?: number;
+    lng?: number;
+    pincode?: string;
+    field: JobField;
+    type: JobType;
+    experience: JobExperience;
+    yearsMin?: number;
+    yearsMax?: number;
+    salaryRange?: string;
+    skills: string[];
+  };
+}
+
+/**
+ * Create a job. We default both status and moderation to ACTIVE / APPROVED
+ * so the demo flow is friction-free; an admin can later flip a job to
+ * REJECTED via the moderation endpoint and the public list will hide it.
+ */
+export async function createJob(args: CreateJobArgs): Promise<Job> {
+  return prisma.job.create({
+    data: {
+      employerId: args.employerId,
+      employerName: args.employerName,
+      ...args.data,
+      skills: args.data.skills,
+      status: JobStatus.ACTIVE,
+      moderationStatus: ModerationStatus.APPROVED,
+    },
+  });
+}
+
+interface UpdateJobArgs {
+  employerId: string;
+  id: string;
+  patch: Partial<CreateJobArgs["data"]> & { status?: JobStatus };
+}
+
+export async function updateJob(args: UpdateJobArgs): Promise<Job> {
+  const existing = await prisma.job.findUnique({ where: { id: args.id } });
+  if (!existing || existing.deletedAt) throw new HttpError(404, "Job not found", "JOB_NOT_FOUND");
+  if (existing.employerId !== args.employerId) {
+    throw new HttpError(403, "You can only edit your own jobs", "FORBIDDEN");
+  }
+  return prisma.job.update({ where: { id: args.id }, data: args.patch });
+}
+
+export async function deleteJob(args: { employerId: string; id: string }): Promise<void> {
+  const existing = await prisma.job.findUnique({ where: { id: args.id } });
+  if (!existing || existing.deletedAt) throw new HttpError(404, "Job not found", "JOB_NOT_FOUND");
+  if (existing.employerId !== args.employerId) {
+    throw new HttpError(403, "You can only delete your own jobs", "FORBIDDEN");
+  }
+  await prisma.job.update({
+    where: { id: args.id },
+    data: { deletedAt: new Date(), status: JobStatus.CLOSED },
+  });
+}

@@ -13,8 +13,10 @@ import authRouter from "./routes/auth.routes.js";
 import profileRouter from "./routes/profile.routes.js";
 import adminRouter from "./routes/admin.routes.js";
 import plansRouter from "./routes/plans.routes.js";
+import jobsRouter from "./routes/jobs.routes.js";
 import { ensureAdminUsers } from "./services/seed.service.js";
 import { ensureDefaultPlans } from "./services/plans.service.js";
+import { ensureDemoJobs } from "./services/jobs-seed.service.js";
 
 const app = express();
 
@@ -82,6 +84,7 @@ app.use(authRouter);
 app.use(profileRouter);
 app.use(adminRouter);
 app.use(plansRouter);
+app.use(jobsRouter);
 app.get("/", (_req, res) => {
   res.json({ name: "itamil-recruit-backend", version: "0.1.0", env: env.NODE_ENV });
 });
@@ -98,6 +101,9 @@ const server = app.listen(env.PORT, () => {
   });
   ensureDefaultPlans().catch((err) => {
     logger.error({ err }, "Default plans seeding failed");
+  });
+  ensureDemoJobs().catch((err) => {
+    logger.error({ err }, "Demo jobs seeding failed");
   });
 });
 
