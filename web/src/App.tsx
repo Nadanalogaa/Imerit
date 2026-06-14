@@ -3,6 +3,7 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { Landing } from "./pages/Landing";
 import { useAuth } from "./store/auth";
 import { useProfile } from "./store/profile";
+import { usePlans } from "./store/subscriptions";
 import { CandidateRegister } from "./pages/CandidateRegister";
 import { CandidateOtp } from "./pages/CandidateOtp";
 import { CandidateDashboard } from "./pages/CandidateDashboard";
@@ -34,6 +35,7 @@ import { AdminSubscriptions } from "./pages/AdminSubscriptions";
 import { AdminCandidateView } from "./pages/AdminCandidateView";
 import { SuperAdminDashboard } from "./pages/SuperAdminDashboard";
 import { SuperAdminAdmins } from "./pages/SuperAdminAdmins";
+import { SuperAdminPlans } from "./pages/SuperAdminPlans";
 import { RequireAuth, RedirectIfAuthed } from "./components/RequireAuth";
 
 export default function App() {
@@ -42,9 +44,12 @@ export default function App() {
   const init = useAuth((s) => s.init);
   const currentUser = useAuth((s) => s.currentUser);
   const fetchMyProfile = useProfile((s) => s.fetchMine);
+  const fetchPlans = usePlans((s) => s.fetchPlans);
   useEffect(() => {
     void init();
-  }, [init]);
+    // Cheap, no auth needed — keeps subscribe pages on the latest pricing.
+    void fetchPlans();
+  }, [init, fetchPlans]);
 
   // Once we know who's logged in (after init resolves), pull the candidate's
   // canonical profile from the API. No-op for employer/admin roles or when
@@ -242,6 +247,7 @@ export default function App() {
         <Route path="/super-admin" element={<AdminLogin />} />
         <Route path="/super-admin/dashboard" element={<RequireAuth role="super_admin"><SuperAdminDashboard /></RequireAuth>} />
         <Route path="/super-admin/admins" element={<RequireAuth role="super_admin"><SuperAdminAdmins /></RequireAuth>} />
+        <Route path="/super-admin/plans" element={<RequireAuth role="super_admin"><SuperAdminPlans /></RequireAuth>} />
       </Routes>
     </BrowserRouter>
   );

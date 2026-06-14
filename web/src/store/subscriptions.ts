@@ -1,5 +1,7 @@
 import { create } from "zustand";
 import { get as load, set as save, KEYS } from "../lib/storage";
+import { apiEnabled } from "../lib/api";
+import { plansApi, type ApiPlan } from "../lib/api/plans";
 
 export type SubscriberType = "candidate" | "employer_sme" | "employer_large";
 
@@ -49,7 +51,63 @@ export const PLANS: Plan[] = [
   { id: "plan_lg_216",  type: "employer_large", label: "Large · 216 days", priceInr: 54432, durationDays: 216, gst: true, benefits: [] },
 ];
 
-export const planById = (id: string) => PLANS.find((p) => p.id === id);
+/* ----------- API → local plan shape conversion ----------- */
+
+const AUDIENCE_TO_TYPE: Record<ApiPlan["audience"], SubscriberType> = {
+  CANDIDATE: "candidate",
+  EMPLOYER_SME: "employer_sme",
+  EMPLOYER_LARGE: "employer_large",
+};
+
+function fromApiPlan(p: ApiPlan): Plan {
+  return {
+    id: p.key, // use the stable string key so existing pages keep working
+    type: AUDIENCE_TO_TYPE[p.audience],
+    label: p.label,
+    priceInr: Math.round(p.priceInPaise / 100),
+    durationDays: p.durationDays,
+    gst: p.gstApplies,
+    benefits: [],
+  };
+}
+
+/**
+ * Live plans store — lazily fetched from /plans on first read, hot-replaces
+ * the in-memory cache, and falls back to the hardcoded PLANS export when the
+ * API is off (or hasn't responded yet). Components should subscribe to this
+ * for the freshest pricing; PLANS stays as the synchronous default for
+ * imports that don't want to thread state.
+ */
+interface PlansState {
+  plans: Plan[];
+  loaded: boolean;
+  fetchPlans: () => Promise<void>;
+}
+
+export const usePlans = create<PlansState>((set) => ({
+  plans: PLANS,
+  loaded: false,
+  fetchPlans: async () => {
+    if (!apiEnabled) {
+      set({ loaded: true });
+      return;
+    }
+    try {
+      const { plans } = await plansApi.listActive();
+      set({ plans: plans.map(fromApiPlan), loaded: true });
+    } catch {
+      // Keep the seeded defaults; surface in console for the dev.
+      // eslint-disable-next-line no-console
+      console.warn("[plans] /plans fetch failed; using hardcoded fallback");
+      set({ loaded: true });
+    }
+  },
+}));
+
+export const planById = (id: string) => {
+  const live = usePlans.getState().plans.find((p) => p.id === id);
+  return live ?? PLANS.find((p) => p.id === id);
+};
 
 interface SubsState {
   subscriptions: Subscription[];

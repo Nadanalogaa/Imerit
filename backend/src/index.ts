@@ -12,7 +12,9 @@ import healthRouter from "./routes/health.js";
 import authRouter from "./routes/auth.routes.js";
 import profileRouter from "./routes/profile.routes.js";
 import adminRouter from "./routes/admin.routes.js";
+import plansRouter from "./routes/plans.routes.js";
 import { ensureAdminUsers } from "./services/seed.service.js";
+import { ensureDefaultPlans } from "./services/plans.service.js";
 
 const app = express();
 
@@ -79,6 +81,7 @@ app.use(healthRouter);
 app.use(authRouter);
 app.use(profileRouter);
 app.use(adminRouter);
+app.use(plansRouter);
 app.get("/", (_req, res) => {
   res.json({ name: "itamil-recruit-backend", version: "0.1.0", env: env.NODE_ENV });
 });
@@ -92,6 +95,9 @@ const server = app.listen(env.PORT, () => {
   // Best-effort seed at boot — never block the listen handshake on it.
   ensureAdminUsers().catch((err) => {
     logger.error({ err }, "Admin seeding failed");
+  });
+  ensureDefaultPlans().catch((err) => {
+    logger.error({ err }, "Default plans seeding failed");
   });
 });
 
