@@ -20,10 +20,22 @@ app.set("trust proxy", 1);
 // Security headers
 app.use(helmet({ crossOriginResourcePolicy: { policy: "cross-origin" } }));
 
-// CORS — credentials true so the frontend can send the httpOnly auth cookie
+// CORS — credentials true so the frontend can send the httpOnly auth cookie.
+// Allow any origin in the explicit env list PLUS any *.vercel.app subdomain
+// (so Vercel preview deploys + branch deploys don't need a config push every
+// time). Requests with no Origin (server-to-server, curl, healthchecks) are
+// allowed through unchanged.
+const VERCEL_ANY = /^https:\/\/[a-z0-9-]+\.vercel\.app$/i;
 app.use(
   cors({
-    origin: env.CORS_ORIGINS,
+    origin: (origin, callback) => {
+      if (!origin) return callback(null, true);
+      if (env.CORS_ORIGINS.includes(origin)) return callback(null, true);
+      if (VERCEL_ANY.test(origin)) return callback(null, true);
+      // Don't throw — cors lib will then omit the allow-origin header, so the
+      // browser blocks the actual request without producing a 500.
+      callback(null, false);
+    },
     credentials: true,
   }),
 );
