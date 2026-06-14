@@ -1,5 +1,7 @@
+import { useEffect } from "react";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { Landing } from "./pages/Landing";
+import { useAuth } from "./store/auth";
 import { CandidateRegister } from "./pages/CandidateRegister";
 import { CandidateOtp } from "./pages/CandidateOtp";
 import { CandidateDashboard } from "./pages/CandidateDashboard";
@@ -33,6 +35,13 @@ import { SuperAdminDashboard } from "./pages/SuperAdminDashboard";
 import { RequireAuth, RedirectIfAuthed } from "./components/RequireAuth";
 
 export default function App() {
+  // Restore the session on first paint when VITE_API_URL is set — pings
+  // /auth/me, swaps any stale localStorage user for the canonical record.
+  const init = useAuth((s) => s.init);
+  useEffect(() => {
+    void init();
+  }, [init]);
+
   return (
     <BrowserRouter>
       <Routes>

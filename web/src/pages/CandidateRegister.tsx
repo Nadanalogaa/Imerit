@@ -4,32 +4,51 @@ import { AuthLayout } from "../components/AuthLayout";
 import { TextField } from "../components/TextField";
 import { useAuth } from "../store/auth";
 import { generateOtp } from "../lib/otp";
+import { apiEnabled, ApiError } from "../lib/api";
 
 export function CandidateRegister() {
   const navigate = useNavigate();
-  const register = useAuth((s) => s.register);
+  const registerAsync = useAuth((s) => s.registerAsync);
   const findByEmail = useAuth((s) => s.findByEmail);
 
   const [name, setName] = useState("");
   const [mobile, setMobile] = useState("");
   const [email, setEmail] = useState("");
-  const [errors, setErrors] = useState<{ name?: string; mobile?: string; email?: string }>({});
+  const [errors, setErrors] = useState<{ name?: string; mobile?: string; email?: string; general?: string }>({});
   const [submitting, setSubmitting] = useState(false);
 
-  const submit = (e: React.FormEvent) => {
+  const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     const next: typeof errors = {};
     if (!name.trim()) next.name = "Required";
     if (!/^[6-9]\d{9}$/.test(mobile)) next.mobile = "Enter a valid 10-digit Indian mobile number";
     if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) next.email = "Enter a valid email";
-    if (findByEmail(email)) next.email = "An account already exists with this email";
+    // localStorage-only duplicate check; the backend has its own unique
+    // constraint that surfaces as EMAIL_TAKEN below.
+    if (!apiEnabled && findByEmail(email)) next.email = "An account already exists with this email";
     setErrors(next);
     if (Object.keys(next).length > 0) return;
 
     setSubmitting(true);
-    register({ role: "candidate", name, email, mobile });
-    generateOtp(email);
-    navigate(`/candidate/verify?email=${encodeURIComponent(email)}`);
+    try {
+      const { devCode } = await registerAsync({ role: "candidate", name, email, mobile });
+      // In localStorage mode the legacy mock OTP service still needs to issue
+      // a code; in API mode the server has already done it.
+      if (!apiEnabled) generateOtp(email);
+      // Stash the dev-mode OTP so the verify page can autofill it.
+      if (devCode) sessionStorage.setItem(`itr.devOtp.${email.toLowerCase()}`, devCode);
+      navigate(`/candidate/verify?email=${encodeURIComponent(email)}`);
+    } catch (err) {
+      if (err instanceof ApiError && err.code === "EMAIL_TAKEN") {
+        setErrors({ email: "An account already exists. Please log in instead." });
+      } else if (err instanceof ApiError && err.code === "VALIDATION_ERROR") {
+        setErrors({ general: "Please double-check the form and try again." });
+      } else {
+        setErrors({ general: err instanceof Error ? err.message : "Something went wrong. Please try again." });
+      }
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (
@@ -66,6 +85,12 @@ export function CandidateRegister() {
           error={errors.email}
           hint="We'll send a 6-digit code to verify."
         />
+
+        {errors.general && (
+          <p className="rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-xs text-rose-700 dark:border-rose-500/30 dark:bg-rose-500/10 dark:text-rose-400">
+            {errors.general}
+          </p>
+        )}
 
         <button
           type="submit"

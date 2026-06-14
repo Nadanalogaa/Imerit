@@ -4,10 +4,11 @@ import { AuthLayout } from "../components/AuthLayout";
 import { TextField } from "../components/TextField";
 import { useAuth } from "../store/auth";
 import { generateOtp } from "../lib/otp";
+import { apiEnabled, ApiError } from "../lib/api";
 
 export function EmployerRegister() {
   const navigate = useNavigate();
-  const register = useAuth((s) => s.register);
+  const registerAsync = useAuth((s) => s.registerAsync);
   const findByEmail = useAuth((s) => s.findByEmail);
 
   const [name, setName] = useState("");
@@ -17,21 +18,34 @@ export function EmployerRegister() {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [submitting, setSubmitting] = useState(false);
 
-  const submit = (e: React.FormEvent) => {
+  const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     const next: Record<string, string> = {};
     if (!name.trim()) next.name = "Required";
     if (!company.trim()) next.company = "Required";
     if (!/^[6-9]\d{9}$/.test(mobile)) next.mobile = "Enter a valid 10-digit Indian mobile number";
     if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) next.email = "Enter a valid email";
-    if (findByEmail(email)) next.email = "An account already exists with this email";
+    if (!apiEnabled && findByEmail(email)) next.email = "An account already exists with this email";
     setErrors(next);
     if (Object.keys(next).length > 0) return;
 
     setSubmitting(true);
-    register({ role: "employer", name, email, mobile, company });
-    generateOtp(email);
-    navigate(`/employer/verify?email=${encodeURIComponent(email)}`);
+    try {
+      const { devCode } = await registerAsync({ role: "employer", name, email, mobile, company });
+      if (!apiEnabled) generateOtp(email);
+      if (devCode) sessionStorage.setItem(`itr.devOtp.${email.toLowerCase()}`, devCode);
+      navigate(`/employer/verify?email=${encodeURIComponent(email)}`);
+    } catch (err) {
+      if (err instanceof ApiError && err.code === "EMAIL_TAKEN") {
+        setErrors({ email: "An account already exists. Please log in instead." });
+      } else if (err instanceof ApiError && err.code === "VALIDATION_ERROR") {
+        setErrors({ general: "Please double-check the form and try again." });
+      } else {
+        setErrors({ general: err instanceof Error ? err.message : "Something went wrong. Please try again." });
+      }
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (
@@ -62,6 +76,12 @@ export function EmployerRegister() {
           error={errors.email}
           hint="We'll send a 6-digit code to verify."
         />
+
+        {errors.general && (
+          <p className="rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-xs text-rose-700 dark:border-rose-500/30 dark:bg-rose-500/10 dark:text-rose-400">
+            {errors.general}
+          </p>
+        )}
 
         <button
           type="submit"

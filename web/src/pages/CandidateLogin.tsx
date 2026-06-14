@@ -4,16 +4,18 @@ import { AuthLayout } from "../components/AuthLayout";
 import { TextField } from "../components/TextField";
 import { useAuth } from "../store/auth";
 import { generateOtp } from "../lib/otp";
+import { apiEnabled, ApiError } from "../lib/api";
 
 export function CandidateLogin() {
   const navigate = useNavigate();
+  const loginAsync = useAuth((s) => s.loginAsync);
   const findByEmail = useAuth((s) => s.findByEmail);
 
   const [email, setEmail] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
-  const submit = (e: React.FormEvent) => {
+  const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
 
@@ -21,15 +23,31 @@ export function CandidateLogin() {
       setError("Enter a valid email");
       return;
     }
-    const user = findByEmail(email);
-    if (!user || user.role !== "candidate") {
-      setError("No candidate account found with this email");
-      return;
+    // In localStorage mode we can do a role-aware check up front; the API
+    // can't filter login by role today (any role with that email succeeds).
+    if (!apiEnabled) {
+      const u = findByEmail(email);
+      if (!u || u.role !== "candidate") {
+        setError("No candidate account found with this email");
+        return;
+      }
     }
 
     setSubmitting(true);
-    generateOtp(email);
-    navigate(`/candidate/verify?email=${encodeURIComponent(email)}&mode=login`);
+    try {
+      const { devCode } = await loginAsync(email);
+      if (!apiEnabled) generateOtp(email);
+      if (devCode) sessionStorage.setItem(`itr.devOtp.${email.toLowerCase()}`, devCode);
+      navigate(`/candidate/verify?email=${encodeURIComponent(email)}&mode=login`);
+    } catch (err) {
+      if (err instanceof ApiError && err.code === "USER_NOT_FOUND") {
+        setError("No account with that email. Please register first.");
+      } else {
+        setError(err instanceof Error ? err.message : "Could not send code. Try again.");
+      }
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (
