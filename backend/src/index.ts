@@ -11,6 +11,8 @@ import { errorHandler, notFoundHandler } from "./middleware/error.js";
 import healthRouter from "./routes/health.js";
 import authRouter from "./routes/auth.routes.js";
 import profileRouter from "./routes/profile.routes.js";
+import adminRouter from "./routes/admin.routes.js";
+import { ensureAdminUsers } from "./services/seed.service.js";
 
 const app = express();
 
@@ -76,6 +78,7 @@ app.use(
 app.use(healthRouter);
 app.use(authRouter);
 app.use(profileRouter);
+app.use(adminRouter);
 app.get("/", (_req, res) => {
   res.json({ name: "itamil-recruit-backend", version: "0.1.0", env: env.NODE_ENV });
 });
@@ -86,6 +89,10 @@ app.use(errorHandler);
 
 const server = app.listen(env.PORT, () => {
   logger.info({ port: env.PORT, env: env.NODE_ENV }, "i-Tamil Recruit backend listening");
+  // Best-effort seed at boot — never block the listen handshake on it.
+  ensureAdminUsers().catch((err) => {
+    logger.error({ err }, "Admin seeding failed");
+  });
 });
 
 // Graceful shutdown — match Prisma's signal handlers
