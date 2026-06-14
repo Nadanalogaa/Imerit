@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { ApplicationStatus, JobExperience, JobField, JobType } from "@prisma/client";
+import { ApplicationStatus, CandidateType, FieldKind, JobExperience, JobField, JobType } from "@prisma/client";
 
 const skills = z.array(z.string().min(1).max(80)).max(30);
 const description = z.string().trim().min(20).max(8000);
@@ -46,4 +46,13 @@ export const applyJobSchema = z.object({
 
 export const updateApplicationStatusSchema = z.object({
   status: z.nativeEnum(ApplicationStatus),
+});
+
+export const employerCandidateSearchSchema = z.object({
+  field: z.nativeEnum(FieldKind).optional(),
+  type: z.nativeEnum(CandidateType).optional(),
+  districtId: z.string().max(80).optional(),
+  search: z.string().trim().max(200).optional(),
+  page: z.coerce.number().int().min(1).default(1),
+  pageSize: z.coerce.number().int().min(1).max(100).default(20),
 });

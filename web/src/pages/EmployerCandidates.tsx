@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import {
@@ -17,6 +17,8 @@ import { useAuth, allUsers, type User } from "../store/auth";
 import { useProfile, type CandidateProfile } from "../store/profile";
 import { useSubscriptions } from "../store/subscriptions";
 import { MapListLayout, type MapListItem } from "../components/MapListLayout";
+import { apiEnabled } from "../lib/api";
+import { employerCandidatesApi, type EmployerCandidateRow } from "../lib/api/jobs";
 
 type FieldFilter = "all" | "it" | "non_it";
 type TypeFilter = "all" | "fresher" | "experienced";
@@ -33,12 +35,73 @@ export function EmployerCandidates() {
   const [fieldFilter, setFieldFilter] = useState<FieldFilter>("all");
   const [typeFilter, setTypeFilter] = useState<TypeFilter>("all");
 
+  /** Server-fetched rows when VITE_API_URL is set; null until first response. */
+  const [apiRows, setApiRows] = useState<EmployerCandidateRow[] | null>(null);
+  const [, setApiLoading] = useState(apiEnabled);
+  const [apiError, setApiError] = useState<string | null>(null);
+
+  // Fetch (with the active filters) whenever the query changes. Debounce the
+  // text search so we don't fire a request per keystroke.
+  const [searchDebounced, setSearchDebounced] = useState("");
+  useEffect(() => {
+    const t = setTimeout(() => setSearchDebounced(search.trim()), 250);
+    return () => clearTimeout(t);
+  }, [search]);
+
+  useEffect(() => {
+    if (!apiEnabled) { setApiLoading(false); return; }
+    let alive = true;
+    setApiLoading(true);
+    employerCandidatesApi.search({
+      field: fieldFilter === "all" ? undefined : fieldFilter === "it" ? "IT" : "NON_IT",
+      type: typeFilter === "all" ? undefined : typeFilter === "fresher" ? "FRESHER" : "EXPERIENCED",
+      search: searchDebounced || undefined,
+      page: 1,
+      pageSize: 60,
+    })
+      .then((res) => { if (alive) { setApiRows(res.items); setApiError(null); } })
+      .catch((err) => { if (alive) setApiError(err instanceof Error ? err.message : "Failed to load candidates"); })
+      .finally(() => alive && setApiLoading(false));
+    return () => { alive = false; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchDebounced, fieldFilter, typeFilter]);
+
   const items = useMemo(() => {
+    if (apiEnabled && apiRows) {
+      // Convert API rows into the {user, profile} shape the rest of this
+      // file expects, so the map markers + cards keep their existing code.
+      return apiRows.map((r) => ({
+        user: {
+          id: r.user.id, role: "candidate" as const, name: r.user.name, email: r.user.email,
+          mobile: r.user.mobile ?? undefined, emailVerified: true, createdAt: r.user.createdAt,
+        } satisfies User,
+        profile: {
+          userId: r.user.id,
+          photoDataUrl: r.photoUrl ?? undefined,
+          field: r.field === "IT" ? "it" : r.field === "NON_IT" ? "non_it" : undefined,
+          type: r.type === "FRESHER" ? "fresher" : r.type === "EXPERIENCED" ? "experienced" : undefined,
+          itSpecialization: r.itSpecialization ?? undefined,
+          itLanguages: r.itLanguages ?? undefined,
+          nonItDepartments: r.nonItDepartments ?? undefined,
+          topSkills: r.topSkills ?? undefined,
+          yearsOfExperience: r.yearsOfExperience ?? undefined,
+          preferredLocation: r.preferredLocation ?? undefined,
+          preferredLat: r.preferredLat ?? undefined,
+          preferredLng: r.preferredLng ?? undefined,
+          currentLat: r.currentLat ?? undefined,
+          currentLng: r.currentLng ?? undefined,
+          selectedTemplateId: (r.selectedTemplateId?.toLowerCase() ?? undefined) as CandidateProfile["selectedTemplateId"],
+          education: [],
+          updatedAt: r.updatedAt,
+        } satisfies CandidateProfile,
+      }));
+    }
+    // localStorage fallback
     const users = allUsers().filter((u) => u.role === "candidate");
     return users
       .map((u) => ({ user: u, profile: profilesMap[u.id] }))
-      .filter((x) => x.profile && x.profile.selectedTemplateId);
-  }, [profilesMap]);
+      .filter((x): x is { user: User; profile: CandidateProfile } => !!x.profile && !!x.profile.selectedTemplateId);
+  }, [apiRows, profilesMap]);
 
   const locations = useMemo(
     () => Array.from(new Set(items.map((x) => x.profile?.preferredLocation).filter(Boolean) as string[])).sort(),
@@ -78,6 +141,11 @@ export function EmployerCandidates() {
           <p className="mt-2 text-sm text-zinc-600 dark:text-zinc-400">
             All candidates with completed profiles. {hasSub ? "Tap any card to view their full CV." : "Subscribe to unlock full CVs."}
           </p>
+          {apiError && (
+            <p className="mt-3 rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-xs text-rose-700 dark:border-rose-500/30 dark:bg-rose-500/10 dark:text-rose-400">
+              {apiError}
+            </p>
+          )}
         </header>
 
         {!hasSub && (

@@ -128,6 +128,47 @@ export const jobsApi = {
     api<{ ok: true }>(`/candidate/saved-jobs/${encodeURIComponent(jobId)}`, { method: "DELETE" }),
 };
 
+/* ----------------------- Employer candidate search ----------------------- */
+
+export type ApiCandidateType = "FRESHER" | "EXPERIENCED";
+export type ApiFieldKind = "IT" | "NON_IT";
+
+export interface EmployerCandidateRow {
+  id: string;
+  userId: string;
+  photoUrl: string | null;
+  field: ApiFieldKind | null;
+  type: ApiCandidateType | null;
+  itSpecialization: string | null;
+  itLanguages: string[] | null;
+  nonItDepartments: string[] | null;
+  topSkills: string[] | null;
+  yearsOfExperience: number | null;
+  preferredLocation: string | null;
+  preferredLat: number | null;
+  preferredLng: number | null;
+  currentLat: number | null;
+  currentLng: number | null;
+  selectedTemplateId: string | null;
+  moderationStatus: "PENDING" | "APPROVED" | "REJECTED";
+  updatedAt: string;
+  user: { id: string; name: string; email: string; mobile: string | null; createdAt: string };
+}
+
+interface CandidateSearchQuery {
+  field?: ApiFieldKind;
+  type?: ApiCandidateType;
+  districtId?: string;
+  search?: string;
+  page?: number;
+  pageSize?: number;
+}
+
+export const employerCandidatesApi = {
+  search: (args: CandidateSearchQuery = {}) =>
+    api<ListResponse<EmployerCandidateRow>>(`/employer/candidates${qs(args)}`),
+};
+
 export const employerJobsApi = {
   list: () => api<{ items: (ApiJob & { _count: { applications: number; savedBy: number } })[] }>("/employer/jobs"),
 
@@ -141,9 +182,14 @@ export const employerJobsApi = {
     api<{ ok: true }>(`/employer/jobs/${encodeURIComponent(id)}`, { method: "DELETE" }),
 
   applicants: (id: string) =>
-    api<{ items: (ApiApplication & { candidate: { id: string; name: string; email: string; mobile: string | null; createdAt: string } })[] }>(
-      `/employer/jobs/${encodeURIComponent(id)}/applicants`,
-    ),
+    api<{
+      items: (ApiApplication & {
+        candidate: { id: string; name: string; email: string; mobile: string | null; createdAt: string };
+        // The backend joins the candidate's full profile too — we type as
+        // unknown here so the page can call fromApiProfile() to normalise it.
+        profile: unknown | null;
+      })[];
+    }>(`/employer/jobs/${encodeURIComponent(id)}/applicants`),
 
   updateApplicationStatus: (applicationId: string, status: ApiApplicationStatus) =>
     api<{ application: ApiApplication }>(`/employer/applications/${encodeURIComponent(applicationId)}`, {

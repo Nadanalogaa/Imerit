@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { ApplicationStatus, JobExperience, JobField, JobType, UserRole } from "@prisma/client";
+import { ApplicationStatus, CandidateType, FieldKind, JobExperience, JobField, JobType, UserRole } from "@prisma/client";
 
 import { asyncHandler, HttpError } from "../middleware/error.js";
 import { requireAuth, requireRole } from "../middleware/auth.js";
@@ -8,9 +8,11 @@ import {
   applyJobSchema,
   browseJobsSchema,
   createJobSchema,
+  employerCandidateSearchSchema,
   updateApplicationStatusSchema,
   updateJobSchema,
 } from "../schemas/jobs.schemas.js";
+import { searchCandidatesForEmployer } from "../services/employer.service.js";
 import {
   createJob,
   deleteJob,
@@ -128,6 +130,22 @@ router.get(
   requireRole(UserRole.EMPLOYER),
   asyncHandler(async (req, res) => {
     res.json({ items: await listEmployerJobs(req.user!.sub) });
+  }),
+);
+
+/* ---------------- Candidate search for employers ---------------- */
+
+router.get(
+  "/employer/candidates",
+  requireAuth,
+  requireRole(UserRole.EMPLOYER),
+  validate({ query: employerCandidateSearchSchema }),
+  asyncHandler(async (req, res) => {
+    const q = req.query as unknown as {
+      field?: FieldKind; type?: CandidateType; districtId?: string; search?: string;
+      page: number; pageSize: number;
+    };
+    res.json(await searchCandidatesForEmployer(q));
   }),
 );
 
