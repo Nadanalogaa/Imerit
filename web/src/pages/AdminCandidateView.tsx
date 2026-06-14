@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
-import { Link, Navigate, useNavigate, useParams } from "react-router-dom";
-import { motion } from "framer-motion";
-import { ArrowLeft, CheckCircle2, FileType2, Mail, Phone, XCircle, Clock } from "lucide-react";
+import { Link, Navigate, useParams } from "react-router-dom";
+import { AnimatePresence, motion } from "framer-motion";
+import { ArrowLeft, CheckCircle2, FileType2, Mail, Phone, XCircle, Clock, NotebookPen } from "lucide-react";
 import { allUsers, type User } from "../store/auth";
 import { fromApiProfile, useProfile, type CandidateProfile } from "../store/profile";
 import { RenderTemplate } from "../components/templates";
@@ -21,7 +21,6 @@ interface ApiBundle {
 
 export function AdminCandidateView() {
   const { id } = useParams<{ id: string }>();
-  const navigate = useNavigate();
   const profiles = useProfile((s) => s.byUser);
 
   const localCandidate = allUsers().find((u) => u.id === id);
@@ -33,6 +32,8 @@ export function AdminCandidateView() {
   const [moderating, setModerating] = useState(false);
   const [modSuccess, setModSuccess] = useState<string | null>(null);
   const [modError, setModError] = useState<string | null>(null);
+  const [confirmModal, setConfirmModal] = useState<null | "APPROVED" | "REJECTED">(null);
+  const [notesDraft, setNotesDraft] = useState("");
 
   useEffect(() => {
     if (!apiEnabled || !id) return;
@@ -104,15 +105,28 @@ export function AdminCandidateView() {
 
   const printPdf = () => window.print();
 
-  const moderate = async (status: "APPROVED" | "REJECTED") => {
-    if (!apiEnabled || !id) return;
-    setModerating(true);
+  const openConfirm = (status: "APPROVED" | "REJECTED") => {
+    setNotesDraft(apiData?.moderationNotes ?? "");
     setModError(null);
     setModSuccess(null);
+    setConfirmModal(status);
+  };
+
+  const submitModeration = async () => {
+    if (!apiEnabled || !id || !confirmModal) return;
+    const status = confirmModal;
+    const notes = notesDraft.trim();
+    if (status === "REJECTED" && !notes) {
+      setModError("Add a short reason — rejection notes are required so the candidate can fix the issue.");
+      return;
+    }
+    setModerating(true);
+    setModError(null);
     try {
-      await adminApi.moderateProfile(id, { status });
-      setApiData((cur) => (cur ? { ...cur, moderationStatus: status } : cur));
+      await adminApi.moderateProfile(id, { status, notes: notes || undefined });
+      setApiData((cur) => cur ? { ...cur, moderationStatus: status, moderationNotes: notes || null } : cur);
       setModSuccess(status === "APPROVED" ? "Profile approved." : "Profile rejected.");
+      setConfirmModal(null);
     } catch (err) {
       if (err instanceof ApiError && err.status === 403) {
         setModError("Only ADMIN or SUPER_ADMIN can moderate. Sign in as admin.");
@@ -153,27 +167,39 @@ export function AdminCandidateView() {
         </div>
 
         {apiEnabled && (
-          <div className="mb-5 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-zinc-200 bg-white px-4 py-3 shadow-sm dark:border-zinc-800 dark:bg-zinc-900 print:hidden">
-            <div className="text-xs text-zinc-600 dark:text-zinc-400">
-              {moderationStatus === "PENDING" ? "Awaiting moderation." : `Moderation status: ${moderationStatus}.`}
-              {apiData?.moderationNotes && <span className="ml-1 italic">Notes: {apiData.moderationNotes}</span>}
+          <div className="mb-5 rounded-2xl border border-zinc-200 bg-white shadow-sm dark:border-zinc-800 dark:bg-zinc-900 print:hidden">
+            <div className="flex flex-wrap items-center justify-between gap-3 px-4 py-3">
+              <div className="text-xs text-zinc-600 dark:text-zinc-400">
+                {moderationStatus === "PENDING" ? "Awaiting moderation." : `Moderation status: ${moderationStatus}.`}
+              </div>
+              <div className="flex flex-wrap items-center gap-2">
+                <button
+                  disabled={moderating || moderationStatus === "APPROVED"}
+                  onClick={() => openConfirm("APPROVED")}
+                  className="inline-flex items-center gap-1.5 rounded-full bg-gradient-to-r from-emerald-500 to-emerald-600 px-3 py-1.5 text-xs font-semibold text-white shadow-md shadow-emerald-500/30 transition hover:shadow-lg disabled:opacity-60"
+                >
+                  <CheckCircle2 size={12} /> Approve
+                </button>
+                <button
+                  disabled={moderating || moderationStatus === "REJECTED"}
+                  onClick={() => openConfirm("REJECTED")}
+                  className="inline-flex items-center gap-1.5 rounded-full bg-gradient-to-r from-rose-500 to-rose-600 px-3 py-1.5 text-xs font-semibold text-white shadow-md shadow-rose-500/30 transition hover:shadow-lg disabled:opacity-60"
+                >
+                  <XCircle size={12} /> Reject
+                </button>
+              </div>
             </div>
-            <div className="flex flex-wrap items-center gap-2">
-              <button
-                disabled={moderating || moderationStatus === "APPROVED"}
-                onClick={() => moderate("APPROVED")}
-                className="inline-flex items-center gap-1.5 rounded-full bg-gradient-to-r from-emerald-500 to-emerald-600 px-3 py-1.5 text-xs font-semibold text-white shadow-md shadow-emerald-500/30 transition hover:shadow-lg disabled:opacity-60"
-              >
-                <CheckCircle2 size={12} /> Approve
-              </button>
-              <button
-                disabled={moderating || moderationStatus === "REJECTED"}
-                onClick={() => navigate("?", { replace: true }) || moderate("REJECTED")}
-                className="inline-flex items-center gap-1.5 rounded-full bg-gradient-to-r from-rose-500 to-rose-600 px-3 py-1.5 text-xs font-semibold text-white shadow-md shadow-rose-500/30 transition hover:shadow-lg disabled:opacity-60"
-              >
-                <XCircle size={12} /> Reject
-              </button>
-            </div>
+            {apiData?.moderationNotes && (
+              <div className="border-t border-zinc-200 px-4 py-3 dark:border-zinc-800">
+                <div className="flex items-start gap-2">
+                  <NotebookPen size={12} className="mt-0.5 shrink-0 text-zinc-500 dark:text-zinc-400" />
+                  <div>
+                    <p className="text-[10px] font-semibold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">Moderation notes</p>
+                    <p className="mt-0.5 text-xs italic text-zinc-700 dark:text-zinc-300">{apiData.moderationNotes}</p>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         )}
         {modSuccess && (
@@ -191,6 +217,87 @@ export function AdminCandidateView() {
           <RenderTemplate id={profile.selectedTemplateId} user={candidate} profile={profile} />
         </motion.div>
       </main>
+
+      {/* Approve / Reject confirmation modal */}
+      <AnimatePresence>
+        {confirmModal && (
+          <motion.div
+            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 print:hidden"
+            onClick={() => !moderating && setConfirmModal(null)}
+          >
+            <motion.div
+              initial={{ scale: 0.95, y: 10 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.95, opacity: 0 }}
+              onClick={(e) => e.stopPropagation()}
+              className="w-full max-w-md rounded-3xl border border-zinc-200 bg-white p-6 shadow-2xl dark:border-zinc-800 dark:bg-zinc-900"
+            >
+              <div className="mb-3 flex items-center gap-2">
+                {confirmModal === "APPROVED" ? (
+                  <span className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-emerald-100 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300">
+                    <CheckCircle2 size={16} />
+                  </span>
+                ) : (
+                  <span className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-rose-100 text-rose-700 dark:bg-rose-500/15 dark:text-rose-300">
+                    <XCircle size={16} />
+                  </span>
+                )}
+                <h3 className="text-lg font-semibold tracking-tight">
+                  {confirmModal === "APPROVED" ? "Approve this profile?" : "Reject this profile?"}
+                </h3>
+              </div>
+              <p className="text-sm text-zinc-600 dark:text-zinc-400">
+                {confirmModal === "APPROVED"
+                  ? "The candidate will be visible to employers searching for this skill set."
+                  : "The candidate will see your notes so they can fix the issue and resubmit."}
+              </p>
+
+              <label className="mt-4 block text-[11px] font-medium text-zinc-600 dark:text-zinc-400">
+                Moderation notes {confirmModal === "REJECTED" ? <span className="text-rose-600 dark:text-rose-400">(required)</span> : <span className="text-zinc-500">(optional)</span>}
+              </label>
+              <textarea
+                value={notesDraft}
+                onChange={(e) => setNotesDraft(e.target.value)}
+                rows={3}
+                placeholder={
+                  confirmModal === "APPROVED"
+                    ? "e.g. Verified by HR; clear profile."
+                    : "e.g. Photo is too small / education year missing."
+                }
+                className="mt-1 w-full rounded-2xl border border-zinc-200 bg-white p-3 text-sm focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500/20 dark:border-zinc-800 dark:bg-zinc-950"
+              />
+
+              {modError && (
+                <p className="mt-2 rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-xs text-rose-700 dark:border-rose-500/30 dark:bg-rose-500/10 dark:text-rose-400">
+                  {modError}
+                </p>
+              )}
+
+              <div className="mt-5 flex justify-end gap-2">
+                <button
+                  onClick={() => !moderating && setConfirmModal(null)}
+                  disabled={moderating}
+                  className="rounded-2xl border border-zinc-200 px-4 py-2 text-sm font-semibold text-zinc-700 hover:bg-zinc-50 disabled:opacity-60 dark:border-zinc-700 dark:text-zinc-200 dark:hover:bg-zinc-800"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={submitModeration}
+                  disabled={moderating}
+                  className={[
+                    "inline-flex items-center gap-2 rounded-2xl px-4 py-2 text-sm font-semibold text-white shadow-md transition disabled:opacity-60",
+                    confirmModal === "APPROVED"
+                      ? "bg-gradient-to-r from-emerald-500 to-emerald-600 shadow-emerald-500/30"
+                      : "bg-gradient-to-r from-rose-500 to-rose-600 shadow-rose-500/30",
+                  ].join(" ")}
+                >
+                  {confirmModal === "APPROVED" ? <CheckCircle2 size={14} /> : <XCircle size={14} />}
+                  {moderating ? "Saving…" : confirmModal === "APPROVED" ? "Approve" : "Reject"}
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
