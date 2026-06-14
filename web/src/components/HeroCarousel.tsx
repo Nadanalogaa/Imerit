@@ -83,14 +83,14 @@ export function HeroCarousel() {
   return (
     <section
       id="home"
-      // Sized to fit a single Mac 13" / 14" viewport after the navbar + welcome
-      // strip (~104px). On larger displays the section grows naturally with
-      // its content, never overflowing because the cards are compact.
-      className="relative w-full overflow-hidden min-h-[calc(100svh-104px)] md:min-h-[560px] lg:min-h-[600px]"
+      // One viewport tall on common laptops, never less than 620px on md+.
+      // Flex column splits the section into a flexible top (slider copy) and
+      // a natural-height bottom (role panels) so both fit above the fold.
+      className="relative flex w-full flex-col overflow-hidden min-h-[calc(100svh-104px)] md:min-h-[620px] lg:min-h-[640px]"
       onMouseEnter={() => setPaused(true)}
       onMouseLeave={() => setPaused(false)}
     >
-      {/* Full-bleed background slider — cross-fades automatically every 6s */}
+      {/* Full-bleed background slider */}
       <div className="absolute inset-0">
         {SLIDES.map((s, i) => (
           <div
@@ -110,59 +110,54 @@ export function HeroCarousel() {
             />
           </div>
         ))}
-        {/* Dark gradient overlay — same on every slide so the role cards keep
-            their contrast even when the photo changes. */}
-        <div className="absolute inset-0 bg-gradient-to-br from-black/60 via-black/55 to-black/70" />
-        {/* Slight extra darkening on the left where the headline sits so the
-            text stays legible against bright photos. */}
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_25%_50%,rgba(0,0,0,0.35),transparent_55%)]" />
+        {/* Dark gradient overlay — heavier at the bottom so the role cards
+            keep their contrast against the photo behind them. */}
+        <div className="absolute inset-0 bg-gradient-to-b from-black/55 via-black/55 to-black/75" />
       </div>
 
-      {/* Overlay content — 60/40 grid, vertically centred in the section */}
-      <div className="relative z-10 grid h-full min-h-inherit items-center gap-6 px-5 py-8 md:grid-cols-[3fr_2fr] md:gap-8 md:px-10 md:py-10 lg:px-14 lg:py-12 xl:px-20">
-        {/* LEFT 60% — slide content */}
-        <div className="flex flex-col justify-center">
-          <span className="mb-5 inline-flex w-fit items-center gap-2.5 rounded-full border border-white/30 bg-white/15 px-5 py-2 text-[13px] font-bold uppercase tracking-[0.25em] text-white backdrop-blur-md md:text-sm">
-            <span className="relative flex h-2 w-2">
-              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
-              <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-400" />
-            </span>
-            {SLIDES[idx].eyebrow}
+      {/* TOP — slider copy, vertically centred in the available space */}
+      <div className="relative z-10 flex flex-1 flex-col justify-center px-5 pt-8 md:px-10 md:pt-10 lg:px-14 lg:pt-12 xl:px-20">
+        <span className="mb-5 inline-flex w-fit items-center gap-2.5 rounded-full border border-white/30 bg-white/15 px-5 py-2 text-[13px] font-bold uppercase tracking-[0.25em] text-white backdrop-blur-md md:text-sm">
+          <span className="relative flex h-2 w-2">
+            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
+            <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-400" />
           </span>
+          {SLIDES[idx].eyebrow}
+        </span>
 
-          <h1 className="max-w-2xl text-3xl font-semibold leading-tight tracking-tight text-white drop-shadow-lg md:text-4xl lg:text-5xl">
-            {SLIDES[idx].title}
-          </h1>
-          <p className="mt-4 max-w-xl text-sm text-white/90 md:text-base">
-            {SLIDES[idx].description}
-          </p>
+        <h1 className="max-w-3xl text-3xl font-semibold leading-tight tracking-tight text-white drop-shadow-lg md:text-4xl lg:text-5xl">
+          {SLIDES[idx].title}
+        </h1>
+        <p className="mt-4 max-w-2xl text-sm text-white/90 md:text-base">
+          {SLIDES[idx].description}
+        </p>
 
-          {/* Dots */}
-          <div className="mt-6 flex items-center gap-2">
-            {SLIDES.map((_, i) => (
-              <button
-                key={i}
-                aria-label={`Slide ${i + 1}`}
-                onClick={() => setIdx(i)}
-                className={[
-                  "h-1.5 rounded-full transition-all",
-                  i === idx ? "w-9 bg-white" : "w-2 bg-white/40 hover:bg-white/60",
-                ].join(" ")}
-              />
-            ))}
-          </div>
+        <div className="mt-6 flex items-center gap-2">
+          {SLIDES.map((_, i) => (
+            <button
+              key={i}
+              aria-label={`Slide ${i + 1}`}
+              onClick={() => setIdx(i)}
+              className={[
+                "h-1.5 rounded-full transition-all",
+                i === idx ? "w-9 bg-white" : "w-2 bg-white/40 hover:bg-white/60",
+              ].join(" ")}
+            />
+          ))}
         </div>
+      </div>
 
-        {/* RIGHT 40% — role cards, always crisp + solid, never fade with slider */}
-        <div className="grid grid-cols-1 gap-3 md:gap-4">
+      {/* BOTTOM — two role cards side-by-side overlapping the lower photo */}
+      <div className="relative z-10 px-5 pb-5 pt-3 md:px-10 md:pb-7 md:pt-4 lg:px-14 lg:pb-8 xl:px-20">
+        <div className="grid grid-cols-1 gap-3 md:grid-cols-2 md:gap-4">
           <RoleCard
             icon={<GraduationCap size={22} />}
             title="I'm a Candidate"
             tagline="Build a free profile, browse jobs across Tamil Nadu, and apply when you're ready."
             bullets={[
-              { icon: <Sparkles size={11} />, label: "Profile posting is free" },
-              { icon: <MapPin size={11} />, label: "Jobs near your home" },
-              { icon: <Target size={11} />, label: "Smart match scoring" },
+              { icon: <Sparkles size={11} />, label: "Profile free" },
+              { icon: <MapPin size={11} />, label: "Jobs near home" },
+              { icon: <Target size={11} />, label: "Smart match" },
             ]}
             ctaTo="/candidate/register"
             ctaLabel="Start as Candidate"
@@ -174,9 +169,9 @@ export function HeroCarousel() {
             title="I'm an Employer"
             tagline="Post jobs for free. Subscribe only when you're ready to search candidates."
             bullets={[
-              { icon: <Sparkles size={11} />, label: "Job posting is free" },
-              { icon: <MapPin size={11} />, label: "District-wise reach" },
-              { icon: <Target size={11} />, label: "Ranked applicants" },
+              { icon: <Sparkles size={11} />, label: "Posting free" },
+              { icon: <MapPin size={11} />, label: "District-wide" },
+              { icon: <Target size={11} />, label: "Ranked apps" },
             ]}
             ctaTo="/employer/register"
             ctaLabel="Start as Employer"
@@ -186,11 +181,12 @@ export function HeroCarousel() {
         </div>
       </div>
 
-      {/* Arrows */}
+      {/* Arrows — positioned in the upper-middle of the section so they don't
+          collide with the bottom role cards. */}
       <button
         aria-label="Previous"
         onClick={() => setIdx((i) => (i - 1 + SLIDES.length) % SLIDES.length)}
-        className="absolute left-3 top-1/2 z-20 -translate-y-1/2 rounded-full border border-white/30 bg-white/15 p-2.5 text-white backdrop-blur-md transition hover:bg-white/30 hover:scale-105 md:left-5"
+        className="absolute left-3 top-[30%] z-20 -translate-y-1/2 rounded-full border border-white/30 bg-white/15 p-2.5 text-white backdrop-blur-md transition hover:bg-white/30 hover:scale-105 md:left-5"
       >
         <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
           <path d="M15 18l-6-6 6-6" />
@@ -199,7 +195,7 @@ export function HeroCarousel() {
       <button
         aria-label="Next"
         onClick={() => setIdx((i) => (i + 1) % SLIDES.length)}
-        className="absolute right-3 top-1/2 z-20 -translate-y-1/2 rounded-full border border-white/30 bg-white/15 p-2.5 text-white backdrop-blur-md transition hover:bg-white/30 hover:scale-105 md:right-5"
+        className="absolute right-3 top-[30%] z-20 -translate-y-1/2 rounded-full border border-white/30 bg-white/15 p-2.5 text-white backdrop-blur-md transition hover:bg-white/30 hover:scale-105 md:right-5"
       >
         <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
           <path d="M9 6l6 6-6 6" />
@@ -209,7 +205,7 @@ export function HeroCarousel() {
   );
 }
 
-/* --------------------- Role card (right column) --------------------- */
+/* --------------------- Role card (bottom row) --------------------- */
 
 interface BulletItem {
   icon: React.ReactNode;
@@ -255,10 +251,9 @@ function RoleCard({ icon, title, tagline, bullets, ctaTo, ctaLabel, signInTo, to
   return (
     <div
       className={[
-        // Compact, solid surface so the card stays "prompt" over the photo
-        // background. Tight padding so two cards stack into a single 13"
-        // laptop viewport without scroll.
-        "group relative flex flex-col overflow-hidden rounded-2xl border border-zinc-200 bg-white p-4 shadow-2xl shadow-zinc-900/30 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-zinc-900/40 dark:border-zinc-700 dark:bg-zinc-900 dark:shadow-black/60 md:p-5",
+        // Solid white card with strong drop shadow so it pops against the
+        // photo overlay it's overlapping.
+        "group relative flex flex-col overflow-hidden rounded-2xl border border-zinc-200 bg-white p-4 shadow-2xl shadow-zinc-900/40 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-zinc-900/50 dark:border-zinc-700 dark:bg-zinc-900 dark:shadow-black/60 md:p-5",
       ].join(" ")}
     >
       {/* Top accent stripe */}
