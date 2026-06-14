@@ -86,7 +86,11 @@ export function HeroCarousel() {
       // One viewport tall on common laptops, never less than 620px on md+.
       // Flex column splits the section into a flexible top (slider copy) and
       // a natural-height bottom (role panels) so both fit above the fold.
-      className="relative flex w-full flex-col overflow-hidden min-h-[calc(100svh-104px)] md:min-h-[680px] lg:min-h-[720px]"
+      // Section overshoots the viewport by 30-40px on most laptops so the
+      // next section's white intro padding is pushed below the fold. 60 was
+      // chosen so the hero stays full-height even when the user dismisses
+      // the welcome strip (only the navbar remains above us).
+      className="relative flex w-full flex-col overflow-hidden min-h-[calc(100svh-60px)]"
       onMouseEnter={() => setPaused(true)}
       onMouseLeave={() => setPaused(false)}
     >
@@ -115,9 +119,9 @@ export function HeroCarousel() {
         <div className="absolute inset-0 bg-gradient-to-b from-black/55 via-black/55 to-black/75" />
       </div>
 
-      {/* TOP — slider copy, horizontally centred, pushed slightly toward
-          the top of the available space so it doesn't crowd the role cards. */}
-      <div className="relative z-10 flex flex-1 flex-col items-center justify-start px-5 pt-10 text-center md:px-10 md:pt-14 lg:px-14 lg:pt-16 xl:px-20">
+      {/* TOP — slider copy, horizontally + vertically centred in the flex
+          area between the navbar and the role cards. */}
+      <div className="relative z-10 flex flex-1 flex-col items-center justify-center px-5 pt-6 text-center md:px-10 md:pt-8 lg:px-14 lg:pt-10 xl:px-20">
         <span className="mb-5 inline-flex items-center gap-2.5 rounded-full border border-white/30 bg-white/15 px-5 py-2 text-[13px] font-bold uppercase tracking-[0.25em] text-white backdrop-blur-md md:text-sm">
           <span className="relative flex h-2 w-2">
             <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
@@ -230,20 +234,27 @@ const TONE: Record<RoleCardProps["tone"], {
   iconGlow: string;
   ctaBg: string;
   highlight: string;
+  /** Tinted card surface — light brand wash for Candidate, light sky wash for Employer. */
+  cardBg: string;
+  cardBorder: string;
 }> = {
   brand: {
     stripe: "from-brand-400 via-brand-500 to-amber-500",
     iconBg: "bg-gradient-to-br from-brand-500 to-brand-700",
     iconGlow: "shadow-brand-500/50",
     ctaBg: "bg-gradient-to-r from-brand-500 to-brand-600 shadow-brand-500/40 hover:shadow-brand-500/60",
-    highlight: "from-brand-50/80 dark:from-brand-500/10",
+    highlight: "from-brand-100/80 dark:from-brand-500/10",
+    cardBg: "bg-gradient-to-br from-brand-50 via-orange-50 to-amber-50 dark:from-brand-500/10 dark:via-zinc-900 dark:to-amber-500/5",
+    cardBorder: "border-orange-200/70 dark:border-brand-500/30",
   },
   sky: {
     stripe: "from-sky-400 via-sky-500 to-cyan-500",
     iconBg: "bg-gradient-to-br from-sky-500 to-sky-700",
     iconGlow: "shadow-sky-500/50",
     ctaBg: "bg-gradient-to-r from-sky-500 to-sky-600 shadow-sky-500/40 hover:shadow-sky-500/60",
-    highlight: "from-sky-50/80 dark:from-sky-500/10",
+    highlight: "from-sky-100/80 dark:from-sky-500/10",
+    cardBg: "bg-gradient-to-br from-sky-50 via-blue-50 to-cyan-50 dark:from-sky-500/10 dark:via-zinc-900 dark:to-cyan-500/5",
+    cardBorder: "border-sky-200/70 dark:border-sky-500/30",
   },
 };
 
@@ -252,10 +263,13 @@ function RoleCard({ icon, title, tagline, bullets, ctaTo, ctaLabel, signInTo, to
   return (
     <div
       className={[
-        // Solid white surface with a bold drop shadow so the card pops against
-        // the photo behind it. Plenty of inner padding for a confident,
-        // premium feel.
-        "group relative flex flex-col overflow-hidden rounded-2xl border border-zinc-200 bg-white p-6 shadow-2xl shadow-zinc-900/40 transition-all duration-300 hover:-translate-y-1 hover:shadow-zinc-900/50 dark:border-zinc-700 dark:bg-zinc-900 dark:shadow-black/60 md:p-7 lg:p-8",
+        // Tinted card surface (peach for Candidate, sky for Employer) — gives
+        // each role visual identity without sacrificing the white-card
+        // legibility of the text. Bold drop shadow pops the card against the
+        // photo behind it.
+        "group relative flex flex-col overflow-hidden rounded-2xl border p-6 shadow-2xl shadow-zinc-900/40 transition-all duration-300 hover:-translate-y-1 hover:shadow-zinc-900/50 dark:shadow-black/60 md:p-7 lg:p-8",
+        t.cardBg,
+        t.cardBorder,
       ].join(" ")}
     >
       {/* Top accent stripe — thicker for more presence */}
@@ -286,7 +300,10 @@ function RoleCard({ icon, title, tagline, bullets, ctaTo, ctaLabel, signInTo, to
         ))}
       </ul>
 
-      <div className="mt-5 flex flex-wrap items-center gap-4">
+      {/* mt-auto pushes the CTA to the bottom of the card so the buttons in
+          both cards line up horizontally, even when the taglines wrap to
+          different line counts. */}
+      <div className="mt-auto pt-5 flex flex-wrap items-center gap-4">
         <Link
           to={ctaTo}
           className={[
