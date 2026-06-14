@@ -169,7 +169,7 @@ function toApiProfilePatch(p: Partial<CandidateProfile>): ApiProfilePatch {
   return out;
 }
 
-function fromApiProfile(api: ApiCandidateProfile): CandidateProfile {
+export function fromApiProfile(api: ApiCandidateProfile): CandidateProfile {
   return {
     userId: api.userId,
     photoDataUrl: api.photoUrl ?? undefined,

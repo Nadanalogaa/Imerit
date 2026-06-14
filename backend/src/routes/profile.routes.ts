@@ -21,13 +21,14 @@ const router = Router();
 
 /**
  * Convert a profile row into the public-safe shape — drops the private
- * street fields that should never go over the wire to non-owners.
+ * street fields that should never go over the wire to non-owners. Accepts
+ * any of the profile-with-relations shapes (with or without user joined).
  */
-function publicProfile(row: Awaited<ReturnType<typeof getOrCreateProfile>>, includePrivate: boolean) {
+function publicProfile<T extends { currentStreet?: string | null }>(row: T, includePrivate: boolean): T | Omit<T, "currentStreet"> {
   if (includePrivate) return row;
   const { currentStreet, ...rest } = row;
   void currentStreet;
-  return rest;
+  return rest as Omit<T, "currentStreet">;
 }
 
 /* ---------- The caller's own profile (auth required, candidate only) ---------- */

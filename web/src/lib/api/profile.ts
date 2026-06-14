@@ -138,5 +138,18 @@ export const profileApi = {
     }),
 
   getByUserId: (userId: string) =>
-    api<{ profile: ApiCandidateProfile }>(`/profiles/${encodeURIComponent(userId)}`),
+    api<{ profile: ApiCandidateProfileWithUser }>(`/profiles/${encodeURIComponent(userId)}`),
 };
+
+/** Server returns the joined user record alongside the profile on /profiles/:id. */
+export interface ApiCandidateProfileWithUser extends ApiCandidateProfile {
+  user: {
+    id: string;
+    name: string;
+    email: string;
+    mobile: string | null;
+    role: "CANDIDATE" | "EMPLOYER" | "ADMIN" | "SUPER_ADMIN";
+    createdAt: string;
+    lastSeenAt: string | null;
+  };
+}

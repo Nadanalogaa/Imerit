@@ -22,12 +22,20 @@ export async function getOrCreateProfile(userId: string): Promise<ProfileWithRel
 
 /**
  * Read-only lookup by user id — used by the employer candidate-detail page
- * and the admin candidate view. Throws 404 if missing/soft-deleted.
+ * and the admin candidate view. Includes the joined user record so the UI
+ * doesn't have to make a second round-trip for the candidate's name/email.
+ * Throws 404 if missing/soft-deleted.
  */
-export async function getProfileByUserId(userId: string): Promise<ProfileWithRelations> {
+export async function getProfileByUserId(userId: string): Promise<ProfileWithUser> {
   const found = await prisma.candidateProfile.findUnique({
     where: { userId },
-    include: { education: true, experiences: true },
+    include: {
+      education: true,
+      experiences: true,
+      user: {
+        select: { id: true, name: true, email: true, mobile: true, role: true, createdAt: true, lastSeenAt: true },
+      },
+    },
   });
   if (!found) throw new HttpError(404, "Profile not found", "PROFILE_NOT_FOUND");
   return found;
@@ -94,4 +102,16 @@ export async function replaceExperiences(
 export type ProfileWithRelations = CandidateProfile & {
   education: Education[];
   experiences: Experience[];
+};
+
+export type ProfileWithUser = ProfileWithRelations & {
+  user: {
+    id: string;
+    name: string;
+    email: string;
+    mobile: string | null;
+    role: import("@prisma/client").UserRole;
+    createdAt: Date;
+    lastSeenAt: Date | null;
+  };
 };
