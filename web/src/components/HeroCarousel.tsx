@@ -83,7 +83,10 @@ export function HeroCarousel() {
   return (
     <section
       id="home"
-      className="relative w-full overflow-hidden"
+      // Sized to fit a single Mac 13" / 14" viewport after the navbar + welcome
+      // strip (~104px). On larger displays the section grows naturally with
+      // its content, never overflowing because the cards are compact.
+      className="relative w-full overflow-hidden min-h-[calc(100svh-104px)] md:min-h-[560px] lg:min-h-[600px]"
       onMouseEnter={() => setPaused(true)}
       onMouseLeave={() => setPaused(false)}
     >
@@ -115,11 +118,11 @@ export function HeroCarousel() {
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_25%_50%,rgba(0,0,0,0.35),transparent_55%)]" />
       </div>
 
-      {/* Overlay content — 60/40 grid */}
-      <div className="relative z-10 grid items-center gap-8 px-5 py-16 md:grid-cols-[3fr_2fr] md:gap-10 md:px-10 md:py-20 lg:px-14 lg:py-24 xl:px-20">
+      {/* Overlay content — 60/40 grid, vertically centred in the section */}
+      <div className="relative z-10 grid h-full min-h-inherit items-center gap-6 px-5 py-8 md:grid-cols-[3fr_2fr] md:gap-8 md:px-10 md:py-10 lg:px-14 lg:py-12 xl:px-20">
         {/* LEFT 60% — slide content */}
-        <div className="min-h-[280px] md:min-h-[420px] flex flex-col justify-center">
-          <span className="mb-6 inline-flex w-fit items-center gap-2.5 rounded-full border border-white/30 bg-white/15 px-5 py-2 text-[13px] font-bold uppercase tracking-[0.25em] text-white backdrop-blur-md md:text-sm">
+        <div className="flex flex-col justify-center">
+          <span className="mb-5 inline-flex w-fit items-center gap-2.5 rounded-full border border-white/30 bg-white/15 px-5 py-2 text-[13px] font-bold uppercase tracking-[0.25em] text-white backdrop-blur-md md:text-sm">
             <span className="relative flex h-2 w-2">
               <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
               <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-400" />
@@ -127,15 +130,15 @@ export function HeroCarousel() {
             {SLIDES[idx].eyebrow}
           </span>
 
-          <h1 className="max-w-2xl text-3xl font-semibold leading-tight tracking-tight text-white drop-shadow-lg md:text-4xl lg:text-5xl xl:text-6xl">
+          <h1 className="max-w-2xl text-3xl font-semibold leading-tight tracking-tight text-white drop-shadow-lg md:text-4xl lg:text-5xl">
             {SLIDES[idx].title}
           </h1>
-          <p className="mt-5 max-w-xl text-sm text-white/90 md:text-base lg:text-lg">
+          <p className="mt-4 max-w-xl text-sm text-white/90 md:text-base">
             {SLIDES[idx].description}
           </p>
 
           {/* Dots */}
-          <div className="mt-8 flex items-center gap-2">
+          <div className="mt-6 flex items-center gap-2">
             {SLIDES.map((_, i) => (
               <button
                 key={i}
@@ -151,15 +154,15 @@ export function HeroCarousel() {
         </div>
 
         {/* RIGHT 40% — role cards, always crisp + solid, never fade with slider */}
-        <div className="grid grid-cols-1 gap-5 md:gap-6">
+        <div className="grid grid-cols-1 gap-3 md:gap-4">
           <RoleCard
-            icon={<GraduationCap size={26} />}
+            icon={<GraduationCap size={22} />}
             title="I'm a Candidate"
             tagline="Build a free profile, browse jobs across Tamil Nadu, and apply when you're ready."
             bullets={[
-              { icon: <Sparkles size={12} />, label: "Profile posting is free" },
-              { icon: <MapPin size={12} />, label: "Jobs near your home" },
-              { icon: <Target size={12} />, label: "Smart match scoring" },
+              { icon: <Sparkles size={11} />, label: "Profile posting is free" },
+              { icon: <MapPin size={11} />, label: "Jobs near your home" },
+              { icon: <Target size={11} />, label: "Smart match scoring" },
             ]}
             ctaTo="/candidate/register"
             ctaLabel="Start as Candidate"
@@ -167,13 +170,13 @@ export function HeroCarousel() {
             tone="brand"
           />
           <RoleCard
-            icon={<Briefcase size={26} />}
+            icon={<Briefcase size={22} />}
             title="I'm an Employer"
             tagline="Post jobs for free. Subscribe only when you're ready to search candidates."
             bullets={[
-              { icon: <Sparkles size={12} />, label: "Job posting is free" },
-              { icon: <MapPin size={12} />, label: "District-wise reach" },
-              { icon: <Target size={12} />, label: "Ranked applicants" },
+              { icon: <Sparkles size={11} />, label: "Job posting is free" },
+              { icon: <MapPin size={11} />, label: "District-wise reach" },
+              { icon: <Target size={11} />, label: "Ranked applicants" },
             ]}
             ctaTo="/employer/register"
             ctaLabel="Start as Employer"
@@ -252,57 +255,56 @@ function RoleCard({ icon, title, tagline, bullets, ctaTo, ctaLabel, signInTo, to
   return (
     <div
       className={[
-        // Solid surface — fully opaque white in light, near-opaque zinc in
-        // dark. This is the key to staying "prompt without lagging" over the
-        // photo background: no transparency, no glassmorphism. Strong border
-        // + shadow keeps the card visually anchored to the photo.
-        "group relative flex h-full flex-col overflow-hidden rounded-[24px] border border-zinc-200 bg-white p-6 shadow-2xl shadow-zinc-900/30 transition-all duration-300 hover:-translate-y-1 hover:shadow-zinc-900/40 dark:border-zinc-700 dark:bg-zinc-900 dark:shadow-black/60 md:p-7",
+        // Compact, solid surface so the card stays "prompt" over the photo
+        // background. Tight padding so two cards stack into a single 13"
+        // laptop viewport without scroll.
+        "group relative flex flex-col overflow-hidden rounded-2xl border border-zinc-200 bg-white p-4 shadow-2xl shadow-zinc-900/30 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-zinc-900/40 dark:border-zinc-700 dark:bg-zinc-900 dark:shadow-black/60 md:p-5",
       ].join(" ")}
     >
       {/* Top accent stripe */}
       <div className={["absolute inset-x-0 top-0 h-1.5 bg-gradient-to-r", t.stripe].join(" ")} />
 
       {/* Soft interior tint at top-left for warmth */}
-      <div className={["pointer-events-none absolute -left-10 -top-10 h-40 w-40 rounded-full bg-gradient-to-br blur-3xl opacity-60", t.highlight].join(" ")} />
+      <div className={["pointer-events-none absolute -left-8 -top-8 h-32 w-32 rounded-full bg-gradient-to-br blur-3xl opacity-60", t.highlight].join(" ")} />
 
-      <div className="relative flex items-center gap-3">
-        <div className={["flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl text-white shadow-lg transition-transform duration-300 group-hover:scale-105", t.iconBg, t.iconGlow].join(" ")}>
+      <div className="relative flex items-center gap-2.5">
+        <div className={["flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-white shadow-lg transition-transform duration-300 group-hover:scale-105", t.iconBg, t.iconGlow].join(" ")}>
           {icon}
         </div>
-        <h2 className="text-xl font-semibold tracking-tight text-zinc-900 dark:text-zinc-100 md:text-2xl">
+        <h2 className="text-lg font-semibold tracking-tight text-zinc-900 dark:text-zinc-100 md:text-xl">
           {title}
         </h2>
       </div>
 
-      <p className="mt-4 text-[15px] leading-relaxed text-zinc-600 dark:text-zinc-300">{tagline}</p>
+      <p className="mt-2.5 text-[13.5px] leading-snug text-zinc-600 dark:text-zinc-300">{tagline}</p>
 
-      <ul className="mt-4 flex flex-wrap gap-1.5">
+      <ul className="mt-2.5 flex flex-wrap gap-1.5">
         {bullets.map((b, i) => (
           <li
             key={i}
-            className="inline-flex items-center gap-1.5 rounded-full border border-zinc-200 bg-zinc-50 px-2.5 py-1 text-[12px] font-semibold text-zinc-700 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-300"
+            className="inline-flex items-center gap-1 rounded-full border border-zinc-200 bg-zinc-50 px-2 py-0.5 text-[11px] font-semibold text-zinc-700 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-300"
           >
             {b.icon} {b.label}
           </li>
         ))}
       </ul>
 
-      <div className="mt-auto pt-5 flex flex-wrap items-center gap-4">
+      <div className="mt-3 flex flex-wrap items-center gap-3">
         <Link
           to={ctaTo}
           className={[
-            "inline-flex items-center gap-2 rounded-2xl px-5 py-3 text-sm font-bold text-white shadow-lg transition-all duration-300 hover:scale-[1.03]",
+            "inline-flex items-center gap-1.5 rounded-xl px-4 py-2.5 text-[13px] font-bold text-white shadow-md transition-all duration-300 hover:scale-[1.03]",
             t.ctaBg,
           ].join(" ")}
         >
           {ctaLabel}
-          <ArrowRight size={15} />
+          <ArrowRight size={13} />
         </Link>
         <Link
           to={signInTo}
-          className="text-xs font-semibold text-zinc-600 hover:underline dark:text-zinc-400"
+          className="text-[11px] font-semibold text-zinc-600 hover:underline dark:text-zinc-400"
         >
-          Already have an account? <span className="text-zinc-900 dark:text-zinc-100">Sign in</span>
+          Already a member? <span className="text-zinc-900 dark:text-zinc-100">Sign in</span>
         </Link>
       </div>
     </div>
