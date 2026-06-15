@@ -19,7 +19,7 @@ import { useProfile } from "../store/profile";
 import { ThemeToggle } from "../components/ThemeToggle";
 import { exportExcel, exportWord, exportSummaryPdf } from "../lib/export";
 import { apiEnabled, ApiError } from "../lib/api";
-import { adminApi, type AdminProfileListItem, type ApiModerationStatus } from "../lib/api/admin";
+import { adminApi, type AdminProfileListItem, type AdminUserListItem, type ApiModerationStatus } from "../lib/api/admin";
 
 const PAGE_SIZE = 20;
 
@@ -63,7 +63,11 @@ export function AdminCandidates() {
   // Reset page when filters change so we don't end up on an empty page.
   useEffect(() => { setPage(1); }, [searchDebounced, statusFilter]);
 
-  // Fetch when filters change.
+  // Fetch when filters change. Two sources:
+  //   - No status filter → /admin/users?role=CANDIDATE so registered-but-
+  //     unprofiled candidates also show.
+  //   - Status filter set → /admin/profiles?status=X so moderation views
+  //     hit the profile index directly.
   useEffect(() => {
     if (!apiEnabled) {
       setApiLoading(false);
@@ -71,15 +75,27 @@ export function AdminCandidates() {
     }
     let alive = true;
     setApiLoading(true);
-    adminApi.listProfiles({
-      status: statusFilter || undefined,
-      search: searchDebounced || undefined,
-      page,
-      pageSize: PAGE_SIZE,
-    })
+    const request = statusFilter
+      ? adminApi
+          .listProfiles({
+            status: statusFilter,
+            search: searchDebounced || undefined,
+            page,
+            pageSize: PAGE_SIZE,
+          })
+          .then((res) => ({ items: res.items.map(profileToRow), total: res.total }))
+      : adminApi
+          .listUsers({
+            role: "CANDIDATE",
+            search: searchDebounced || undefined,
+            page,
+            pageSize: PAGE_SIZE,
+          })
+          .then((res) => ({ items: res.items.map(userApiToRow), total: res.total }));
+    request
       .then((res) => {
         if (!alive) return;
-        setApiRows(res.items.map(profileToRow));
+        setApiRows(res.items);
         setApiTotal(res.total);
         setApiError(null);
       })
@@ -287,6 +303,25 @@ function profileToRow(p: AdminProfileListItem): CandidateRow {
     yearsOfExperience: p.yearsOfExperience ?? "",
     emailVerified: true, // listed candidates are always emailVerified
     createdAt: p.user.createdAt,
+  };
+}
+
+function userApiToRow(u: AdminUserListItem): CandidateRow {
+  return {
+    userId: u.id,
+    name: u.name,
+    email: u.email,
+    mobile: u.mobile,
+    location: "",
+    field: null,
+    hasResume: !!u.candidateProfile?.selectedTemplateId,
+    status: u.candidateProfile?.moderationStatus ?? "—",
+    fieldLabel: "",
+    type: "",
+    specialization: "",
+    yearsOfExperience: "",
+    emailVerified: u.emailVerified,
+    createdAt: u.createdAt,
   };
 }
 

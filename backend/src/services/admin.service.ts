@@ -95,6 +95,7 @@ export async function listUsers(args: UserListArgs) {
         createdAt: true,
         lastSeenAt: true,
         candidateProfile: { select: { moderationStatus: true, selectedTemplateId: true } },
+        employerProfile: { select: { companyName: true, moderationStatus: true } },
       },
     }),
     prisma.user.count({ where }),

@@ -41,6 +41,7 @@ export interface AdminUserListItem {
   createdAt: string;
   lastSeenAt: string | null;
   candidateProfile?: { moderationStatus: ApiModerationStatus; selectedTemplateId: string | null } | null;
+  employerProfile?: { companyName: string; moderationStatus: ApiModerationStatus } | null;
 }
 
 export interface AdminProfileListItem extends ApiCandidateProfile {
