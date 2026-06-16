@@ -13,12 +13,15 @@ import {
   Briefcase,
   ShieldCheck,
 } from "lucide-react";
+import { useEffect, useState } from "react";
 import { useAuth, allUsers } from "../store/auth";
 import { useProfile } from "../store/profile";
 import { useSubscriptions, PLANS } from "../store/subscriptions";
 import { useApplications } from "../store/applications";
 import { useJobs } from "../store/jobs";
 import { ThemeToggle } from "../components/ThemeToggle";
+import { apiEnabled } from "../lib/api";
+import { adminApi, type AdminStats } from "../lib/api/admin";
 
 export function SuperAdminDashboard() {
   const user = useAuth((s) => s.currentUser)!;
@@ -29,9 +32,31 @@ export function SuperAdminDashboard() {
   const apps = useApplications((s) => s.applications);
   const jobs = useJobs((s) => s.jobs);
 
-  const candidates = allUsers().filter((u) => u.role === "candidate");
-  const employers = allUsers().filter((u) => u.role === "employer");
-  const completedProfiles = candidates.filter((c) => profilesMap[c.id]?.selectedTemplateId).length;
+  // localStorage fallback — used when API is off or still loading.
+  const localCandidates = allUsers().filter((u) => u.role === "candidate");
+  const localEmployers = allUsers().filter((u) => u.role === "employer");
+  const localCompleted = localCandidates.filter((c) => profilesMap[c.id]?.selectedTemplateId).length;
+
+  const [stats, setStats] = useState<AdminStats | null>(null);
+  const [statsError, setStatsError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!apiEnabled) return;
+    let alive = true;
+    adminApi.stats()
+      .then((s) => { if (alive) setStats(s); })
+      .catch((err) => {
+        if (alive) setStatsError(err instanceof Error ? err.message : "Failed to load stats");
+      });
+    return () => { alive = false; };
+  }, []);
+
+  // Prefer live API counts, fall back to local cache.
+  const candidatesCount = stats?.users.candidates ?? localCandidates.length;
+  const employersCount = stats?.users.employers ?? localEmployers.length;
+  const completedProfiles = stats?.profiles.approved ?? localCompleted;
+  const jobsCount = stats?.jobs.active ?? jobs.length;
+
   const totalRevenue = subs.reduce((s, x) => s + x.priceInr, 0);
   const activeSubs = subs.filter((s) => new Date(s.expiresAt) > new Date()).length;
   const subsByType = {
@@ -121,11 +146,17 @@ export function SuperAdminDashboard() {
             </Link>
           </motion.div>
 
+          {statsError && (
+            <motion.p variants={itemV} className="rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-xs text-rose-700 dark:border-rose-500/30 dark:bg-rose-500/10 dark:text-rose-400">
+              Live stats unavailable: {statsError}. Showing cached numbers from this browser.
+            </motion.p>
+          )}
+
           {/* Top metrics */}
           <motion.div variants={containerV} className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            <Stat variants={itemV} icon={<Users size={20} />} label="Candidates" value={candidates.length} sub={`${completedProfiles} with CV`} accent="from-brand-500 to-amber-500" />
-            <Stat variants={itemV} icon={<Building2 size={20} />} label="Employers" value={employers.length} sub="registered" accent="from-sky-500 to-cyan-500" />
-            <Stat variants={itemV} icon={<Briefcase size={20} />} label="Jobs" value={jobs.length} sub={`${apps.length} applications`} accent="from-violet-500 to-fuchsia-500" />
+            <Stat variants={itemV} icon={<Users size={20} />} label="Candidates" value={candidatesCount} sub={`${completedProfiles} with CV`} accent="from-brand-500 to-amber-500" />
+            <Stat variants={itemV} icon={<Building2 size={20} />} label="Employers" value={employersCount} sub="registered" accent="from-sky-500 to-cyan-500" />
+            <Stat variants={itemV} icon={<Briefcase size={20} />} label="Jobs" value={jobsCount} sub={`${apps.length} applications`} accent="from-violet-500 to-fuchsia-500" />
             <Stat variants={itemV} icon={<TrendingUp size={20} />} label="Total revenue" value={`₹${totalRevenue.toLocaleString("en-IN")}`} sub={`${activeSubs} active subs`} accent="from-emerald-500 to-teal-500" />
           </motion.div>
 

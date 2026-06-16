@@ -5,6 +5,32 @@ import { authApi, type ApiUser } from "../lib/api/auth";
 
 export type Role = "candidate" | "employer" | "admin" | "super_admin";
 
+/** Higher-privilege roles transparently satisfy any lower-privilege gate. */
+const ROLE_GRANTS: Record<Role, readonly Role[]> = {
+  candidate: ["candidate"],
+  employer: ["employer"],
+  admin: ["admin"],
+  super_admin: ["super_admin", "admin"],
+};
+
+export const HOME_PATH: Record<Role, string> = {
+  candidate: "/candidate/dashboard",
+  employer: "/employer/dashboard",
+  admin: "/admin/dashboard",
+  super_admin: "/super-admin/dashboard",
+};
+
+export const LOGIN_PATH: Record<Role, string> = {
+  candidate: "/candidate/login",
+  employer: "/employer/login",
+  admin: "/admin",
+  super_admin: "/super-admin",
+};
+
+export function hasRole(actual: Role, required: Role): boolean {
+  return ROLE_GRANTS[actual].includes(required);
+}
+
 export interface User {
   id: string;
   role: Role;
