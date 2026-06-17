@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate, useParams } from "react-router-dom";
 import { Landing } from "./pages/Landing";
 import { useAuth } from "./store/auth";
 import { useProfile } from "./store/profile";
@@ -258,7 +258,20 @@ export default function App() {
         <Route path="/super-admin/dashboard" element={<RequireAuth role="super_admin"><SuperAdminDashboard /></RequireAuth>} />
         <Route path="/super-admin/admins" element={<RequireAuth role="super_admin"><SuperAdminAdmins /></RequireAuth>} />
         <Route path="/super-admin/plans" element={<RequireAuth role="super_admin"><SuperAdminPlans /></RequireAuth>} />
+        {/* /super-admin/{candidates,employers,subscriptions} are aliases for
+            the equivalent /admin/* pages — super-admin shares the admin's
+            management UI for these, only the dashboards differ. */}
+        <Route path="/super-admin/candidates" element={<Navigate to="/admin/candidates" replace />} />
+        <Route path="/super-admin/candidates/:id" element={<NavigateWithParams to="/admin/candidates/:id" />} />
+        <Route path="/super-admin/employers" element={<Navigate to="/admin/employers" replace />} />
+        <Route path="/super-admin/subscriptions" element={<Navigate to="/admin/subscriptions" replace />} />
       </Routes>
     </BrowserRouter>
   );
+}
+
+function NavigateWithParams({ to }: { to: string }) {
+  const params = useParams();
+  const resolved = to.replace(/:([a-zA-Z_]+)/g, (_, key) => params[key] ?? "");
+  return <Navigate to={resolved} replace />;
 }
