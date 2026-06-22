@@ -84,3 +84,16 @@ export const experiencesReplaceSchema = z.object({
   experiences: z.array(experienceRowSchema).max(30),
 });
 export type ExperiencesReplace = z.infer<typeof experiencesReplaceSchema>;
+
+/* ---------- Employer profile (logo + brand metadata for Post Job wizard) ---------- */
+
+export const employerProfilePatchSchema = z.object({
+  companyName: z.string().trim().min(2).max(160).optional(),
+  // Base64 data URL, capped at ~250KB for logo upload (no object storage yet).
+  // Wire this to a real CDN once prod volume warrants it.
+  logoUrl: z.string().max(350_000).nullable().optional(),
+  industry: z.string().max(120).nullable().optional(),
+  website: z.string().url().max(255).nullable().optional(),
+  about: z.string().max(8000).nullable().optional(),
+});
+

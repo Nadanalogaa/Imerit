@@ -99,6 +99,31 @@ export async function replaceExperiences(
   });
 }
 
+/**
+ * Get-or-create the caller's employer profile. The /auth/register flow only
+ * creates a User row for employers — the profile is implied until they fill
+ * something in. Same lazy-init story as getOrCreateProfile for candidates.
+ */
+export async function getOrCreateEmployerProfile(userId: string) {
+  const existing = await prisma.employerProfile.findUnique({ where: { userId } });
+  if (existing) return existing;
+  // Inherit user.name as a placeholder companyName so the row is valid; the
+  // wizard's Brand step overwrites this with the real company name.
+  const user = await prisma.user.findUnique({ where: { id: userId }, select: { name: true } });
+  return prisma.employerProfile.create({
+    data: { userId, companyName: user?.name ?? "Untitled company" },
+  });
+}
+
+/** Apply a partial update to the caller's employer profile. */
+export async function patchEmployerProfile(
+  userId: string,
+  data: Prisma.EmployerProfileUpdateInput,
+) {
+  await getOrCreateEmployerProfile(userId);
+  return prisma.employerProfile.update({ where: { userId }, data });
+}
+
 export type ProfileWithRelations = CandidateProfile & {
   education: Education[];
   experiences: Experience[];

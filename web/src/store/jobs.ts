@@ -7,6 +7,29 @@ export type JobField = "it" | "non_it";
 export type JobType = "internship" | "full_time" | "part_time" | "contract";
 export type JobExperience = "fresher" | "experienced" | "any";
 
+/**
+ * Employee benefits — strict checkbox set on the Post-Job wizard. Keep in
+ * sync with backend's JOB_BENEFITS enum in schemas/jobs.schemas.ts.
+ */
+export const JOB_BENEFITS: { id: JobBenefit; label: string }[] = [
+  { id: "PF", label: "Provident Fund (PF)" },
+  { id: "ESI", label: "ESI" },
+  { id: "HEALTH_INSURANCE", label: "Health insurance" },
+  { id: "WFH", label: "Work from home" },
+  { id: "HYBRID", label: "Hybrid working" },
+  { id: "MEALS", label: "Meals" },
+  { id: "TRANSPORT", label: "Transport / cab" },
+  { id: "PAID_LEAVE", label: "Paid leave" },
+  { id: "LEARNING_BUDGET", label: "Learning budget" },
+  { id: "PERFORMANCE_BONUS", label: "Performance bonus" },
+  { id: "STOCK_OPTIONS", label: "Stock options" },
+  { id: "GYM_WELLNESS", label: "Gym / wellness" },
+];
+export type JobBenefit =
+  | "PF" | "ESI" | "HEALTH_INSURANCE" | "WFH" | "HYBRID" | "MEALS"
+  | "TRANSPORT" | "PAID_LEAVE" | "LEARNING_BUDGET" | "PERFORMANCE_BONUS"
+  | "STOCK_OPTIONS" | "GYM_WELLNESS";
+
 export interface Job {
   id: string;
   employerId: string;
@@ -30,6 +53,8 @@ export interface Job {
   yearsMax?: number;
   salaryRange?: string;
   skills: string[];
+  benefits?: JobBenefit[];
+  contactEmail?: string;
   postedAt: string;
 }
 
@@ -281,6 +306,8 @@ export const useJobs = create<JobsState>((set, get) => ({
       yearsMax: input.yearsMax,
       salaryRange: input.salaryRange,
       skills: input.skills,
+      benefits: input.benefits,
+      contactEmail: input.contactEmail,
     });
     const local = fromApiJob(job);
     const next = [local, ...get().jobs];
@@ -327,6 +354,8 @@ function fromApiJob(j: ApiJob): Job {
     yearsMax: j.yearsMax ?? undefined,
     salaryRange: j.salaryRange ?? undefined,
     skills: j.skills,
+    benefits: (j.benefits ?? []) as JobBenefit[],
+    contactEmail: j.contactEmail ?? undefined,
     postedAt: j.postedAt,
   };
 }

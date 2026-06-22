@@ -153,3 +153,39 @@ export interface ApiCandidateProfileWithUser extends ApiCandidateProfile {
     lastSeenAt: string | null;
   };
 }
+
+/* ---------- Employer profile (logo + brand metadata) ---------- */
+
+export interface ApiEmployerProfile {
+  id: string;
+  userId: string;
+  companyName: string;
+  companySize: "SME" | "LARGE";
+  industry: string | null;
+  website: string | null;
+  about: string | null;
+  logoUrl: string | null;
+  districtId: string | null;
+  talukId: string | null;
+  lat: number | null;
+  lng: number | null;
+  pincode: string | null;
+  moderationStatus: ApiModerationStatus;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface EmployerProfilePatch {
+  companyName?: string;
+  /** Base64 data URL (max ~250KB) until object storage is wired. */
+  logoUrl?: string | null;
+  industry?: string | null;
+  website?: string | null;
+  about?: string | null;
+}
+
+export const employerProfileApi = {
+  getMine: () => api<{ profile: ApiEmployerProfile }>("/employer/profile"),
+  patch: (input: EmployerProfilePatch) =>
+    api<{ profile: ApiEmployerProfile }>("/employer/profile", { method: "PATCH", json: input }),
+};

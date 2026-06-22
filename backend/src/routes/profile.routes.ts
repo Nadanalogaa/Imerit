@@ -6,13 +6,16 @@ import { requireAuth, requireRole } from "../middleware/auth.js";
 import { validate } from "../middleware/validate.js";
 import {
   getOrCreateProfile,
+  getOrCreateEmployerProfile,
   getProfileByUserId,
   patchProfile,
+  patchEmployerProfile,
   replaceEducation,
   replaceExperiences,
 } from "../services/profile.service.js";
 import {
   educationReplaceSchema,
+  employerProfilePatchSchema,
   experiencesReplaceSchema,
   profilePatchSchema,
 } from "../schemas/profile.schemas.js";
@@ -76,6 +79,30 @@ router.put(
     const { experiences } = req.body as { experiences: Array<{ company: string; role: string; fromDate: string }> };
     const rows = await replaceExperiences(req.user!.sub, experiences as Parameters<typeof replaceExperiences>[1]);
     res.json({ experiences: rows });
+  }),
+);
+
+/* ---------- Employer profile (read + PATCH for logo + brand metadata) ---------- */
+
+router.get(
+  "/employer/profile",
+  requireAuth,
+  requireRole(UserRole.EMPLOYER),
+  asyncHandler(async (req, res) => {
+    const profile = await getOrCreateEmployerProfile(req.user!.sub);
+    res.json({ profile });
+  }),
+);
+
+router.patch(
+  "/employer/profile",
+  requireAuth,
+  requireRole(UserRole.EMPLOYER),
+  validate({ body: employerProfilePatchSchema }),
+  asyncHandler(async (req, res) => {
+    const data = req.body as Prisma.EmployerProfileUpdateInput;
+    const profile = await patchEmployerProfile(req.user!.sub, data);
+    res.json({ profile });
   }),
 );
 

@@ -6,6 +6,29 @@ const description = z.string().trim().min(20).max(8000);
 const title = z.string().trim().min(3).max(200);
 const location = z.string().trim().min(2).max(200);
 
+/**
+ * Strict enum of supported employee benefits — checkbox grid on the Post-Job
+ * wizard. Stored as Json (string[]) in Postgres for forward-compatibility;
+ * validated here so the API never accepts unknown keys.
+ */
+export const JOB_BENEFITS = [
+  "PF",
+  "ESI",
+  "HEALTH_INSURANCE",
+  "WFH",
+  "HYBRID",
+  "MEALS",
+  "TRANSPORT",
+  "PAID_LEAVE",
+  "LEARNING_BUDGET",
+  "PERFORMANCE_BONUS",
+  "STOCK_OPTIONS",
+  "GYM_WELLNESS",
+] as const;
+export type JobBenefit = (typeof JOB_BENEFITS)[number];
+const benefits = z.array(z.enum(JOB_BENEFITS)).max(JOB_BENEFITS.length);
+const contactEmail = z.string().trim().email().max(254);
+
 /** Browse list query — every filter optional, pagination clamped. */
 export const browseJobsSchema = z.object({
   field: z.nativeEnum(JobField).optional(),
@@ -33,6 +56,8 @@ export const createJobSchema = z.object({
   yearsMax: z.number().int().min(0).max(60).optional(),
   salaryRange: z.string().max(120).optional(),
   skills,
+  benefits: benefits.default([]),
+  contactEmail: contactEmail.optional(),
 });
 
 export const updateJobSchema = createJobSchema.partial().extend({

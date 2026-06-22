@@ -99,6 +99,8 @@ interface CreateJobArgs {
     yearsMax?: number;
     salaryRange?: string;
     skills: string[];
+    benefits?: string[];
+    contactEmail?: string;
   };
 }
 
@@ -114,6 +116,7 @@ export async function createJob(args: CreateJobArgs): Promise<Job> {
       employerName: args.employerName,
       ...args.data,
       skills: args.data.skills,
+      benefits: args.data.benefits ?? [],
       status: JobStatus.ACTIVE,
       moderationStatus: ModerationStatus.APPROVED,
     },

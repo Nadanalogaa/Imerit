@@ -316,6 +316,8 @@ model Job {
   yearsMax     Int?
   salaryRange  String?
   skills       Json          // string[]
+  benefits     Json          @default("[]") // JobBenefit[] (strict enum, validated at API boundary)
+  contactEmail String?       @db.VarChar(254) // optional hiring contact, distinct from employer login
   // Lifecycle
   status            JobStatus        @default(ACTIVE)
   moderationStatus  ModerationStatus @default(PENDING)
