@@ -76,7 +76,7 @@ export function AdminDashboard() {
   return (
     <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950">
       <header className="border-b border-zinc-200 bg-white px-5 py-3 dark:border-zinc-800 dark:bg-zinc-900">
-        <div className="mx-auto flex max-w-6xl items-center justify-between">
+        <div className="mx-auto flex max-w-7xl items-center justify-between">
           <div className="flex items-center gap-2.5">
             <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-zinc-900 to-zinc-700 text-white shadow-md dark:from-zinc-100 dark:to-zinc-300 dark:text-zinc-900">
               <ShieldCheck size={16} />
@@ -98,7 +98,7 @@ export function AdminDashboard() {
         </div>
       </header>
 
-      <main className="mx-auto max-w-6xl px-5 py-10">
+      <main className="mx-auto max-w-7xl px-5 py-10">
         <motion.div variants={containerV} initial="hidden" animate="visible" className="flex flex-col gap-6">
           <motion.div variants={itemV}>
             <div className="flex items-center justify-between gap-3">

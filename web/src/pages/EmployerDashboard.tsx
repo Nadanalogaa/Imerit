@@ -39,7 +39,7 @@ export function EmployerDashboard() {
   return (
     <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950">
       <Navbar />
-      <main className="mx-auto max-w-5xl px-5 py-10 md:py-14">
+      <main className="mx-auto max-w-7xl px-5 py-10 md:py-14">
         <motion.div variants={containerVariants} initial="hidden" animate="visible" className="flex flex-col gap-6">
           {/* Hero */}
           <motion.div variants={itemVariants} className="relative overflow-hidden rounded-3xl border border-zinc-200 bg-gradient-to-br from-white via-white to-sky-50/50 p-8 shadow-sm dark:border-zinc-800 dark:from-zinc-900 dark:via-zinc-900 dark:to-sky-500/5">

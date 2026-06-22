@@ -80,7 +80,7 @@ export function AdminCandidateView() {
     return (
       <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950">
         <Header title="Candidate" />
-        <main className="mx-auto max-w-5xl px-5 py-12 text-center text-xs text-zinc-500 dark:text-zinc-400">
+        <main className="mx-auto max-w-7xl px-5 py-12 text-center text-xs text-zinc-500 dark:text-zinc-400">
           Loading profile from the server…
         </main>
       </div>
@@ -90,7 +90,7 @@ export function AdminCandidateView() {
     return (
       <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950">
         <Header title="Candidate" />
-        <main className="mx-auto max-w-5xl px-5 py-12 text-center">
+        <main className="mx-auto max-w-7xl px-5 py-12 text-center">
           <p className="text-sm font-semibold text-rose-700 dark:text-rose-400">{loadError}</p>
           <Link to="/admin/candidates" className="mt-3 inline-flex items-center gap-2 text-xs font-semibold text-brand-600 hover:underline dark:text-brand-400">
             <ArrowLeft size={12} /> Back to candidates
@@ -141,7 +141,7 @@ export function AdminCandidateView() {
   return (
     <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950">
       <Header title="Candidate" />
-      <main className="mx-auto max-w-5xl px-5 py-8">
+      <main className="mx-auto max-w-7xl px-5 py-8">
         <div className="mb-6 flex flex-wrap items-center justify-between gap-3 print:hidden">
           <div className="flex items-center gap-2">
             <Link to="/admin/candidates" className="inline-flex items-center gap-2 rounded-full border border-zinc-200 px-3 py-1.5 text-xs font-semibold text-zinc-700 transition hover:bg-zinc-100 dark:border-zinc-700 dark:text-zinc-200 dark:hover:bg-zinc-800">

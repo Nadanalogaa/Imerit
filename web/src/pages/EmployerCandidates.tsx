@@ -130,7 +130,7 @@ export function EmployerCandidates() {
   return (
     <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950">
       <Navbar />
-      <main className="mx-auto max-w-6xl px-5 py-8 md:py-12">
+      <main className="mx-auto max-w-7xl px-5 py-8 md:py-12">
         <header className="mb-6">
           <p className="text-xs font-semibold uppercase tracking-widest text-sky-600 dark:text-sky-400">
             Search candidates

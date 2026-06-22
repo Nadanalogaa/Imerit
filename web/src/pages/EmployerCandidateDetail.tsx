@@ -69,7 +69,7 @@ export function EmployerCandidateDetail() {
   return (
     <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950">
       <Navbar />
-      <main className="mx-auto max-w-5xl px-5 py-8">
+      <main className="mx-auto max-w-7xl px-5 py-8">
         <header className="sticky top-16 z-30 -mx-5 mb-6 flex flex-wrap items-center justify-between gap-3 border-b border-zinc-200/60 bg-zinc-50/80 px-5 py-3 backdrop-blur-xl dark:border-zinc-800/60 dark:bg-zinc-950/80">
           <Link to="/employer/candidates" className="inline-flex items-center gap-2 rounded-full border border-zinc-200 px-3 py-1.5 text-xs font-semibold text-zinc-700 transition hover:bg-zinc-100 dark:border-zinc-700 dark:text-zinc-200 dark:hover:bg-zinc-800">
             <ArrowLeft size={14} /> Candidates

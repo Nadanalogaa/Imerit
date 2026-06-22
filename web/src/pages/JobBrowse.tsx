@@ -117,7 +117,7 @@ export function JobBrowse() {
     <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950">
       <Navbar />
 
-      <main className="mx-auto max-w-6xl px-5 py-8 md:py-12">
+      <main className="mx-auto max-w-7xl px-5 py-8 md:py-12">
         {/* Header */}
         <header className="mb-6">
           <p className="text-xs font-semibold uppercase tracking-widest text-brand-600 dark:text-brand-400">

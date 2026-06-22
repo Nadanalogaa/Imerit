@@ -50,7 +50,7 @@ export function CandidateProfilePreview() {
         </div>
       </header>
 
-      <main className="mx-auto max-w-5xl px-5 py-8">
+      <main className="mx-auto max-w-7xl px-5 py-8">
         <motion.div
           initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}

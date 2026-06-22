@@ -74,7 +74,7 @@ export function CandidateDashboard() {
     <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950">
       <Navbar />
 
-      <main className="mx-auto max-w-5xl px-5 py-10 md:py-14">
+      <main className="mx-auto max-w-7xl px-5 py-10 md:py-14">
         <motion.div variants={containerVariants} initial="hidden" animate="visible" className="flex flex-col gap-6">
 
           {/* Hero card */}

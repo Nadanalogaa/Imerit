@@ -20,7 +20,7 @@ export function EmployerSubscribe() {
   return (
     <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950">
       <Navbar />
-      <main className="mx-auto max-w-5xl px-5 py-8 md:py-12">
+      <main className="mx-auto max-w-7xl px-5 py-8 md:py-12">
         <Link
           to={returnTo}
           className="mb-6 inline-flex items-center gap-2 rounded-full border border-zinc-200 px-3 py-1.5 text-xs font-semibold text-zinc-700 transition hover:bg-zinc-100 dark:border-zinc-700 dark:text-zinc-200 dark:hover:bg-zinc-800"

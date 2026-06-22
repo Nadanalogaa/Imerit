@@ -71,7 +71,7 @@ export function SuperAdminDashboard() {
   return (
     <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950">
       <header className="border-b border-zinc-200 bg-gradient-to-r from-zinc-900 via-zinc-800 to-zinc-900 px-5 py-3 text-white">
-        <div className="mx-auto flex max-w-6xl items-center justify-between">
+        <div className="mx-auto flex max-w-7xl items-center justify-between">
           <div className="flex items-center gap-2.5">
             <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-amber-400 to-amber-600 text-zinc-900 shadow-md">
               <Crown size={16} />
@@ -90,7 +90,7 @@ export function SuperAdminDashboard() {
         </div>
       </header>
 
-      <main className="mx-auto max-w-6xl px-5 py-10">
+      <main className="mx-auto max-w-7xl px-5 py-10">
         <motion.div variants={containerV} initial="hidden" animate="visible" className="flex flex-col gap-6">
           <motion.div variants={itemV}>
             <p className="inline-flex items-center gap-1.5 rounded-full bg-gradient-to-r from-amber-500/15 to-yellow-500/10 px-3 py-1 text-xs font-semibold uppercase tracking-widest text-amber-700 dark:text-amber-300">
