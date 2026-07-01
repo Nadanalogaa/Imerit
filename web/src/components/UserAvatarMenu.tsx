@@ -131,7 +131,7 @@ function MenuItem({
  "group flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition",
  isDanger
  ? "text-rose-600 hover:bg-rose-50 dark:text-rose-400 dark:hover:bg-rose-500/10"
- : "text-zinc-700 hover:bg-zinc-100 dark:text-zinc-200 dark:hover:bg-zinc-800",
+ : "text-zinc-700 hover:bg-brand-50 hover:text-brand-700 dark:text-zinc-200 dark:hover:bg-brand-500/10 dark:hover:text-brand-300",
  soon ? "opacity-50" : "",
  ].join(" ")}
  >

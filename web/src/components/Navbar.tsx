@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import { ThemeToggle } from "./ThemeToggle";
 import { SignInMenu } from "./SignInMenu";
 import { UserAvatarMenu } from "./UserAvatarMenu";
@@ -31,7 +31,7 @@ const APP_LINKS: Record<Role, { label: string; to: string }[]> = {
   ],
   employer: [
     { label: "Dashboard", to: "/employer/dashboard" },
-    { label: "Post a job", to: "/employer/post-job" },
+    { label: "Post a job", to: "/employer/jobs/new" },
     { label: "My jobs", to: "/employer/my-jobs" },
     { label: "Candidates", to: "/employer/candidates" },
   ],
@@ -50,10 +50,30 @@ const APP_LINKS: Record<Role, { label: string; to: string }[]> = {
   ],
 };
 
+/**
+ * Single source of truth for menu-item state styling. Idle stays neutral,
+ * hover lifts into a soft brand tint (light orange, matching brand-50),
+ * and the currently-active route flips to the full brand gradient — the
+ * same pill treatment as the "Browse jobs" CTA elsewhere in the app.
+ */
+const MENU_ITEM_BASE = "rounded-full px-4 py-2 text-sm font-medium transition";
+const MENU_ITEM_IDLE =
+  "text-zinc-600 hover:bg-brand-50 hover:text-brand-700 dark:text-zinc-400 dark:hover:bg-brand-500/10 dark:hover:text-brand-300";
+const MENU_ITEM_ACTIVE =
+  "bg-gradient-to-r from-brand-500 to-brand-600 text-white shadow-md shadow-brand-500/30";
+
+/** Same tokens, block-layout variant for the mobile hamburger dropdown. */
+const MOBILE_ITEM_BASE = "block rounded-xl px-4 py-3 text-sm font-medium transition";
+const MOBILE_ITEM_IDLE =
+  "text-zinc-700 hover:bg-brand-50 hover:text-brand-700 dark:text-zinc-300 dark:hover:bg-brand-500/10 dark:hover:text-brand-300";
+const MOBILE_ITEM_ACTIVE =
+  "bg-gradient-to-r from-brand-500 to-brand-600 text-white shadow-md shadow-brand-500/30";
+
 export function Navbar() {
   const [scrolled, setScrolled] = useState(false);
   const [open, setOpen] = useState(false);
   const user = useAuth((s) => s.currentUser);
+  const location = useLocation();
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 8);
@@ -66,6 +86,13 @@ export function Navbar() {
   // own dashboard so they never bounce back to the marketing site by accident.
   const logoHref = user ? HOME_PATH[user.role] : "/";
   const appLinks = user ? APP_LINKS[user.role] : null;
+
+  /** Route match — treat sub-paths (e.g. /candidate/jobs/123) as active
+   *  under the parent /candidate/jobs so drilling into a detail keeps the
+   *  parent nav item highlighted. */
+  const isActive = (to: string) =>
+    location.pathname === to ||
+    (to !== "/" && location.pathname.startsWith(to + "/"));
 
   return (
     <header
@@ -89,20 +116,24 @@ export function Navbar() {
 
         <nav className="hidden items-center gap-1 lg:flex">
           {appLinks
-            ? appLinks.map((l) => (
-                <Link
-                  key={l.to}
-                  to={l.to}
-                  className="rounded-full px-4 py-2 text-sm font-medium text-zinc-600 transition hover:bg-zinc-100 hover:text-zinc-900 dark:text-zinc-400 dark:hover:bg-zinc-900 dark:hover:text-zinc-100"
-                >
-                  {l.label}
-                </Link>
-              ))
+            ? appLinks.map((l) => {
+                const active = isActive(l.to);
+                return (
+                  <Link
+                    key={l.to}
+                    to={l.to}
+                    aria-current={active ? "page" : undefined}
+                    className={[MENU_ITEM_BASE, active ? MENU_ITEM_ACTIVE : MENU_ITEM_IDLE].join(" ")}
+                  >
+                    {l.label}
+                  </Link>
+                );
+              })
             : PUBLIC_LINKS.map((l) => (
                 <a
                   key={l.label}
                   href={l.href}
-                  className="rounded-full px-4 py-2 text-sm font-medium text-zinc-600 transition hover:bg-zinc-100 hover:text-zinc-900 dark:text-zinc-400 dark:hover:bg-zinc-900 dark:hover:text-zinc-100"
+                  className={[MENU_ITEM_BASE, MENU_ITEM_IDLE].join(" ")}
                 >
                   {l.label}
                 </a>
@@ -142,16 +173,20 @@ export function Navbar() {
       {open && (
         <nav className="border-t border-zinc-200/60 bg-white/95 px-5 py-3 backdrop-blur-xl lg:hidden /60 dark:bg-zinc-950/95">
           {appLinks
-            ? appLinks.map((l) => (
-                <Link
-                  key={l.to}
-                  to={l.to}
-                  onClick={() => setOpen(false)}
-                  className="block rounded-xl px-4 py-3 text-sm font-medium text-zinc-700 transition hover:bg-zinc-100 dark:text-zinc-300 dark:hover:bg-zinc-900"
-                >
-                  {l.label}
-                </Link>
-              ))
+            ? appLinks.map((l) => {
+                const active = isActive(l.to);
+                return (
+                  <Link
+                    key={l.to}
+                    to={l.to}
+                    onClick={() => setOpen(false)}
+                    aria-current={active ? "page" : undefined}
+                    className={[MOBILE_ITEM_BASE, active ? MOBILE_ITEM_ACTIVE : MOBILE_ITEM_IDLE].join(" ")}
+                  >
+                    {l.label}
+                  </Link>
+                );
+              })
             : (
               <>
                 {PUBLIC_LINKS.map((l) => (
@@ -159,7 +194,7 @@ export function Navbar() {
                     key={l.label}
                     href={l.href}
                     onClick={() => setOpen(false)}
-                    className="block rounded-xl px-4 py-3 text-sm font-medium text-zinc-700 transition hover:bg-zinc-100 dark:text-zinc-300 dark:hover:bg-zinc-900"
+                    className={[MOBILE_ITEM_BASE, MOBILE_ITEM_IDLE].join(" ")}
                   >
                     {l.label}
                   </a>

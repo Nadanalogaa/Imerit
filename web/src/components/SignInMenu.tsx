@@ -17,7 +17,7 @@ export function SignInMenu() {
  <div ref={ref} className="relative">
  <button
  onClick={() => setOpen((v) => !v)}
- className="inline-flex items-center gap-1 rounded-full px-4 py-2 text-sm font-semibold text-zinc-700 transition hover:bg-zinc-100 dark:border-zinc-700 dark:text-zinc-200 dark:hover:bg-zinc-800"
+ className="inline-flex items-center gap-1 rounded-full px-4 py-2 text-sm font-semibold text-zinc-700 transition hover:bg-brand-50 hover:text-brand-700 dark:border-zinc-700 dark:text-zinc-200 dark:hover:bg-brand-500/10 dark:hover:text-brand-300"
  >
  Sign in
  <svg viewBox="0 0 24 24" className={["h-3.5 w-3.5 transition", open ? "rotate-180" : ""].join(" ")} fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
