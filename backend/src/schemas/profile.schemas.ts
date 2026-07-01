@@ -23,7 +23,10 @@ export const profilePatchSchema = z.object({
   currentPincode: z.string().regex(/^\d{6}$/u).nullable().optional(),
   currentStreet: z.string().max(255).nullable().optional(),
 
-  // Preferred work location
+  // Preferred work location — multi-select of district IDs. The legacy
+  // single-anchor fields below are still accepted for backward compat but
+  // the new UI writes preferredDistricts only.
+  preferredDistricts: z.array(z.string().max(64)).max(20).nullable().optional(),
   preferredDistrictId: z.string().max(64).nullable().optional(),
   preferredTalukId: z.string().max(80).nullable().optional(),
   preferredLat: z.number().min(-90).max(90).nullable().optional(),
@@ -49,6 +52,12 @@ export const profilePatchSchema = z.object({
   yearsOfExperience: z.number().int().min(0).max(60).nullable().optional(),
   topSkills: stringArray.nullable().optional(),
 
+  // Showcase links — optional, max 10 entries of { label, url }.
+  links: z.array(z.object({
+    label: z.string().trim().min(1).max(40),
+    url: z.string().trim().url().max(500),
+  })).max(10).nullable().optional(),
+
   // Template selection
   selectedTemplateId: z.nativeEnum(TemplateId).nullable().optional(),
 }).strict();
@@ -64,12 +73,21 @@ const educationRowSchema = z.object({
   thesis: z.string().max(1000).nullable().optional(),
   courseName: z.string().max(120).nullable().optional(),
   institution: z.string().max(200).nullable().optional(),
+  districtId: z.string().max(64).nullable().optional(),
+  pincode: z.string().regex(/^\d{6}$/u).nullable().optional(),
 }).strict();
 
 export const educationReplaceSchema = z.object({
   education: z.array(educationRowSchema).max(10),
 });
 export type EducationReplace = z.infer<typeof educationReplaceSchema>;
+
+const experienceProjectSchema = z.object({
+  name: z.string().trim().min(1).max(160),
+  description: z.string().trim().max(2000).nullable().optional(),
+  skills: z.array(z.string().trim().min(1).max(60)).max(20).default([]),
+  showcaseUrl: z.string().trim().url().max(500).nullable().optional(),
+}).strict();
 
 const experienceRowSchema = z.object({
   company: z.string().min(1).max(200),
@@ -78,6 +96,7 @@ const experienceRowSchema = z.object({
   // partial year ("2018") too if the UI ever simplifies.
   fromDate: z.string().min(4).max(10),
   toDate: z.string().min(4).max(10).nullable().optional(),
+  projects: z.array(experienceProjectSchema).max(15).default([]),
 }).strict();
 
 export const experiencesReplaceSchema = z.object({

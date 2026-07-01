@@ -2,6 +2,7 @@ import { create } from "zustand";
 import { get as load, set as save } from "../lib/storage";
 import { apiEnabled } from "../lib/api";
 import { jobsApi } from "../lib/api/jobs";
+import { toast } from "./toast";
 
 export interface Application {
   id: string;
@@ -110,14 +111,22 @@ export const useApplications = create<AppsState>((set, get) => ({
 
   toggleSaveAsync: async (userId, jobId) => {
     const isAlreadySaved = get().isSaved(userId, jobId);
-    if (!apiEnabled) {
-      get().toggleSave(userId, jobId);
-      return;
-    }
-    if (isAlreadySaved) await jobsApi.unsave(jobId);
-    else await jobsApi.save(jobId);
-    // Mirror to the local map either way.
+    // Flip local state FIRST so the UI reacts instantly (button color,
+    // heart/bookmark fill, list count). If the API round-trip fails
+    // we roll it back below and surface a toast so the user sees the
+    // undo happen instead of being lied to about the state.
     get().toggleSave(userId, jobId);
+    toast.success(isAlreadySaved ? "Removed from saved" : "Saved to your list");
+    if (!apiEnabled) return;
+    try {
+      if (isAlreadySaved) await jobsApi.unsave(jobId);
+      else await jobsApi.save(jobId);
+    } catch (err) {
+      // Roll back the optimistic toggle so the UI matches server truth.
+      get().toggleSave(userId, jobId);
+      toast.error(err instanceof Error ? err.message : "Could not update saved jobs.");
+      throw err;
+    }
   },
 
   fetchMyApplications: async (userId) => {

@@ -4,7 +4,15 @@ import { apiEnabled } from "../lib/api";
 import { employerJobsApi, jobsApi, type ApiJob, type ApiJobExperience, type ApiJobField, type ApiJobType } from "../lib/api/jobs";
 
 export type JobField = "it" | "non_it";
-export type JobType = "internship" | "full_time" | "part_time" | "contract";
+export type JobType =
+  | "internship_training"
+  | "apprentice"
+  | "full_time"
+  | "part_time"
+  | "gig_delivery"
+  | "contract"
+  | "consultant"
+  | "freelancer";
 export type JobExperience = "fresher" | "experienced" | "any";
 
 /**
@@ -56,6 +64,20 @@ export interface Job {
   benefits?: JobBenefit[];
   contactEmail?: string;
   postedAt: string;
+  /** ISO string — 45 days after postedAt on create, extended by repost. */
+  expiresAt?: string;
+}
+
+/** Days remaining until a job expires. Negative when already expired. */
+export function daysUntilExpiry(job: Job): number | null {
+  if (!job.expiresAt) return null;
+  const diff = new Date(job.expiresAt).getTime() - Date.now();
+  return Math.floor(diff / (24 * 60 * 60 * 1000));
+}
+
+export function isExpired(job: Job): boolean {
+  if (!job.expiresAt) return false;
+  return new Date(job.expiresAt).getTime() < Date.now();
 }
 
 const SEED: Job[] = [
@@ -119,7 +141,7 @@ const SEED: Job[] = [
     description: "6-month research internship working on multilingual NLP for Indian languages. Stipend ₹35K/month. Final-year B.Tech / M.Tech students preferred. Conversion based on performance.",
     location: "Srirangam, Tiruchirappalli",
     districtId: "tiruchirappalli", talukId: "tiruchirappalli_srirangam", lat: 10.8589, lng: 78.6890,
-    field: "it", type: "internship", experience: "fresher",
+    field: "it", type: "internship_training", experience: "fresher",
     salaryRange: "₹35K / month",
     skills: ["Python", "PyTorch", "NLP", "Research"],
     postedAt: daysAgo(7),
@@ -200,6 +222,9 @@ interface JobsState {
    * Falls back to addJob() in localStorage mode.
    */
   addJobAsync: (input: Omit<Job, "id" | "postedAt" | "employerId" | "employerName">) => Promise<Job>;
+
+  /** Repost — resets postedAt to now and extends expiresAt by 45 days. */
+  repostJobAsync: (id: string) => Promise<Job | undefined>;
 }
 
 const STORAGE_KEY = KEYS.jobs;
@@ -315,6 +340,24 @@ export const useJobs = create<JobsState>((set, get) => ({
     set({ jobs: next });
     return local;
   },
+
+  repostJobAsync: async (id) => {
+    if (!apiEnabled) {
+      // In local mode, just bump the postedAt to now.
+      const now = new Date().toISOString();
+      const expires = new Date(Date.now() + 45 * 24 * 60 * 60 * 1000).toISOString();
+      const next = get().jobs.map((j) => (j.id === id ? { ...j, postedAt: now, expiresAt: expires } : j));
+      save(STORAGE_KEY, next);
+      set({ jobs: next });
+      return next.find((j) => j.id === id);
+    }
+    const { job } = await employerJobsApi.repost(id);
+    const local = fromApiJob(job);
+    const next = get().jobs.map((j) => (j.id === id ? local : j));
+    save(STORAGE_KEY, next);
+    set({ jobs: next });
+    return local;
+  },
 }));
 
 /* ---------- API ↔ local enum + shape mapping ---------- */
@@ -322,10 +365,24 @@ export const useJobs = create<JobsState>((set, get) => ({
 const FIELD_TO_API: Record<JobField, ApiJobField> = { it: "IT", non_it: "NON_IT" };
 const FIELD_FROM_API: Record<ApiJobField, JobField> = { IT: "it", NON_IT: "non_it" };
 const TYPE_TO_API: Record<JobType, ApiJobType> = {
-  internship: "INTERNSHIP", full_time: "FULL_TIME", part_time: "PART_TIME", contract: "CONTRACT",
+  internship_training: "INTERNSHIP_TRAINING",
+  apprentice: "APPRENTICE",
+  full_time: "FULL_TIME",
+  part_time: "PART_TIME",
+  gig_delivery: "GIG_DELIVERY",
+  contract: "CONTRACT",
+  consultant: "CONSULTANT",
+  freelancer: "FREELANCER",
 };
 const TYPE_FROM_API: Record<ApiJobType, JobType> = {
-  INTERNSHIP: "internship", FULL_TIME: "full_time", PART_TIME: "part_time", CONTRACT: "contract",
+  INTERNSHIP_TRAINING: "internship_training",
+  APPRENTICE: "apprentice",
+  FULL_TIME: "full_time",
+  PART_TIME: "part_time",
+  GIG_DELIVERY: "gig_delivery",
+  CONTRACT: "contract",
+  CONSULTANT: "consultant",
+  FREELANCER: "freelancer",
 };
 const EXPERIENCE_TO_API: Record<JobExperience, ApiJobExperience> = {
   fresher: "FRESHER", experienced: "EXPERIENCED", any: "ANY",
@@ -357,6 +414,7 @@ function fromApiJob(j: ApiJob): Job {
     benefits: (j.benefits ?? []) as JobBenefit[],
     contactEmail: j.contactEmail ?? undefined,
     postedAt: j.postedAt,
+    expiresAt: j.expiresAt,
   };
 }
 
@@ -376,8 +434,12 @@ export function relativeTime(iso: string): string {
 
 export const FIELD_LABEL: Record<JobField, string> = { it: "IT", non_it: "Non-IT" };
 export const TYPE_LABEL: Record<JobType, string> = {
-  internship: "Internship",
+  internship_training: "Internship / Training",
+  apprentice: "Apprentice",
   full_time: "Full-time",
   part_time: "Part-time",
+  gig_delivery: "Gig (Delivery)",
   contract: "Contract",
+  consultant: "Consultant",
+  freelancer: "Freelancer",
 };

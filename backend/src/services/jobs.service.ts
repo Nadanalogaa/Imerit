@@ -33,6 +33,10 @@ export async function listPublicJobs(args: JobFilters) {
   const where: Prisma.JobWhereInput = {
     deletedAt: null,
     status: JobStatus.ACTIVE,
+    // 45-day listing window — anything past its expiry drops from the
+    // public feed without touching the row. The employer still sees it
+    // in their own /employer/jobs list marked "Expired · Repost".
+    expiresAt: { gt: new Date() },
     NOT: { moderationStatus: ModerationStatus.REJECTED },
   };
   if (args.field) where.field = args.field;
@@ -92,6 +96,7 @@ interface CreateJobArgs {
     lat?: number;
     lng?: number;
     pincode?: string;
+    street?: string;
     field: JobField;
     type: JobType;
     experience: JobExperience;
@@ -136,6 +141,30 @@ export async function updateJob(args: UpdateJobArgs): Promise<Job> {
     throw new HttpError(403, "You can only edit your own jobs", "FORBIDDEN");
   }
   return prisma.job.update({ where: { id: args.id }, data: args.patch });
+}
+
+/**
+ * Repost — resets postedAt to now and pushes expiresAt out 45 days.
+ * Existing applications and saves are preserved (Naukri/Indeed pattern).
+ * Only the owner can repost their own listing.
+ */
+const REPOST_DAYS = 45;
+export async function repostJob(args: { employerId: string; id: string }): Promise<Job> {
+  const existing = await prisma.job.findUnique({ where: { id: args.id } });
+  if (!existing || existing.deletedAt) throw new HttpError(404, "Job not found", "JOB_NOT_FOUND");
+  if (existing.employerId !== args.employerId) {
+    throw new HttpError(403, "You can only repost your own jobs", "FORBIDDEN");
+  }
+  const now = new Date();
+  return prisma.job.update({
+    where: { id: args.id },
+    data: {
+      postedAt: now,
+      expiresAt: new Date(now.getTime() + REPOST_DAYS * 24 * 60 * 60 * 1000),
+      // If a listing was closed manually, repost also brings it back active.
+      status: JobStatus.ACTIVE,
+    },
+  });
 }
 
 export async function deleteJob(args: { employerId: string; id: string }): Promise<void> {

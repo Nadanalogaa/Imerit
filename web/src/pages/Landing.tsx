@@ -8,18 +8,18 @@ import { ContactUs } from "../components/ContactUs";
 import { Footer } from "../components/Footer";
 
 export function Landing() {
-  return (
-    <div className="scroll-smooth">
-      <WelcomeStrip />
-      <Navbar />
-      <main>
-        <HeroCarousel />
-        <WhyUs />
-        <AboutUs />
-        <SuggestionForm />
-        <ContactUs />
-      </main>
-      <Footer />
-    </div>
-  );
+ return (
+ <div className="scroll-smooth">
+ <WelcomeStrip />
+ <Navbar />
+ <main>
+ <HeroCarousel />
+ <WhyUs />
+ <AboutUs />
+ <SuggestionForm />
+ <ContactUs />
+ </main>
+ <Footer />
+ </div>
+ );
 }

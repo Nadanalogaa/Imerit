@@ -89,8 +89,18 @@ export interface AdminAccount {
   lastSeenAt: string | null;
 }
 
+export interface AdminTrends {
+  days: string[]; // 7 ISO dates
+  candidateSignups: number[];
+  employerSignups: number[];
+  jobsPosted: number[];
+  applications: number[];
+}
+
 export const adminApi = {
   stats: () => api<AdminStats>("/admin/stats"),
+
+  trends: () => api<AdminTrends>("/admin/trends"),
 
   activity: (limit = 50) =>
     api<{ items: AdminActivityItem[] }>(`/admin/activity${qs({ limit })}`),

@@ -1,7 +1,7 @@
 import { useEffect } from "react";
 import { BrowserRouter, Routes, Route, Navigate, useParams } from "react-router-dom";
 import { Landing } from "./pages/Landing";
-import { useAuth } from "./store/auth";
+import { useAuth, HOME_PATH } from "./store/auth";
 import { useProfile } from "./store/profile";
 import { usePlans } from "./store/subscriptions";
 import { useJobs } from "./store/jobs";
@@ -39,6 +39,7 @@ import { SuperAdminDashboard } from "./pages/SuperAdminDashboard";
 import { SuperAdminAdmins } from "./pages/SuperAdminAdmins";
 import { SuperAdminPlans } from "./pages/SuperAdminPlans";
 import { RequireAuth, RedirectIfAuthed } from "./components/RequireAuth";
+import { ToastHost } from "./components/ToastHost";
 
 export default function App() {
   // Restore the session on first paint when VITE_API_URL is set — pings
@@ -72,8 +73,9 @@ export default function App() {
 
   return (
     <BrowserRouter>
+      <ToastHost />
       <Routes>
-        <Route path="/" element={<Landing />} />
+        <Route path="/" element={<LandingOrDashboard />} />
 
         <Route path="/candidate" element={<Navigate to="/candidate/register" replace />} />
         <Route
@@ -274,4 +276,16 @@ function NavigateWithParams({ to }: { to: string }) {
   const params = useParams();
   const resolved = to.replace(/:([a-zA-Z_]+)/g, (_, key) => params[key] ?? "");
   return <Navigate to={resolved} replace />;
+}
+
+/**
+ * Root route handler — signed-in users land on their dashboard, visitors see
+ * the marketing landing. Prevents the disorienting "I'm signed in but the
+ * landing keeps pitching me to register" loop when a logged-in user clicks
+ * the logo or accidentally types the site root.
+ */
+function LandingOrDashboard() {
+  const user = useAuth((s) => s.currentUser);
+  if (user) return <Navigate to={HOME_PATH[user.role]} replace />;
+  return <Landing />;
 }

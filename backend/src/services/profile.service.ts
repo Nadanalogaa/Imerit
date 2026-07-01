@@ -1,4 +1,4 @@
-import { Prisma, type CandidateProfile, type Education, type Experience } from "@prisma/client";
+import { Prisma, type CandidateProfile, type Education, type Experience, type ExperienceProject } from "@prisma/client";
 import { prisma } from "../lib/prisma.js";
 import { HttpError } from "../middleware/error.js";
 
@@ -10,13 +10,13 @@ import { HttpError } from "../middleware/error.js";
 export async function getOrCreateProfile(userId: string): Promise<ProfileWithRelations> {
   const existing = await prisma.candidateProfile.findUnique({
     where: { userId },
-    include: { education: true, experiences: true },
+    include: { education: true, experiences: { include: { projects: { orderBy: { createdAt: "asc" } } }, orderBy: { fromDate: "desc" } } },
   });
   if (existing) return existing;
 
   return prisma.candidateProfile.create({
     data: { userId },
-    include: { education: true, experiences: true },
+    include: { education: true, experiences: { include: { projects: { orderBy: { createdAt: "asc" } } }, orderBy: { fromDate: "desc" } } },
   });
 }
 
@@ -31,7 +31,7 @@ export async function getProfileByUserId(userId: string): Promise<ProfileWithUse
     where: { userId },
     include: {
       education: true,
-      experiences: true,
+      experiences: { include: { projects: { orderBy: { createdAt: "asc" } } }, orderBy: { fromDate: "desc" } },
       user: {
         select: { id: true, name: true, email: true, mobile: true, role: true, createdAt: true, lastSeenAt: true },
       },
@@ -55,7 +55,7 @@ export async function patchProfile(
   return prisma.candidateProfile.update({
     where: { userId },
     data,
-    include: { education: true, experiences: true },
+    include: { education: true, experiences: { include: { projects: { orderBy: { createdAt: "asc" } } }, orderBy: { fromDate: "desc" } } },
   });
 }
 
@@ -79,23 +79,63 @@ export async function replaceEducation(
   });
 }
 
+export interface ExperienceProjectInput {
+  name: string;
+  description?: string | null;
+  skills?: string[];
+  showcaseUrl?: string | null;
+}
+
+export interface ExperienceRowInput {
+  company: string;
+  role: string;
+  fromDate: string;
+  toDate?: string | null;
+  projects?: ExperienceProjectInput[];
+}
+
 /**
- * Replace the work-experience list. Same wipe-and-insert as education for
- * the same reason — the form lets the user add/remove rows freely and we
- * don't want orphan records.
+ * Replace the work-experience list (and each row's nested projects). Same
+ * wipe-and-insert as education for the same reason — the form lets the user
+ * add/remove rows freely and we don't want orphan records.
+ * Each Experience row creates its own ExperienceProject children in the same
+ * transaction so a partial failure rolls back cleanly.
  */
 export async function replaceExperiences(
   userId: string,
-  rows: Array<Omit<Prisma.ExperienceCreateManyInput, "profileId" | "id" | "createdAt">>,
-): Promise<Experience[]> {
+  rows: ExperienceRowInput[],
+): Promise<ExperienceWithProjects[]> {
   const profile = await getOrCreateProfile(userId);
   return prisma.$transaction(async (tx) => {
     await tx.experience.deleteMany({ where: { profileId: profile.id } });
     if (rows.length === 0) return [];
-    await tx.experience.createMany({
-      data: rows.map((r) => ({ ...r, profileId: profile.id })),
+    for (const r of rows) {
+      const projects = r.projects ?? [];
+      await tx.experience.create({
+        data: {
+          profileId: profile.id,
+          company: r.company,
+          role: r.role,
+          fromDate: r.fromDate,
+          toDate: r.toDate ?? null,
+          projects: projects.length
+            ? {
+                create: projects.map((p) => ({
+                  name: p.name,
+                  description: p.description ?? null,
+                  skills: (p.skills ?? []) as Prisma.InputJsonValue,
+                  showcaseUrl: p.showcaseUrl ?? null,
+                })),
+              }
+            : undefined,
+        },
+      });
+    }
+    return tx.experience.findMany({
+      where: { profileId: profile.id },
+      orderBy: { fromDate: "desc" },
+      include: { projects: { orderBy: { createdAt: "asc" } } },
     });
-    return tx.experience.findMany({ where: { profileId: profile.id }, orderBy: { fromDate: "desc" } });
   });
 }
 
@@ -124,9 +164,11 @@ export async function patchEmployerProfile(
   return prisma.employerProfile.update({ where: { userId }, data });
 }
 
+export type ExperienceWithProjects = Experience & { projects: ExperienceProject[] };
+
 export type ProfileWithRelations = CandidateProfile & {
   education: Education[];
-  experiences: Experience[];
+  experiences: ExperienceWithProjects[];
 };
 
 export type ProfileWithUser = ProfileWithRelations & {

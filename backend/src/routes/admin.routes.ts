@@ -14,6 +14,7 @@ import {
 import {
   getOverviewStats,
   getRecentActivity,
+  getSevenDayTrends,
   listProfiles,
   listUsers,
   moderateProfile,
@@ -37,6 +38,14 @@ router.get(
   ...adminGuard,
   asyncHandler(async (_req, res) => {
     res.json(await getOverviewStats());
+  }),
+);
+
+router.get(
+  "/admin/trends",
+  ...adminGuard,
+  asyncHandler(async (_req, res) => {
+    res.json(await getSevenDayTrends());
   }),
 );
 

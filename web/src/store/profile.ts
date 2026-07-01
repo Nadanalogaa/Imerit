@@ -30,6 +30,15 @@ export interface Education {
   thesis?: string; // phd
   courseName?: string; // other
   institution?: string;
+  districtId?: string;
+  pincode?: string;
+}
+
+export interface ExperienceProject {
+  name: string;
+  description?: string;
+  skills?: string[];
+  showcaseUrl?: string;
 }
 
 export interface Experience {
@@ -37,6 +46,13 @@ export interface Experience {
   role: string;
   fromDate: string; // YYYY-MM
   toDate: string | null; // null = present
+  projects?: ExperienceProject[];
+}
+
+/** Showcase link on the candidate profile — LinkedIn / Portfolio / GitHub / etc. */
+export interface ProfileLink {
+  label: string;
+  url: string;
 }
 
 export type TemplateId = "classic" | "modern" | "creative" | "corporate" | "tech_mono";
@@ -58,7 +74,10 @@ export interface CandidateProfile {
   currentPincode?: string;
   currentStreet?: string; // private — never shown publicly
 
-  // Structured PREFERRED work location (optional)
+  /** Preferred work — multi-select list of district IDs. */
+  preferredDistricts?: string[];
+  // Legacy single-anchor preferred coords — mirrored from the first
+  // preferredDistricts entry for the "Near preferred" matcher anchor.
   preferredDistrictId?: string;
   preferredTalukId?: string;
   preferredLat?: number;
@@ -83,6 +102,8 @@ export interface CandidateProfile {
   yearsOfExperience?: number;
   topSkills?: string[];
   experiences?: Experience[];
+  /** Optional showcase links — LinkedIn / Portfolio / GitHub / etc. */
+  links?: ProfileLink[];
 
   // education
   education: Education[];
@@ -145,6 +166,7 @@ function toApiProfilePatch(p: Partial<CandidateProfile>): ApiProfilePatch {
   if ("currentLng" in p) out.currentLng = p.currentLng ?? null;
   if ("currentPincode" in p) out.currentPincode = p.currentPincode ?? null;
   if ("currentStreet" in p) out.currentStreet = p.currentStreet ?? null;
+  if ("preferredDistricts" in p) out.preferredDistricts = p.preferredDistricts ?? null;
   if ("preferredDistrictId" in p) out.preferredDistrictId = p.preferredDistrictId ?? null;
   if ("preferredTalukId" in p) out.preferredTalukId = p.preferredTalukId ?? null;
   if ("preferredLat" in p) out.preferredLat = p.preferredLat ?? null;
@@ -161,6 +183,7 @@ function toApiProfilePatch(p: Partial<CandidateProfile>): ApiProfilePatch {
   if ("nonItDepartments" in p) out.nonItDepartments = p.nonItDepartments ?? null;
   if ("yearsOfExperience" in p) out.yearsOfExperience = p.yearsOfExperience ?? null;
   if ("topSkills" in p) out.topSkills = p.topSkills ?? null;
+  if ("links" in p) out.links = p.links ?? null;
   if ("selectedTemplateId" in p) {
     out.selectedTemplateId = p.selectedTemplateId
       ? (p.selectedTemplateId.toUpperCase() as ApiProfilePatch["selectedTemplateId"])
@@ -181,6 +204,7 @@ export function fromApiProfile(api: ApiCandidateProfile): CandidateProfile {
     currentLng: api.currentLng ?? undefined,
     currentPincode: api.currentPincode ?? undefined,
     currentStreet: api.currentStreet ?? undefined,
+    preferredDistricts: api.preferredDistricts ?? undefined,
     preferredDistrictId: api.preferredDistrictId ?? undefined,
     preferredTalukId: api.preferredTalukId ?? undefined,
     preferredLat: api.preferredLat ?? undefined,
@@ -201,7 +225,14 @@ export function fromApiProfile(api: ApiCandidateProfile): CandidateProfile {
       role: e.role,
       fromDate: e.fromDate,
       toDate: e.toDate ?? null,
+      projects: (e.projects ?? []).map((p) => ({
+        name: p.name,
+        description: p.description ?? undefined,
+        skills: p.skills ?? undefined,
+        showcaseUrl: p.showcaseUrl ?? undefined,
+      })),
     })),
+    links: api.links ?? undefined,
     education: api.education.map((e) => ({
       level: LEVEL_FROM_API[e.level],
       enabled: e.enabled,
@@ -210,6 +241,8 @@ export function fromApiProfile(api: ApiCandidateProfile): CandidateProfile {
       thesis: e.thesis ?? undefined,
       courseName: e.courseName ?? undefined,
       institution: e.institution ?? undefined,
+      districtId: e.districtId ?? undefined,
+      pincode: e.pincode ?? undefined,
     })),
     selectedTemplateId: api.selectedTemplateId
       ? (api.selectedTemplateId.toLowerCase() as TemplateId)
@@ -227,6 +260,8 @@ function toApiEducation(rows: Education[]): ApiEducation[] {
     thesis: e.thesis ?? null,
     courseName: e.courseName ?? null,
     institution: e.institution ?? null,
+    districtId: e.districtId ?? null,
+    pincode: e.pincode ?? null,
   }));
 }
 

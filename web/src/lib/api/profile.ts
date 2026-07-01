@@ -24,6 +24,18 @@ export interface ApiEducation {
   thesis?: string | null;
   courseName?: string | null;
   institution?: string | null;
+  districtId?: string | null;
+  pincode?: string | null;
+  createdAt?: string;
+}
+
+export interface ApiExperienceProject {
+  id?: string;
+  experienceId?: string;
+  name: string;
+  description?: string | null;
+  skills?: string[];
+  showcaseUrl?: string | null;
   createdAt?: string;
 }
 
@@ -34,7 +46,13 @@ export interface ApiExperience {
   role: string;
   fromDate: string;
   toDate?: string | null;
+  projects?: ApiExperienceProject[];
   createdAt?: string;
+}
+
+export interface ApiProfileLink {
+  label: string;
+  url: string;
 }
 
 export interface ApiCandidateProfile {
@@ -53,6 +71,7 @@ export interface ApiCandidateProfile {
   currentPincode: string | null;
   currentStreet?: string | null;
 
+  preferredDistricts?: string[] | null;
   preferredDistrictId: string | null;
   preferredTalukId: string | null;
   preferredLat: number | null;
@@ -71,6 +90,7 @@ export interface ApiCandidateProfile {
   nonItDepartments: string[] | null;
   yearsOfExperience: number | null;
   topSkills: string[] | null;
+  links?: ApiProfileLink[] | null;
 
   selectedTemplateId: ApiTemplateId | null;
 
@@ -95,6 +115,7 @@ export type ApiProfilePatch = Partial<
     | "currentLng"
     | "currentPincode"
     | "currentStreet"
+    | "preferredDistricts"
     | "preferredDistrictId"
     | "preferredTalukId"
     | "preferredLat"
@@ -111,6 +132,7 @@ export type ApiProfilePatch = Partial<
     | "nonItDepartments"
     | "yearsOfExperience"
     | "topSkills"
+    | "links"
     | "selectedTemplateId"
   >
 >;

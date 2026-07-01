@@ -47,6 +47,59 @@ export async function getOverviewStats() {
   };
 }
 
+/**
+ * 7-day daily trend series for the admin/super-admin sparklines. Returns an
+ * array of length 7 per metric — index 0 is the oldest day, index 6 is today.
+ * One SQL group-by per metric bucketed by day-of-year in the local TZ.
+ * Cheap enough to compute on every dashboard load; if it ever becomes hot,
+ * cache in Redis with a 60s TTL.
+ */
+export async function getSevenDayTrends() {
+  const startOfToday = new Date();
+  startOfToday.setHours(0, 0, 0, 0);
+  const days: Date[] = Array.from({ length: 7 }, (_, i) => {
+    const d = new Date(startOfToday);
+    d.setDate(d.getDate() - (6 - i));
+    return d;
+  });
+
+  const bucketCount = async (
+    fetch: (from: Date, to: Date) => Promise<number>,
+  ): Promise<number[]> => {
+    const out: number[] = [];
+    for (let i = 0; i < days.length; i++) {
+      const from = days[i]!;
+      const to = new Date(from);
+      to.setDate(to.getDate() + 1);
+      out.push(await fetch(from, to));
+    }
+    return out;
+  };
+
+  const [candidateSignups, employerSignups, jobsPosted, applications] = await Promise.all([
+    bucketCount((from, to) =>
+      prisma.user.count({ where: { role: UserRole.CANDIDATE, createdAt: { gte: from, lt: to } } }),
+    ),
+    bucketCount((from, to) =>
+      prisma.user.count({ where: { role: UserRole.EMPLOYER, createdAt: { gte: from, lt: to } } }),
+    ),
+    bucketCount((from, to) =>
+      prisma.job.count({ where: { postedAt: { gte: from, lt: to } } }),
+    ),
+    bucketCount((from, to) =>
+      prisma.application.count({ where: { appliedAt: { gte: from, lt: to } } }),
+    ),
+  ]);
+
+  return {
+    days: days.map((d) => d.toISOString().slice(0, 10)),
+    candidateSignups,
+    employerSignups,
+    jobsPosted,
+    applications,
+  };
+}
+
 /** Recent platform activity for the live feed on the admin dashboard. */
 export async function getRecentActivity(limit: number) {
   return prisma.auditLog.findMany({

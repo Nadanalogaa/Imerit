@@ -16,6 +16,7 @@ import { searchCandidatesForEmployer } from "../services/employer.service.js";
 import {
   createJob,
   deleteJob,
+  repostJob,
   getJobById,
   listEmployerJobs,
   listPublicJobs,
@@ -193,6 +194,17 @@ router.delete(
     const id = paramId(req.params.id);
     await deleteJob({ employerId: req.user!.sub, id });
     res.json({ ok: true });
+  }),
+);
+
+router.post(
+  "/employer/jobs/:id/repost",
+  requireAuth,
+  requireRole(UserRole.EMPLOYER),
+  asyncHandler(async (req, res) => {
+    const id = paramId(req.params.id);
+    const job = await repostJob({ employerId: req.user!.sub, id });
+    res.json({ job });
   }),
 );
 

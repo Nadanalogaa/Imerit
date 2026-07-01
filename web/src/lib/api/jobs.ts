@@ -9,7 +9,15 @@
 import { api } from "../api";
 
 export type ApiJobField = "IT" | "NON_IT";
-export type ApiJobType = "INTERNSHIP" | "FULL_TIME" | "PART_TIME" | "CONTRACT";
+export type ApiJobType =
+  | "INTERNSHIP_TRAINING"
+  | "APPRENTICE"
+  | "FULL_TIME"
+  | "PART_TIME"
+  | "GIG_DELIVERY"
+  | "CONTRACT"
+  | "CONSULTANT"
+  | "FREELANCER";
 export type ApiJobExperience = "FRESHER" | "EXPERIENCED" | "ANY";
 export type ApiJobStatus = "DRAFT" | "ACTIVE" | "PAUSED" | "CLOSED";
 export type ApiApplicationStatus = "APPLIED" | "VIEWED" | "SHORTLISTED" | "INTERVIEW" | "REJECTED" | "HIRED" | "WITHDRAWN";
@@ -38,6 +46,7 @@ export interface ApiJob {
   status: ApiJobStatus;
   moderationStatus: "PENDING" | "APPROVED" | "REJECTED";
   postedAt: string;
+  expiresAt: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -184,6 +193,9 @@ export const employerJobsApi = {
 
   remove: (id: string) =>
     api<{ ok: true }>(`/employer/jobs/${encodeURIComponent(id)}`, { method: "DELETE" }),
+
+  repost: (id: string) =>
+    api<{ job: ApiJob }>(`/employer/jobs/${encodeURIComponent(id)}/repost`, { method: "POST" }),
 
   applicants: (id: string) =>
     api<{

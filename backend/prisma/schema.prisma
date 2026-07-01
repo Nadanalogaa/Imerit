@@ -140,7 +140,14 @@ model CandidateProfile {
   currentPincode    String?
   currentStreet     String?   @db.VarChar(255) // private; never returned in public views
 
-  // Preferred work location
+  // Preferred work location — multi-select of district IDs (the candidate's
+  // home district hierarchy is the only anchor; preferred is purely a list
+  // of districts they're open to working in).
+  preferredDistricts  Json    @default("[]") // string[] of district IDs
+
+  // Legacy single-anchor preferred fields — kept while the matcher still
+  // reads a single (lat, lng) pair for "Near preferred" scoring. We mirror
+  // the first entry of preferredDistricts into these.
   preferredDistrictId String?
   preferredTalukId    String?
   preferredLat        Float?
@@ -161,6 +168,10 @@ model CandidateProfile {
   nonItDepartments  Json? // string[]
   yearsOfExperience Int?
   topSkills         Json? // string[]
+
+  // Showcase links — array of { label, url }. Optional. Free-form so the
+  // candidate can add LinkedIn, Portfolio, GitHub, Behance, anything.
+  links             Json     @default("[]") // { label: string; url: string }[]
 
   // Template picked on preview step
   selectedTemplateId TemplateId?
@@ -204,6 +215,10 @@ model Education {
   thesis      String? @db.Text // PhD only
   courseName  String? // OTHER only
   institution String?
+  // Where the candidate studied — district + pincode. Both optional so the
+  // form stays low-friction; useful for "studied near my city" filters.
+  districtId  String?
+  pincode     String?
   createdAt   DateTime @default(now())
 
   @@unique([profileId, level])
@@ -220,8 +235,30 @@ model Experience {
   toDate    String? // null = present
   createdAt DateTime         @default(now())
 
+  projects  ExperienceProject[]
+
   @@index([profileId])
   @@map("experiences")
+}
+
+/**
+ * One project entry inside an Experience row. Lets the candidate showcase
+ * concrete work done at each company — name + brief + skills used + an
+ * optional public link (GitHub, case study, deployed app, etc.).
+ * All fields optional except name so the form stays low-friction.
+ */
+model ExperienceProject {
+  id           String     @id @default(cuid())
+  experienceId String
+  experience   Experience @relation(fields: [experienceId], references: [id], onDelete: Cascade)
+  name         String
+  description  String?    @db.Text
+  skills       Json       @default("[]") // string[]
+  showcaseUrl  String?    @db.VarChar(512)
+  createdAt    DateTime   @default(now())
+
+  @@index([experienceId])
+  @@map("experience_projects")
 }
 
 // -------------------------------------------------------------------- //
@@ -242,7 +279,7 @@ model EmployerProfile {
   industry    String?
   website     String?
   about       String?  @db.Text
-  logoUrl     String?  @db.VarChar(512)
+  logoUrl     String?  @db.Text // base64 data URL (up to ~250KB) or CDN URL when object storage lands
 
   // Address
   districtId  String?
@@ -274,10 +311,14 @@ enum JobField {
 }
 
 enum JobType {
-  INTERNSHIP
+  INTERNSHIP_TRAINING
+  APPRENTICE
   FULL_TIME
   PART_TIME
+  GIG_DELIVERY   // gig employment — delivery partners, cab drivers, etc.
   CONTRACT
+  CONSULTANT
+  FREELANCER
 }
 
 enum JobExperience {
@@ -325,6 +366,10 @@ model Job {
   moderatedAt       DateTime?
   moderatedById     String?
   postedAt          DateTime         @default(now())
+  // Listing lifecycle — jobs are live for 45 days from postedAt. Once
+  // expiresAt is in the past the public feed hides them; the employer sees
+  // an "Expired · Repost" state on their own dashboard.
+  expiresAt         DateTime         @default(dbgenerated("now() + interval '45 days'"))
   closedAt          DateTime?
   createdAt         DateTime         @default(now())
   updatedAt         DateTime         @updatedAt
@@ -338,6 +383,7 @@ model Job {
   @@index([districtId])
   @@index([employerId])
   @@index([postedAt])
+  @@index([expiresAt])
   @@map("jobs")
 }
 

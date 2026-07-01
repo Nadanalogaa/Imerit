@@ -51,6 +51,21 @@ export const errorHandler: ErrorRequestHandler = (err, req, res, _next) => {
       res.status(404).json({ error: { code: "NOT_FOUND", message: "Record not found" } });
       return;
     }
+    if (err.code === "P2000") {
+      // "The provided value for the column is too long for the column's
+      // type." — this is a client-visible bug, not a 500. Return the field
+      // (when Prisma provides it) so the wizard can surface a useful msg.
+      const col = (err.meta as { column_name?: string } | undefined)?.column_name;
+      res.status(400).json({
+        error: {
+          code: "VALUE_TOO_LONG",
+          message: col && col !== "(not available)"
+            ? `Value too long for field: ${col}`
+            : "One of the values is too long for its column.",
+        },
+      });
+      return;
+    }
   }
 
   if (err instanceof HttpError) {

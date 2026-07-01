@@ -49,6 +49,7 @@ export const createJobSchema = z.object({
   lat: z.number().min(-90).max(90).optional(),
   lng: z.number().min(-180).max(180).optional(),
   pincode: z.string().regex(/^\d{6}$/u).optional(),
+  street: z.string().max(255).optional(),
   field: z.nativeEnum(JobField),
   type: z.nativeEnum(JobType),
   experience: z.nativeEnum(JobExperience),
