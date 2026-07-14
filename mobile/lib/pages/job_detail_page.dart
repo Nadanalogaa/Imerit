@@ -6,6 +6,7 @@ import '../store/auth_provider.dart';
 import '../store/jobs_provider.dart';
 import '../store/subscriptions_provider.dart';
 import '../store/theme_provider.dart';
+import '../widgets/save_job_button.dart';
 import '../widgets/theme_toggle.dart';
 
 class JobDetailPage extends ConsumerStatefulWidget {
@@ -149,7 +150,6 @@ class _JobDetailPageState extends ConsumerState<JobDetailPage> {
     }
 
     final hasApplied = ref.watch(applicationsProvider.notifier).hasApplied(user.id, job.id);
-    final isSaved = ref.watch(applicationsProvider.notifier).isSaved(user.id, job.id);
     final activeSub = ref.watch(subscriptionsProvider.notifier).activeFor(user.id, SubscriberType.candidate);
     final isIt = job.field == JobField.it;
     final initials = job.employerName
@@ -170,16 +170,13 @@ class _JobDetailPageState extends ConsumerState<JobDetailPage> {
         ),
         title: const Text('Job', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700)),
         actions: [
-          IconButton(
-            icon: Icon(
-              isSaved ? Icons.bookmark_rounded : Icons.bookmark_outline_rounded,
-              color: isSaved ? const Color(0xFFE11D48) : null,
+          Padding(
+            padding: const EdgeInsets.only(right: 4),
+            child: SaveJobButton(
+              jobId: job.id,
+              jobTitle: job.title,
+              size: SaveJobButtonSize.medium,
             ),
-            tooltip: isSaved ? 'Remove from saved' : 'Save job',
-            onPressed: () {
-              ref.read(applicationsProvider.notifier).toggleSave(user.id, job.id);
-              setState(() {});
-            },
           ),
           const ThemeToggle(),
           const SizedBox(width: 12),
@@ -267,7 +264,7 @@ class _JobDetailPageState extends ConsumerState<JobDetailPage> {
                           icon: isIt ? Icons.code_rounded : Icons.business_center_rounded,
                           isDark: isDark,
                         ),
-                        _PillBig(text: typeLabel[job.type]!, icon: Icons.work_outline_rounded, isDark: isDark),
+                        _PillBig(text: typeLabel[job.type]!, icon: typeIcon[job.type]!, isDark: isDark),
                         if (job.experience == JobExperience.fresher)
                           _PillBig(text: 'Freshers welcome', icon: Icons.auto_awesome_rounded, isDark: isDark),
                         if (job.experience == JobExperience.experienced && job.yearsMin != null)

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../store/theme_provider.dart';
+import 'brand_logo.dart';
 import 'theme_toggle.dart';
 
 class AuthScaffold extends ConsumerWidget {
@@ -49,38 +50,12 @@ class AuthScaffold extends ConsumerWidget {
                       InkWell(
                         onTap: () => context.go('/'),
                         borderRadius: BorderRadius.circular(10),
-                        child: Row(
-                          children: [
-                            Container(
-                              width: 36,
-                              height: 36,
-                              decoration: BoxDecoration(
-                                borderRadius: BorderRadius.circular(10),
-                                gradient: const LinearGradient(
-                                  colors: [Color(0xFFF97316), Color(0xFFC2410C)],
-                                ),
-                              ),
-                              child: const Center(
-                                child: Text(
-                                  'iT',
-                                  style: TextStyle(
-                                    color: Colors.white,
-                                    fontWeight: FontWeight.w700,
-                                    fontSize: 13,
-                                  ),
-                                ),
-                              ),
-                            ),
-                            const SizedBox(width: 10),
-                            Text(
-                              'i-Tamil Recruit',
-                              style: TextStyle(
-                                fontSize: 15,
-                                fontWeight: FontWeight.w600,
-                                color: isDark ? Colors.white : const Color(0xFF18181B),
-                              ),
-                            ),
-                          ],
+                        child: BrandLogo(
+                          size: BrandLogoSize.small,
+                          // On dark auth surfaces the JPEG's white matte
+                          // would clash — always sit it on a light plate so
+                          // the wordmark reads cleanly in either theme.
+                          plateColor: isDark ? Colors.white : null,
                         ),
                       ),
                       const Spacer(),

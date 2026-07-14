@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../store/theme_provider.dart';
 import '../store/auth_provider.dart';
+import '../widgets/brand_logo.dart';
 import '../widgets/theme_toggle.dart';
 import '../widgets/bottom_nav.dart';
 import '../widgets/welcome_banner.dart';
@@ -67,43 +68,7 @@ class _LandingPageState extends ConsumerState<LandingPage> {
             padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
             child: Row(
               children: [
-                Container(
-                  width: 36,
-                  height: 36,
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(10),
-                    gradient: const LinearGradient(
-                      colors: [Color(0xFFF97316), Color(0xFFC2410C)],
-                    ),
-                    boxShadow: [
-                      BoxShadow(
-                        color: const Color(0xFFF97316).withValues(alpha: 0.4),
-                        blurRadius: 10,
-                        offset: const Offset(0, 4),
-                      ),
-                    ],
-                  ),
-                  child: const Center(
-                    child: Text(
-                      'iT',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.w700,
-                        fontSize: 13,
-                      ),
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 10),
-                const Text(
-                  'i-Tamil Recruit',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 15,
-                    fontWeight: FontWeight.w600,
-                    shadows: [Shadow(color: Colors.black54, blurRadius: 8)],
-                  ),
-                ),
+                const BrandLogo(size: BrandLogoSize.medium, plateColor: Colors.white),
                 const Spacer(),
                 AnimatedSwitcher(
                   duration: const Duration(milliseconds: 250),

@@ -1,4 +1,4 @@
-import { Link } from "react-router-dom";
+import { Brand } from "./Brand";
 import { ThemeToggle } from "./ThemeToggle";
 
 interface Props {
@@ -6,7 +6,6 @@ interface Props {
  subtitle?: string;
  children: React.ReactNode;
  bgImage?: string;
- badge?: string;
  tone?: "brand" | "sky";
  panelTitle?: string;
  panelCopy?: string;
@@ -19,7 +18,6 @@ export function AuthLayout({
  subtitle,
  children,
  bgImage = "/images/background-04.jpg",
- badge = "i-Tamil Recruit",
  tone = "brand",
  panelTitle,
  panelCopy,
@@ -49,12 +47,7 @@ export function AuthLayout({
  <div className="absolute inset-0 -z-10 bg-[radial-gradient(circle_at_15%_20%,rgba(249,115,22,0.22),transparent_26%),radial-gradient(circle_at_85%_15%,rgba(14,165,233,0.18),transparent_24%),radial-gradient(circle_at_80%_85%,rgba(255,255,255,0.08),transparent_22%)]" />
 
  <header className="relative z-10 flex items-center justify-between px-4 py-4 sm:px-6 lg:px-8">
- <Link to="/" className="flex items-center gap-2.5">
- <div className={["flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br text-white shadow-md", accent.solid].join(" ")}>
- <span className="text-sm font-bold">iT</span>
- </div>
- <span className="text-sm font-semibold tracking-tight text-white md:text-base">{badge}</span>
- </Link>
+ <Brand to="/" size="md" className="rounded-lg bg-white/95 px-2 py-1" />
  <ThemeToggle />
  </header>
 
@@ -62,10 +55,7 @@ export function AuthLayout({
  <div className="grid w-full items-stretch gap-6 lg:grid-cols-[1.05fr_0.95fr] lg:gap-10">
  <section className="hidden flex-col justify-between rounded-[2rem] border border-white/10 bg-white/8 p-8 shadow-2xl shadow-black/20 backdrop-blur-xl lg:flex">
  <div>
- <div className={["inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/10 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.24em]", accent.text, accent.ring].join(" ")}>
- <span className="h-1.5 w-1.5 rounded-full bg-current" />
- {badge}
- </div>
+ <Brand size="md" className="rounded-lg bg-white/95 px-2 py-1" />
  <h2 className="mt-5 max-w-xl text-4xl font-semibold tracking-tight text-white xl:text-5xl">
  {panelTitle ?? title}
  </h2>

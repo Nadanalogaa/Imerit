@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
+import { Brand } from "./Brand";
 import { ThemeToggle } from "./ThemeToggle";
 import { SignInMenu } from "./SignInMenu";
 import { UserAvatarMenu } from "./UserAvatarMenu";
@@ -104,15 +105,8 @@ export function Navbar() {
       ].join(" ")}
     >
       <div className="mx-auto flex max-w-7xl items-center justify-between px-5 py-3 md:px-8">
-        <Link to={logoHref} className="flex items-center gap-2.5">
-          <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-brand-500 to-brand-700 text-white shadow-md shadow-brand-500/30">
-            <span className="text-sm font-bold">iT</span>
-          </div>
-          <div className="flex flex-col leading-tight">
-            <span className="text-sm font-semibold tracking-tight md:text-base">i-Tamil Recruit</span>
-            <span className="hidden text-[10px] text-zinc-500 md:block dark:text-zinc-400">by RUDRAA HR Solutions</span>
-          </div>
-        </Link>
+        <Brand to={logoHref} size="md" />
+
 
         <nav className="hidden items-center gap-1 lg:flex">
           {appLinks

@@ -14,6 +14,8 @@ import '../widgets/profile/photo_upload.dart';
 import '../widgets/profile/education_step.dart';
 import '../widgets/profile/ambition_step.dart';
 import '../widgets/profile/about_you_step.dart';
+import '../widgets/profile/district_multi_select.dart';
+import '../widgets/profile/links_editor.dart';
 import '../widgets/profile/template_picker.dart';
 import '../widgets/templates/template_data.dart';
 import '../widgets/theme_toggle.dart';
@@ -57,11 +59,14 @@ class _CandidateProfileFormPageState
   List<String> _topSkills = [];
   List<WorkExperience> _experiences = [];
 
-  // Structured locations — single source of truth for matcher/map distance.
-  // The display label (`preferredLocation` on the profile) is auto-derived
-  // from `_preferredPlace` when Step 0 saves.
+  // Structured locations — current-location is a single PlaceRef (with
+  // taluk/pincode/street granularity) while preferred is now a multi-select
+  // list of district IDs. Matches the 2026-06 backend migration.
   PlaceRef _currentPlace = const PlaceRef();
-  PlaceRef _preferredPlace = const PlaceRef();
+  List<String> _preferredDistrictIds = const [];
+
+  // Portfolio / social links — LinkedIn, GitHub, Behance, custom "Other".
+  List<ProfileLink> _links = const [];
 
   // Template
   String? _templateId;
@@ -95,20 +100,24 @@ class _CandidateProfileFormPageState
       pincode: profile.currentPincode,
       street: profile.currentStreet,
     );
-    _preferredPlace = PlaceRef(
-      districtId: profile.preferredDistrictId,
-      talukId: profile.preferredTalukId,
-      lat: profile.preferredLat,
-      lng: profile.preferredLng,
-      pincode: profile.preferredPincode,
-    );
+    _preferredDistrictIds = profile.preferredDistrictIds;
+    _links = profile.links;
     _templateId = profile.selectedTemplateId;
   }
 
-  /// Auto-derived display label from the structured pickers; falls back to
-  /// the current-location label, then the legacy stored label.
+  /// Auto-derived display label from the district multi-select; falls back
+  /// to the current-location label, then the legacy stored label. For 2+
+  /// preferred districts we render "Chennai + 2 more" so cards stay tight.
   String? _derivedPreferredLabel(LocationsData data, CandidateProfile current) {
-    if (_preferredPlace.talukId != null) return _preferredPlace.publicLabel(data);
+    if (_preferredDistrictIds.isNotEmpty) {
+      final names = _preferredDistrictIds
+          .map((id) => data.districtById(id)?.name)
+          .whereType<String>()
+          .toList();
+      if (names.isNotEmpty) {
+        return names.length == 1 ? names.first : '${names.first} + ${names.length - 1} more';
+      }
+    }
     if (_currentPlace.talukId != null) return _currentPlace.publicLabel(data);
     return current.preferredLocation;
   }
@@ -135,11 +144,9 @@ class _CandidateProfileFormPageState
       currentLng: _currentPlace.lng ?? current.currentLng,
       currentPincode: _currentPlace.pincode ?? current.currentPincode,
       currentStreet: _currentPlace.street ?? current.currentStreet,
-      preferredDistrictId: _preferredPlace.districtId ?? current.preferredDistrictId,
-      preferredTalukId: _preferredPlace.talukId ?? current.preferredTalukId,
-      preferredLat: _preferredPlace.lat ?? current.preferredLat,
-      preferredLng: _preferredPlace.lng ?? current.preferredLng,
-      preferredPincode: _preferredPlace.pincode ?? current.preferredPincode,
+      preferredDistrictIds:
+          _preferredDistrictIds.isNotEmpty ? _preferredDistrictIds : current.preferredDistrictIds,
+      links: _links.isNotEmpty ? _links : current.links,
       preferredLocation:
           _derivedPreferredLabel(ref.read(locationsProvider), current) ?? current.preferredLocation,
     );
@@ -196,12 +203,9 @@ class _CandidateProfileFormPageState
           currentLng: _currentPlace.lng,
           currentPincode: _currentPlace.pincode,
           currentStreet: _currentPlace.street,
-          preferredDistrictId: _preferredPlace.districtId,
-          preferredTalukId: _preferredPlace.talukId,
-          preferredLat: _preferredPlace.lat,
-          preferredLng: _preferredPlace.lng,
-          preferredPincode: _preferredPlace.pincode,
-          // Keep the legacy display label in sync with the structured picker so
+          preferredDistrictIds: _preferredDistrictIds,
+          links: _links,
+          // Keep the legacy display label in sync with the district picker so
           // cards/lists that read `preferredLocation` keep working.
           preferredLocation: _derivedPreferredLabel(locData, current),
         ),
@@ -318,8 +322,10 @@ class _CandidateProfileFormPageState
           onPhoto: (v) => setState(() => _photo = v),
           currentPlace: _currentPlace,
           onCurrentPlace: (p) => setState(() => _currentPlace = p),
-          preferredPlace: _preferredPlace,
-          onPreferredPlace: (p) => setState(() => _preferredPlace = p),
+          preferredDistrictIds: _preferredDistrictIds,
+          onPreferredDistrictIds: (v) => setState(() => _preferredDistrictIds = v),
+          links: _links,
+          onLinks: (v) => setState(() => _links = v),
           errors: _errors,
         );
       case 1:
@@ -527,8 +533,10 @@ class _PersonalStep extends StatelessWidget {
     required this.onPhoto,
     required this.currentPlace,
     required this.onCurrentPlace,
-    required this.preferredPlace,
-    required this.onPreferredPlace,
+    required this.preferredDistrictIds,
+    required this.onPreferredDistrictIds,
+    required this.links,
+    required this.onLinks,
     required this.errors,
   });
 
@@ -540,8 +548,10 @@ class _PersonalStep extends StatelessWidget {
   final ValueChanged<String?> onPhoto;
   final PlaceRef currentPlace;
   final ValueChanged<PlaceRef> onCurrentPlace;
-  final PlaceRef preferredPlace;
-  final ValueChanged<PlaceRef> onPreferredPlace;
+  final List<String> preferredDistrictIds;
+  final ValueChanged<List<String>> onPreferredDistrictIds;
+  final List<ProfileLink> links;
+  final ValueChanged<List<ProfileLink>> onLinks;
   final Map<String, String?> errors;
 
   @override
@@ -608,14 +618,79 @@ class _PersonalStep extends StatelessWidget {
           onChange: onCurrentPlace,
         ),
         const SizedBox(height: 12),
-        _LocationSection(
-          title: 'Preferred work location',
-          subtitle: "Different from where you live? We'll match jobs near both anchors.",
-          value: preferredPlace,
-          onChange: onPreferredPlace,
-          allowStreet: false,
+        _SectionShell(
+          title: 'Preferred work districts',
+          subtitle: "Pick every district you'd work in — we'll rank jobs by proximity to the closest one.",
+          icon: Icons.map_rounded,
+          child: DistrictMultiSelect(
+            value: preferredDistrictIds,
+            onChange: onPreferredDistrictIds,
+          ),
+        ),
+        const SizedBox(height: 12),
+        _SectionShell(
+          title: 'Portfolio & links',
+          subtitle: 'LinkedIn, GitHub, portfolio site — anything you want employers to see.',
+          icon: Icons.link_rounded,
+          child: LinksEditor(value: links, onChange: onLinks),
         ),
       ],
+    );
+  }
+}
+
+class _SectionShell extends StatelessWidget {
+  const _SectionShell({
+    required this.title,
+    required this.subtitle,
+    required this.icon,
+    required this.child,
+  });
+  final String title;
+  final String subtitle;
+  final IconData icon;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: const Color(0xFFFAFAFA),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: const Color(0xFFE4E4E7)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                width: 28,
+                height: 28,
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF97316).withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Icon(icon, size: 14, color: const Color(0xFFEA580C)),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(title, style: const TextStyle(fontSize: 13.5, fontWeight: FontWeight.w700, color: Color(0xFF18181B))),
+                    const SizedBox(height: 2),
+                    Text(subtitle, style: const TextStyle(fontSize: 11, color: Color(0xFF71717A))),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          child,
+        ],
+      ),
     );
   }
 }

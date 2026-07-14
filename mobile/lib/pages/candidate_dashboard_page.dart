@@ -7,6 +7,8 @@ import '../store/profile_provider.dart';
 import '../store/theme_provider.dart';
 import '../utils/distance.dart';
 import '../utils/matcher.dart';
+import '../widgets/brand_logo.dart';
+import '../widgets/notification_bell.dart';
 import '../widgets/theme_toggle.dart';
 
 const _minMatchScore = 30;
@@ -76,37 +78,10 @@ class CandidateDashboardPage extends ConsumerWidget {
         scrolledUnderElevation: 0,
         title: InkWell(
           onTap: () => context.go('/'),
-          child: Row(
-            children: [
-              Container(
-                width: 32,
-                height: 32,
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(8),
-                  gradient: const LinearGradient(
-                    colors: [Color(0xFFF97316), Color(0xFFC2410C)],
-                  ),
-                ),
-                child: const Center(
-                  child: Text(
-                    'iT',
-                    style: TextStyle(color: Colors.white, fontWeight: FontWeight.w700, fontSize: 12),
-                  ),
-                ),
-              ),
-              const SizedBox(width: 10),
-              Text(
-                'i-Tamil Recruit',
-                style: TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w600,
-                  color: isDark ? Colors.white : const Color(0xFF18181B),
-                ),
-              ),
-            ],
-          ),
+          child: const BrandLogo(size: BrandLogoSize.small),
         ),
         actions: [
+          const Padding(padding: EdgeInsets.only(right: 4), child: NotificationBell()),
           const ThemeToggle(),
           const SizedBox(width: 8),
           Padding(

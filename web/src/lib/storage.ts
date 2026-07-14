@@ -30,5 +30,11 @@ export const KEYS = {
   candidateProfiles: "itr.candidateProfiles",
   jobs: "itr.jobs",
   subscriptions: "itr.subscriptions",
+  // Employer-side prefs (2026-07): saved candidate searches, shortlist,
+  // recently viewed. Keyed by employer id inside the value blob so
+  // multiple employers sharing a browser stay isolated.
+  employerSavedSearches: "itr.employer.savedSearches",
+  employerShortlist: "itr.employer.shortlist",
+  employerRecentCandidates: "itr.employer.recentCandidates",
   otp: (email: string) => `itr.otp.${email}`,
 } as const;

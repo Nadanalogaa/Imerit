@@ -70,6 +70,8 @@ class Education {
     this.thesis,
     this.courseName,
     this.institution,
+    this.districtId,
+    this.pincode,
   });
 
   final EducationLevel level;
@@ -79,6 +81,33 @@ class Education {
   final String? thesis;
   final String? courseName;
   final String? institution;
+  // Per-education location — matches the web `Education.districtId` +
+  // `pincode` columns (2026-06 migration). Candidates can now say WHERE they
+  // studied each level (10th in Madurai, UG in Chennai, etc.).
+  final String? districtId;
+  final String? pincode;
+
+  Education copyWith({
+    bool? enabled,
+    double? percentage,
+    int? passedOutYear,
+    String? thesis,
+    String? courseName,
+    String? institution,
+    String? districtId,
+    String? pincode,
+  }) =>
+      Education(
+        level: level,
+        enabled: enabled ?? this.enabled,
+        percentage: percentage ?? this.percentage,
+        passedOutYear: passedOutYear ?? this.passedOutYear,
+        thesis: thesis ?? this.thesis,
+        courseName: courseName ?? this.courseName,
+        institution: institution ?? this.institution,
+        districtId: districtId ?? this.districtId,
+        pincode: pincode ?? this.pincode,
+      );
 
   Map<String, dynamic> toJson() => {
         'level': educationLevelKey(level),
@@ -88,6 +117,8 @@ class Education {
         if (thesis != null) 'thesis': thesis,
         if (courseName != null) 'courseName': courseName,
         if (institution != null) 'institution': institution,
+        if (districtId != null) 'districtId': districtId,
+        if (pincode != null) 'pincode': pincode,
       };
 
   static Education fromJson(Map<String, dynamic> j) => Education(
@@ -98,6 +129,55 @@ class Education {
         thesis: j['thesis'] as String?,
         courseName: j['courseName'] as String?,
         institution: j['institution'] as String?,
+        districtId: j['districtId'] as String?,
+        pincode: j['pincode'] as String?,
+      );
+}
+
+/// Portfolio / social link a candidate can pin on their profile. Free-form
+/// label + URL — mirrors the web `CandidateProfile.links` JSON column.
+@immutable
+class ProfileLink {
+  const ProfileLink({required this.label, required this.url});
+  final String label;
+  final String url;
+
+  Map<String, dynamic> toJson() => {'label': label, 'url': url};
+
+  static ProfileLink fromJson(Map<String, dynamic> j) =>
+      ProfileLink(label: j['label'] as String, url: j['url'] as String);
+}
+
+/// Project a candidate worked on during a specific work stint. Matches the
+/// web `ExperienceProject` table (2026-06 migration). Stored inline on
+/// `WorkExperience.projects` so the UI can render an accordion under each
+/// company.
+@immutable
+class ExperienceProject {
+  const ExperienceProject({
+    required this.name,
+    this.description,
+    this.skills = const [],
+    this.url,
+  });
+
+  final String name;
+  final String? description;
+  final List<String> skills;
+  final String? url;
+
+  Map<String, dynamic> toJson() => {
+        'name': name,
+        if (description != null) 'description': description,
+        'skills': skills,
+        if (url != null) 'url': url,
+      };
+
+  static ExperienceProject fromJson(Map<String, dynamic> j) => ExperienceProject(
+        name: j['name'] as String,
+        description: j['description'] as String?,
+        skills: (j['skills'] as List<dynamic>? ?? const []).cast<String>(),
+        url: j['url'] as String?,
       );
 }
 
@@ -108,18 +188,37 @@ class WorkExperience {
     required this.role,
     required this.fromDate,
     this.toDate,
+    this.projects = const [],
   });
 
   final String company;
   final String role;
   final String fromDate;
   final String? toDate;
+  final List<ExperienceProject> projects;
+
+  WorkExperience copyWith({
+    String? company,
+    String? role,
+    String? fromDate,
+    String? toDate,
+    bool clearToDate = false,
+    List<ExperienceProject>? projects,
+  }) =>
+      WorkExperience(
+        company: company ?? this.company,
+        role: role ?? this.role,
+        fromDate: fromDate ?? this.fromDate,
+        toDate: clearToDate ? null : (toDate ?? this.toDate),
+        projects: projects ?? this.projects,
+      );
 
   Map<String, dynamic> toJson() => {
         'company': company,
         'role': role,
         'fromDate': fromDate,
         'toDate': toDate,
+        'projects': projects.map((p) => p.toJson()).toList(),
       };
 
   static WorkExperience fromJson(Map<String, dynamic> j) => WorkExperience(
@@ -127,6 +226,9 @@ class WorkExperience {
         role: j['role'] as String,
         fromDate: j['fromDate'] as String,
         toDate: j['toDate'] as String?,
+        projects: (j['projects'] as List<dynamic>? ?? const [])
+            .map((e) => ExperienceProject.fromJson(e as Map<String, dynamic>))
+            .toList(),
       );
 }
 
@@ -143,11 +245,7 @@ class CandidateProfile {
     this.currentLng,
     this.currentPincode,
     this.currentStreet,
-    this.preferredDistrictId,
-    this.preferredTalukId,
-    this.preferredLat,
-    this.preferredLng,
-    this.preferredPincode,
+    this.preferredDistrictIds = const [],
     this.shortTermAmbition,
     this.longTermAmbition,
     this.type,
@@ -160,6 +258,7 @@ class CandidateProfile {
     this.topSkills,
     this.experiences,
     this.education = const [],
+    this.links = const [],
     this.selectedTemplateId,
     required this.updatedAt,
   });
@@ -174,11 +273,11 @@ class CandidateProfile {
   final double? currentLng;
   final String? currentPincode;
   final String? currentStreet;
-  final String? preferredDistrictId;
-  final String? preferredTalukId;
-  final double? preferredLat;
-  final double? preferredLng;
-  final String? preferredPincode;
+  // Multi-select preferred districts. Replaces the old single
+  // `preferredDistrictId` / `preferredTalukId` / `preferredPincode` fields
+  // (2026-06 migration). Candidates now say "I'll work in Chennai, Salem, or
+  // Madurai" without picking a specific taluk/pincode.
+  final List<String> preferredDistrictIds;
   final String? shortTermAmbition;
   final String? longTermAmbition;
   final CandidateType? type;
@@ -191,6 +290,9 @@ class CandidateProfile {
   final List<String>? topSkills;
   final List<WorkExperience>? experiences;
   final List<Education> education;
+  // Portfolio / social links (LinkedIn, GitHub, Behance, custom "Other").
+  // Free-form list keyed on `[[profile-links]]` in web.
+  final List<ProfileLink> links;
   final String? selectedTemplateId;
   final String updatedAt;
 
@@ -204,11 +306,7 @@ class CandidateProfile {
     double? currentLng,
     String? currentPincode,
     String? currentStreet,
-    String? preferredDistrictId,
-    String? preferredTalukId,
-    double? preferredLat,
-    double? preferredLng,
-    String? preferredPincode,
+    List<String>? preferredDistrictIds,
     String? shortTermAmbition,
     String? longTermAmbition,
     CandidateType? type,
@@ -221,6 +319,7 @@ class CandidateProfile {
     List<String>? topSkills,
     List<WorkExperience>? experiences,
     List<Education>? education,
+    List<ProfileLink>? links,
     String? selectedTemplateId,
   }) =>
       CandidateProfile(
@@ -234,11 +333,7 @@ class CandidateProfile {
         currentLng: currentLng ?? this.currentLng,
         currentPincode: currentPincode ?? this.currentPincode,
         currentStreet: currentStreet ?? this.currentStreet,
-        preferredDistrictId: preferredDistrictId ?? this.preferredDistrictId,
-        preferredTalukId: preferredTalukId ?? this.preferredTalukId,
-        preferredLat: preferredLat ?? this.preferredLat,
-        preferredLng: preferredLng ?? this.preferredLng,
-        preferredPincode: preferredPincode ?? this.preferredPincode,
+        preferredDistrictIds: preferredDistrictIds ?? this.preferredDistrictIds,
         shortTermAmbition: shortTermAmbition ?? this.shortTermAmbition,
         longTermAmbition: longTermAmbition ?? this.longTermAmbition,
         type: type ?? this.type,
@@ -251,6 +346,7 @@ class CandidateProfile {
         topSkills: topSkills ?? this.topSkills,
         experiences: experiences ?? this.experiences,
         education: education ?? this.education,
+        links: links ?? this.links,
         selectedTemplateId: selectedTemplateId ?? this.selectedTemplateId,
         updatedAt: DateTime.now().toIso8601String(),
       );
@@ -266,11 +362,7 @@ class CandidateProfile {
         if (currentLng != null) 'currentLng': currentLng,
         if (currentPincode != null) 'currentPincode': currentPincode,
         if (currentStreet != null) 'currentStreet': currentStreet,
-        if (preferredDistrictId != null) 'preferredDistrictId': preferredDistrictId,
-        if (preferredTalukId != null) 'preferredTalukId': preferredTalukId,
-        if (preferredLat != null) 'preferredLat': preferredLat,
-        if (preferredLng != null) 'preferredLng': preferredLng,
-        if (preferredPincode != null) 'preferredPincode': preferredPincode,
+        'preferredDistrictIds': preferredDistrictIds,
         'shortTermAmbition': shortTermAmbition,
         'longTermAmbition': longTermAmbition,
         if (type != null) 'type': type == CandidateType.fresher ? 'fresher' : 'experienced',
@@ -283,49 +375,63 @@ class CandidateProfile {
         'topSkills': topSkills,
         'experiences': experiences?.map((e) => e.toJson()).toList(),
         'education': education.map((e) => e.toJson()).toList(),
+        'links': links.map((l) => l.toJson()).toList(),
         'selectedTemplateId': selectedTemplateId,
         'updatedAt': updatedAt,
       };
 
-  static CandidateProfile fromJson(Map<String, dynamic> j) => CandidateProfile(
-        userId: j['userId'] as String,
-        photoDataUrl: j['photoDataUrl'] as String?,
-        alternateMobile: j['alternateMobile'] as String?,
-        preferredLocation: j['preferredLocation'] as String?,
-        currentDistrictId: j['currentDistrictId'] as String?,
-        currentTalukId: j['currentTalukId'] as String?,
-        currentLat: (j['currentLat'] as num?)?.toDouble(),
-        currentLng: (j['currentLng'] as num?)?.toDouble(),
-        currentPincode: j['currentPincode'] as String?,
-        currentStreet: j['currentStreet'] as String?,
-        preferredDistrictId: j['preferredDistrictId'] as String?,
-        preferredTalukId: j['preferredTalukId'] as String?,
-        preferredLat: (j['preferredLat'] as num?)?.toDouble(),
-        preferredLng: (j['preferredLng'] as num?)?.toDouble(),
-        preferredPincode: j['preferredPincode'] as String?,
-        shortTermAmbition: j['shortTermAmbition'] as String?,
-        longTermAmbition: j['longTermAmbition'] as String?,
-        type: j['type'] == 'experienced'
-            ? CandidateType.experienced
-            : (j['type'] == 'fresher' ? CandidateType.fresher : null),
-        internOrJob: j['internOrJob'] as String?,
-        field: j['field'] == 'non_it'
-            ? FieldKind.nonIt
-            : (j['field'] == 'it' ? FieldKind.it : null),
-        itSpecialization: j['itSpecialization'] as String?,
-        itLanguages: (j['itLanguages'] as List<dynamic>?)?.cast<String>(),
-        nonItDepartments: (j['nonItDepartments'] as List<dynamic>?)?.cast<String>(),
-        yearsOfExperience: j['yearsOfExperience'] as int?,
-        topSkills: (j['topSkills'] as List<dynamic>?)?.cast<String>(),
-        experiences: (j['experiences'] as List<dynamic>?)
-            ?.map((e) => WorkExperience.fromJson(e as Map<String, dynamic>))
-            .toList(),
-        education: (j['education'] as List<dynamic>? ?? const [])
-            .map((e) => Education.fromJson(e as Map<String, dynamic>))
-            .toList(),
-        selectedTemplateId: j['selectedTemplateId'] as String?,
-        updatedAt: j['updatedAt'] as String? ?? DateTime.now().toIso8601String(),
-      );
+  static CandidateProfile fromJson(Map<String, dynamic> j) {
+    // Legacy migration: rows written before the multi-district refactor
+    // stored a single `preferredDistrictId`. Promote it to a one-element
+    // list so the new UI sees a populated set instead of falling back to
+    // empty.
+    final rawList = j['preferredDistrictIds'] as List<dynamic>?;
+    List<String> prefIds;
+    if (rawList != null) {
+      prefIds = rawList.cast<String>();
+    } else {
+      final legacy = j['preferredDistrictId'] as String?;
+      prefIds = legacy != null ? [legacy] : const [];
+    }
+    return CandidateProfile(
+      userId: j['userId'] as String,
+      photoDataUrl: j['photoDataUrl'] as String?,
+      alternateMobile: j['alternateMobile'] as String?,
+      preferredLocation: j['preferredLocation'] as String?,
+      currentDistrictId: j['currentDistrictId'] as String?,
+      currentTalukId: j['currentTalukId'] as String?,
+      currentLat: (j['currentLat'] as num?)?.toDouble(),
+      currentLng: (j['currentLng'] as num?)?.toDouble(),
+      currentPincode: j['currentPincode'] as String?,
+      currentStreet: j['currentStreet'] as String?,
+      preferredDistrictIds: prefIds,
+      shortTermAmbition: j['shortTermAmbition'] as String?,
+      longTermAmbition: j['longTermAmbition'] as String?,
+      type: j['type'] == 'experienced'
+          ? CandidateType.experienced
+          : (j['type'] == 'fresher' ? CandidateType.fresher : null),
+      internOrJob: j['internOrJob'] as String?,
+      field: j['field'] == 'non_it'
+          ? FieldKind.nonIt
+          : (j['field'] == 'it' ? FieldKind.it : null),
+      itSpecialization: j['itSpecialization'] as String?,
+      itLanguages: (j['itLanguages'] as List<dynamic>?)?.cast<String>(),
+      nonItDepartments: (j['nonItDepartments'] as List<dynamic>?)?.cast<String>(),
+      yearsOfExperience: j['yearsOfExperience'] as int?,
+      topSkills: (j['topSkills'] as List<dynamic>?)?.cast<String>(),
+      experiences: (j['experiences'] as List<dynamic>?)
+          ?.map((e) => WorkExperience.fromJson(e as Map<String, dynamic>))
+          .toList(),
+      education: (j['education'] as List<dynamic>? ?? const [])
+          .map((e) => Education.fromJson(e as Map<String, dynamic>))
+          .toList(),
+      links: (j['links'] as List<dynamic>? ?? const [])
+          .map((e) => ProfileLink.fromJson(e as Map<String, dynamic>))
+          .toList(),
+      selectedTemplateId: j['selectedTemplateId'] as String?,
+      updatedAt: j['updatedAt'] as String? ?? DateTime.now().toIso8601String(),
+    );
+  }
 }
 
 CandidateProfile _empty(String userId) => CandidateProfile(

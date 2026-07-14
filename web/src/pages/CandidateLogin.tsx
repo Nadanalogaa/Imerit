@@ -54,7 +54,6 @@ export function CandidateLogin() {
  <AuthLayout
  title="Welcome back"
  subtitle="Sign in to your candidate account with a one-time email code."
- badge="Candidate"
  tone="brand"
  bgImage="/images/background-04.jpg"
  panelTitle="Continue your job search"

@@ -52,7 +52,6 @@ export function EmployerRegister() {
  <AuthLayout
  title="Create your employer account"
  subtitle="Job posting is free. Subscribe only when you're ready to search candidates."
- badge="Employer"
  tone="sky"
  bgImage="/images/background-02.jpg"
  panelTitle="Build a hiring pipeline faster"

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../store/auth_provider.dart';
+import '../store/employer_prefs_provider.dart';
 import '../store/profile_provider.dart';
 import '../store/subscriptions_provider.dart';
 import '../store/theme_provider.dart';
@@ -31,6 +32,14 @@ class EmployerCandidateDetailPage extends ConsumerWidget {
       WidgetsBinding.instance.addPostFrameCallback((_) => context.go('/employer/candidates'));
       return const SizedBox.shrink();
     }
+
+    // Mirror the web `recentCandidates` list — push this profile to the top
+    // of the employer's "recently viewed" strip on the search page. Runs
+    // after the frame so the notifier state change never conflicts with
+    // this frame's rebuild.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      ref.read(recentCandidatesProvider.notifier).push(employer.id, candidateId);
+    });
 
     if (sub == null) {
       return Scaffold(

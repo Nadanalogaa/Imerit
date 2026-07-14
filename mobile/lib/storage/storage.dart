@@ -44,5 +44,11 @@ class StorageKeys {
   static const candidateProfiles = 'itr.candidateProfiles';
   static const jobs = 'itr.jobs';
   static const subscriptions = 'itr.subscriptions';
+  // Employer-side prefs (2026-07): saved candidate searches, shortlist,
+  // recently viewed. Each is keyed by employer id inside the value blob so
+  // multiple employers sharing a device stay isolated.
+  static const employerSavedSearches = 'itr.employer.savedSearches';
+  static const employerShortlist = 'itr.employer.shortlist';
+  static const employerRecentCandidates = 'itr.employer.recentCandidates';
   static String otp(String email) => 'itr.otp.$email';
 }

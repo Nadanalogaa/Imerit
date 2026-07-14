@@ -50,7 +50,6 @@ export function EmployerLogin() {
  <AuthLayout
  title="Welcome back"
  subtitle="Sign in to your employer account with a one-time email code."
- badge="Employer"
  tone="sky"
  bgImage="/images/background-02.jpg"
  panelTitle="Manage live jobs and applicants"

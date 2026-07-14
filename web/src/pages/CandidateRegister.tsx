@@ -55,7 +55,6 @@ export function CandidateRegister() {
  <AuthLayout
  title="Create your candidate account"
  subtitle="Profile posting is free. It takes less than a minute."
- badge="Candidate"
  tone="brand"
  bgImage="/images/background-03.jpg"
  panelTitle="Find jobs closer to home"

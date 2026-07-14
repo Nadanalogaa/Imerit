@@ -1,9 +1,13 @@
 import { useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import { Bell, CheckCircle2, XCircle, UserPlus, LogIn, LogOut, Activity, Briefcase, Heart, Sparkles } from "lucide-react";
-import { useAuth } from "../store/auth";
+import { Bell, CheckCircle2, XCircle, UserPlus, LogIn, LogOut, Activity, Briefcase, Heart, Sparkles, UserSearch } from "lucide-react";
+import { useAuth, allUsers } from "../store/auth";
 import { useApplications } from "../store/applications";
 import { useJobs, isExpired, daysUntilExpiry } from "../store/jobs";
+import { useProfile } from "../store/profile";
+import { useLocations } from "../store/locations";
+import { useSavedSearches } from "../store/employerPrefs";
+import { matchesFilter } from "../lib/employerFilters";
 import { adminApi, type AdminActivityItem } from "../lib/api/admin";
 import { apiEnabled } from "../lib/api";
 
@@ -28,6 +32,7 @@ export function NotificationBell() {
   const [open, setOpen] = useState(false);
   const items = useNotifications(user?.role, user?.id);
   const anchorRef = useRef<HTMLDivElement>(null);
+  const reconcileSavedSearches = useReconcileSavedSearches();
 
   // Close on outside click so it behaves like a proper popover.
   useEffect(() => {
@@ -46,7 +51,13 @@ export function NotificationBell() {
     <div ref={anchorRef} className="relative">
       <button
         type="button"
-        onClick={() => setOpen((o) => !o)}
+        onClick={() => {
+          // Advance saved-search "known" sets before opening — from the
+          // employer's point of view they've now "seen" every queued match,
+          // so the badge deflates instead of resurfacing next render.
+          if (user.role === "employer") reconcileSavedSearches(user.id);
+          setOpen((o) => !o);
+        }}
         aria-label={unread > 0 ? `${unread} notifications` : "Notifications"}
         title={unread > 0 ? `${unread} notifications` : "Notifications"}
         className="relative inline-flex h-9 w-9 items-center justify-center rounded-full text-zinc-600 transition hover:bg-zinc-100 dark:text-zinc-300 dark:hover:bg-zinc-800"
@@ -124,6 +135,8 @@ function useNotifications(role: string | undefined, userId: string | undefined):
   const saved = useApplications((s) => s.saved);
   const jobs = useJobs((s) => s.jobs);
   const [adminActivity, setAdminActivity] = useState<AdminActivityItem[]>([]);
+  // Compute at top level so hook order is stable regardless of role branch.
+  const { items: savedSearchNotifications } = useSavedSearchNotifications(userId, role);
 
   // Poll admin activity every 30s while an admin is signed in.
   useEffect(() => {
@@ -186,7 +199,8 @@ function useNotifications(role: string | undefined, userId: string | undefined):
     return items;
   }
 
-  // Employers: their expiring / expired jobs.
+  // Employers: expiring / expired jobs, plus new candidate matches for any
+  // saved search that has "notify" turned on.
   if (role === "employer") {
     const out: Item[] = [];
     for (const j of jobs) {
@@ -212,10 +226,67 @@ function useNotifications(role: string | undefined, userId: string | undefined):
         });
       }
     }
+    out.push(...savedSearchNotifications);
     return out;
   }
 
   return [];
+}
+
+/**
+ * Shared helper — computes the "fresh match" delta for every notify-enabled
+ * saved search this employer owns. Split into its own hook so both
+ * `useNotifications` (for rendering) and `useReconcileSavedSearches` (for
+ * marking-as-seen) can reuse the same source of truth.
+ */
+function useSavedSearchNotifications(userId: string | undefined, role: string | undefined) {
+  const savedSearches = useSavedSearches((s) => s.all);
+  const profiles = useProfile((s) => s.byUser);
+  const jobs = useJobs((s) => s.jobs);
+  const districts = useLocations((s) => s.districts);
+  if (!userId || role !== "employer") return { items: [] as Item[], deltas: [] as { id: string; ids: string[] }[] };
+  const mine = savedSearches.filter((s) => s.employerId === userId && s.notify);
+  if (mine.length === 0) return { items: [], deltas: [] };
+  const candidates = allUsers()
+    .filter((u) => u.role === "candidate")
+    .map((u) => ({ user: u, profile: profiles[u.id] }))
+    .filter((x): x is { user: (typeof allUsers)[number] extends never ? never : any; profile: any } => !!x.profile && !!x.profile.selectedTemplateId);
+  const activeJobs = jobs.filter((j) => j.employerId === userId && !isExpired(j));
+  const items: Item[] = [];
+  const deltas: { id: string; ids: string[] }[] = [];
+  for (const s of mine) {
+    const nearJob = s.filters.nearJobId ? activeJobs.find((j) => j.id === s.filters.nearJobId) ?? null : null;
+    const currentIds = candidates
+      .filter((c) => matchesFilter(c.profile, s.filters, { districts, nearJob }))
+      .map((c) => c.user.id);
+    const fresh = currentIds.filter((id) => !s.knownCandidateIds.includes(id));
+    if (fresh.length > 0) {
+      items.push({
+        id: `saved-${s.id}`,
+        title: `${fresh.length} new match${fresh.length === 1 ? "" : "es"}`,
+        detail: s.name,
+        at: "moments ago",
+        tone: "violet",
+        icon: <UserSearch size={13} />,
+      });
+    }
+    deltas.push({ id: s.id, ids: currentIds });
+  }
+  return { items, deltas };
+}
+
+/**
+ * Returns a callback the bell can invoke on open to advance every notify-
+ * enabled saved search's `knownCandidateIds` to the current match set, so
+ * the same match never appears twice.
+ */
+function useReconcileSavedSearches() {
+  const reconcile = useSavedSearches((s) => s.reconcile);
+  const user = useAuth((s) => s.currentUser);
+  const { deltas } = useSavedSearchNotifications(user?.id, user?.role);
+  return (_employerId: string) => {
+    for (const { id, ids } of deltas) reconcile(id, ids);
+  };
 }
 
 const ADMIN_ICON: Record<string, React.ReactNode> = {

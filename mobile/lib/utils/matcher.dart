@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../store/jobs_provider.dart';
+import '../store/locations_provider.dart';
 import '../store/profile_provider.dart';
 import 'distance.dart';
 
@@ -24,19 +25,30 @@ enum MatchBand { high, medium, low }
 
 String _norm(String s) => s.toLowerCase().trim();
 
-/// Distance to job from candidate's nearest anchor (current or preferred).
-double? jobDistanceKm(Job job, CandidateProfile? profile) {
+/// Distance to job from candidate's nearest anchor. Considers the candidate's
+/// current-location coords plus each preferred-district centroid (from the
+/// locations dataset). Pass `locations` when available so multi-district
+/// candidates get scored against every district they'd work in — the closest
+/// wins. If `locations` is omitted, only the current-location coords are
+/// considered.
+double? jobDistanceKm(Job job, CandidateProfile? profile, [LocationsData? locations]) {
   if (profile == null || job.lat == null || job.lng == null) return null;
   final ds = <double>[];
   final c1 = distanceKm(profile.currentLat, profile.currentLng, job.lat, job.lng);
   if (c1 != null) ds.add(c1);
-  final c2 = distanceKm(profile.preferredLat, profile.preferredLng, job.lat, job.lng);
-  if (c2 != null) ds.add(c2);
+  if (locations != null) {
+    for (final id in profile.preferredDistrictIds) {
+      final d = locations.districtById(id);
+      if (d == null) continue;
+      final dist = distanceKm(d.lat, d.lng, job.lat, job.lng);
+      if (dist != null) ds.add(dist);
+    }
+  }
   if (ds.isEmpty) return null;
   return ds.reduce((a, b) => a < b ? a : b);
 }
 
-MatchResult matchScore(Job job, CandidateProfile? profile) {
+MatchResult matchScore(Job job, CandidateProfile? profile, [LocationsData? locations]) {
   if (profile == null) {
     return const MatchResult(
       score: 0, band: MatchBand.low, reasons: [], matchedSkills: [], missingSkills: [],
@@ -67,7 +79,7 @@ MatchResult matchScore(Job job, CandidateProfile? profile) {
   final fieldScore = fieldOk ? 25 : 0;
 
   // Location (15) — distance-based
-  final dist = jobDistanceKm(job, profile);
+  final dist = jobDistanceKm(job, profile, locations);
   var locationScore = 0;
   String? locationLevel;
   if (dist != null) {

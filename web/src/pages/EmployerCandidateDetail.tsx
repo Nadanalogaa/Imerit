@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { Link, Navigate, useParams } from "react-router-dom";
 import { motion } from "framer-motion";
 import { ArrowLeft, Lock, ShieldAlert, Sparkles, Mail, Phone } from "lucide-react";
@@ -5,6 +6,7 @@ import { Navbar } from "../components/Navbar";
 import { useAuth, allUsers } from "../store/auth";
 import { useProfile } from "../store/profile";
 import { useSubscriptions } from "../store/subscriptions";
+import { useRecentCandidates } from "../store/employerPrefs";
 import { RenderTemplate } from "../components/templates";
 
 export function EmployerCandidateDetail() {
@@ -14,9 +16,19 @@ export function EmployerCandidateDetail() {
  s.activeFor(employer.id, "employer_sme") ?? s.activeFor(employer.id, "employer_large")
  );
  const profiles = useProfile((s) => s.byUser);
+ const pushRecent = useRecentCandidates((s) => s.push);
 
  const candidate = allUsers().find((u) => u.id === id);
  const profile = id ? profiles[id] : undefined;
+
+ // Push to the "recently viewed" strip on the search page so the employer's
+ // browsing history survives navigation. Only fires when the target profile
+ // is real — invalid IDs never pollute the strip.
+ useEffect(() => {
+  if (id && candidate?.role === "candidate" && profile?.selectedTemplateId) {
+    pushRecent(employer.id, id);
+  }
+ }, [id, employer.id, candidate?.role, profile?.selectedTemplateId, pushRecent]);
 
  if (!candidate || candidate.role !== "candidate" || !profile?.selectedTemplateId) {
  return <Navigate to="/employer/candidates" replace />;

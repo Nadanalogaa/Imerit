@@ -1,5 +1,6 @@
 import { Link } from "react-router-dom";
 import { Heart, Mail, MapPin } from "lucide-react";
+import { Brand } from "./Brand";
 
 export function Footer() {
  return (
@@ -13,15 +14,7 @@ export function Footer() {
  <div className="relative grid gap-10 md:grid-cols-[1.6fr_1fr_1fr_1fr]">
  {/* Brand block */}
  <div>
- <div className="flex items-center gap-2.5">
- <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-gradient-to-br from-brand-500 to-brand-700 text-white shadow-lg shadow-brand-500/40">
- <span className="text-sm font-bold">iT</span>
- </div>
- <div className="leading-tight">
- <div className="text-base font-semibold text-white">i-Tamil Recruit</div>
- <div className="text-[11px] text-zinc-500">by RUDRAA HR Solutions</div>
- </div>
- </div>
+ <Brand size="lg" className="rounded-lg bg-white/95 px-2 py-1" />
  <p className="mt-5 max-w-md text-sm leading-relaxed text-zinc-400">
  Tamil Nadu's modern recruitment platform — connecting students and professionals across every field with the right opportunities, near home.
  </p>
