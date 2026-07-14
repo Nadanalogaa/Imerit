@@ -106,16 +106,20 @@ export function EmployerCandidates() {
 
   const items = useMemo(() => {
     if (apiEnabled && apiRows) {
-      return apiRows.map((r) => ({
+      // `as CandidateProfile` (not `satisfies`) — the API row is a strict
+      // subset of the full profile shape, but downstream code reads
+      // optional fields like `experiences`; keeping the literal type would
+      // narrow the union and blow up on those accesses at build time.
+      return apiRows.map((r): { user: User; profile: CandidateProfile } => ({
         user: {
           id: r.user.id,
-          role: "candidate" as const,
+          role: "candidate",
           name: r.user.name,
           email: r.user.email,
           mobile: r.user.mobile ?? undefined,
           emailVerified: true,
           createdAt: r.user.createdAt,
-        } satisfies User,
+        },
         profile: {
           userId: r.user.id,
           photoDataUrl: r.photoUrl ?? undefined,
@@ -134,7 +138,7 @@ export function EmployerCandidates() {
           selectedTemplateId: (r.selectedTemplateId?.toLowerCase() ?? undefined) as CandidateProfile["selectedTemplateId"],
           education: [],
           updatedAt: r.updatedAt,
-        } satisfies CandidateProfile,
+        },
       }));
     }
     const users = allUsers().filter((u) => u.role === "candidate");

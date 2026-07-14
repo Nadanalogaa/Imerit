@@ -9,6 +9,9 @@ interface Props {
   hint?: string;
   error?: string;
   maxLength?: number;
+  /** Renders the field read-only + visually muted. Used for immutable
+   *  keys like an employer's email in the edit form. */
+  disabled?: boolean;
 }
 
 export function TextField({
@@ -22,6 +25,7 @@ export function TextField({
   hint,
   error,
   maxLength,
+  disabled,
 }: Props) {
   return (
     <div className="flex flex-col gap-1.5">
@@ -33,12 +37,14 @@ export function TextField({
         inputMode={inputMode}
         autoFocus={autoFocus}
         maxLength={maxLength}
+        disabled={disabled}
         onChange={(e) => onChange(e.target.value)}
         className={[
           "h-11 rounded-lg border bg-white px-3.5 text-sm text-zinc-900 placeholder:text-zinc-400 transition focus:outline-none focus:ring-2 dark:bg-zinc-950 dark:text-zinc-100 dark:placeholder:text-zinc-500",
           error
             ? "border-rose-400 focus:border-rose-500 focus:ring-rose-500/20"
             : "border-zinc-300 focus:border-brand-500 focus:ring-brand-500/15 dark:border-zinc-700",
+          disabled ? "cursor-not-allowed opacity-60" : "",
         ].join(" ")}
       />
       {hint && !error && (

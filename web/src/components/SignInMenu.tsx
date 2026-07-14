@@ -44,6 +44,8 @@ export function SignInMenu() {
  />
  <div className="border-t border-zinc-200 bg-zinc-50 px-4 py-2 text-[11px] text-zinc-500 dark:bg-zinc-950 dark:text-zinc-400">
  Admin? <Link to="/admin" className="text-brand-600 hover:underline dark:text-brand-400" onClick={() => setOpen(false)}>Admin login</Link>
+ <span className="mx-1 text-zinc-300 dark:text-zinc-700">·</span>
+ Staff? <Link to="/staff/login" className="text-teal-600 hover:underline dark:text-teal-400" onClick={() => setOpen(false)}>Staff login</Link>
  </div>
  </div>
  )}

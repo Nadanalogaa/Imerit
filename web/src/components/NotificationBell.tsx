@@ -1,10 +1,10 @@
 import { useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { Bell, CheckCircle2, XCircle, UserPlus, LogIn, LogOut, Activity, Briefcase, Heart, Sparkles, UserSearch } from "lucide-react";
-import { useAuth, allUsers } from "../store/auth";
+import { useAuth, allUsers, type User } from "../store/auth";
 import { useApplications } from "../store/applications";
 import { useJobs, isExpired, daysUntilExpiry } from "../store/jobs";
-import { useProfile } from "../store/profile";
+import { useProfile, type CandidateProfile } from "../store/profile";
 import { useLocations } from "../store/locations";
 import { useSavedSearches } from "../store/employerPrefs";
 import { matchesFilter } from "../lib/employerFilters";
@@ -250,7 +250,7 @@ function useSavedSearchNotifications(userId: string | undefined, role: string | 
   const candidates = allUsers()
     .filter((u) => u.role === "candidate")
     .map((u) => ({ user: u, profile: profiles[u.id] }))
-    .filter((x): x is { user: (typeof allUsers)[number] extends never ? never : any; profile: any } => !!x.profile && !!x.profile.selectedTemplateId);
+    .filter((x): x is { user: User; profile: CandidateProfile } => !!x.profile && !!x.profile.selectedTemplateId);
   const activeJobs = jobs.filter((j) => j.employerId === userId && !isExpired(j));
   const items: Item[] = [];
   const deltas: { id: string; ids: string[] }[] = [];

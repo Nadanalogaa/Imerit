@@ -47,7 +47,19 @@ const APP_LINKS: Record<Role, { label: string; to: string }[]> = {
     { label: "Candidates", to: "/admin/candidates" },
     { label: "Employers", to: "/admin/employers" },
     { label: "Admins", to: "/super-admin/admins" },
+    { label: "Staff", to: "/super-admin/staff" },
     { label: "Plans", to: "/super-admin/plans" },
+  ],
+  // Staff has its own top-bar rendered inside every /staff/* page (see
+  // StaffTopBar in StaffDashboard.tsx). This entry keeps the Role typing
+  // exhaustive but the marketing/global Navbar isn't visible on staff
+  // routes, so these links only matter if we ever surface the global
+  // Navbar for a staff user (which shouldn't happen in the current app).
+  staff: [
+    { label: "Dashboard", to: "/staff/dashboard" },
+    { label: "Employers", to: "/staff/employers" },
+    { label: "Post job", to: "/staff/jobs/new" },
+    { label: "My jobs", to: "/staff/jobs" },
   ],
 };
 

@@ -3,7 +3,7 @@ import { get as load, set as save, remove, KEYS } from "../lib/storage";
 import { apiEnabled, ApiError } from "../lib/api";
 import { authApi, type ApiUser } from "../lib/api/auth";
 
-export type Role = "candidate" | "employer" | "admin" | "super_admin";
+export type Role = "candidate" | "employer" | "admin" | "super_admin" | "staff";
 
 /** Higher-privilege roles transparently satisfy any lower-privilege gate. */
 const ROLE_GRANTS: Record<Role, readonly Role[]> = {
@@ -11,6 +11,11 @@ const ROLE_GRANTS: Record<Role, readonly Role[]> = {
   employer: ["employer"],
   admin: ["admin"],
   super_admin: ["super_admin", "admin"],
+  // Staff is a distinct internal lane — they can act on the employer master
+  // and post jobs on behalf of employers, but they don't inherit
+  // employer/admin privileges. Kept siloed so a compromised staff account
+  // can never read an employer's applications or reach admin surfaces.
+  staff: ["staff"],
 };
 
 export const HOME_PATH: Record<Role, string> = {
@@ -18,6 +23,7 @@ export const HOME_PATH: Record<Role, string> = {
   employer: "/employer/dashboard",
   admin: "/admin/dashboard",
   super_admin: "/super-admin/dashboard",
+  staff: "/staff/dashboard",
 };
 
 export const LOGIN_PATH: Record<Role, string> = {
@@ -25,6 +31,7 @@ export const LOGIN_PATH: Record<Role, string> = {
   employer: "/employer/login",
   admin: "/admin",
   super_admin: "/super-admin",
+  staff: "/staff/login",
 };
 
 export function hasRole(actual: Role, required: Role): boolean {
@@ -40,6 +47,24 @@ export interface User {
   company?: string;
   emailVerified: boolean;
   createdAt: string;
+
+  /**
+   * Only set on employer users that were created BY staff via the Employer
+   * Master flow. Holds the plaintext password we generated so staff can
+   * look it up + share it manually until real email is wired.
+   *
+   * SECURITY: this is a stopgap. Once the email pipeline lands we'll:
+   * (1) email the credential on create, (2) drop this field from the
+   * shape, (3) migrate away by nulling it on the backend. Self-registered
+   * employers never carry a value here.
+   */
+  sharedPassword?: string;
+
+  /** Optional — records which staff user provisioned this employer. */
+  createdByStaffId?: string;
+
+  /** Soft-deactivate flag — set from super-admin's staff manager. */
+  deactivated?: boolean;
 }
 
 /** Map backend's uppercase enum back to the lowercase shape the UI uses. */
@@ -108,9 +133,75 @@ interface AuthState {
   loginByEmail: (email: string) => User | null;
   logout: () => void;
   findByEmail: (email: string) => User | null;
+
+  /* --------------- Staff + Employer Master (localStorage-only) --------------- */
+
+  /**
+   * Password-based login used by staff and by employers whose accounts
+   * were provisioned by staff. Returns the matched user or null.
+   *
+   * Staff always authenticate this way (no OTP for the internal role).
+   * Employers can *also* authenticate this way when their creds came
+   * from staff — otherwise they use the normal OTP flow.
+   */
+  passwordLogin: (email: string, password: string) => User | null;
+
+  /**
+   * Super-admin creates a staff account. Password is generated + surfaced
+   * once in the CredentialShareModal so the super-admin can hand it over.
+   */
+  createStaff: (input: { name: string; email: string; mobile?: string }) => { user: User; password: string };
+
+  /**
+   * Staff creates a new employer in the Employer Master. Password is
+   * generated automatically and stored on the employer row so staff can
+   * copy it later from the master view.
+   */
+  createEmployerByStaff: (input: {
+    staffId: string;
+    name: string;
+    email: string;
+    mobile?: string;
+    company?: string;
+  }) => { user: User; password: string };
+
+  /** Overwrite an employer's shared password with a freshly-generated one. */
+  resetEmployerPassword: (employerId: string) => string;
+
+  /** Patch limited fields on an existing employer (staff-owned edit). */
+  updateEmployer: (
+    employerId: string,
+    patch: Partial<Pick<User, "name" | "mobile" | "company">>,
+  ) => void;
+
+  /** Toggle the `deactivated` flag — used by the super-admin staff manager. */
+  setDeactivated: (userId: string, deactivated: boolean) => void;
 }
 
 const userId = () => "u_" + Math.random().toString(36).slice(2, 10);
+
+/**
+ * Generate a memorable-ish password for staff-provisioned employer + staff
+ * accounts. 10 chars, mixes upper/lower/digits — enough entropy for a
+ * pre-launch stopgap, easy enough to type over the phone.
+ */
+function generatePassword(): string {
+  const upper = "ABCDEFGHJKLMNPQRSTUVWXYZ"; // no I/O to avoid confusion with 1/0
+  const lower = "abcdefghijkmnpqrstuvwxyz";
+  const digits = "23456789";
+  const all = upper + lower + digits;
+  const pick = (pool: string) => pool[Math.floor(Math.random() * pool.length)];
+  // Guarantee at least one of each class so the password meets the "mixed"
+  // bar most people expect at a glance.
+  const chars = [pick(upper), pick(lower), pick(digits)];
+  while (chars.length < 10) chars.push(pick(all));
+  // Fisher-Yates shuffle so the required class chars aren't always front-loaded.
+  for (let i = chars.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [chars[i], chars[j]] = [chars[j], chars[i]];
+  }
+  return chars.join("");
+}
 
 export const useAuth = create<AuthState>((set, get) => ({
   currentUser: load<User | null>(KEYS.currentUser, null),
@@ -266,6 +357,119 @@ export const useAuth = create<AuthState>((set, get) => ({
   findByEmail: (email) => {
     const users = load<User[]>(KEYS.users, []);
     return users.find((u) => u.email.toLowerCase() === email.toLowerCase()) ?? null;
+  },
+
+  /* ------------- Staff + Employer Master (localStorage-only) ------------- */
+
+  passwordLogin: (email, password) => {
+    const users = load<User[]>(KEYS.users, []);
+    const match = users.find(
+      (u) =>
+        u.email.toLowerCase() === email.toLowerCase() &&
+        u.sharedPassword &&
+        u.sharedPassword === password,
+    );
+    if (!match) return null;
+    if (match.deactivated) return null;
+    // Auto-verify — the shared credential path bypasses OTP entirely.
+    const verified: User = { ...match, emailVerified: true };
+    const updated = users.map((u) => (u.id === match.id ? verified : u));
+    save(KEYS.users, updated);
+    save(KEYS.currentUser, verified);
+    set({ currentUser: verified });
+    return verified;
+  },
+
+  createStaff: ({ name, email, mobile }) => {
+    const users = load<User[]>(KEYS.users, []);
+    const existing = users.find((u) => u.email.toLowerCase() === email.toLowerCase());
+    if (existing) {
+      // Idempotent: if the email is already taken, hand back the same row
+      // with a freshly-generated password so the super-admin can still
+      // share creds. Prevents accidental orphaned dupes.
+      const password = generatePassword();
+      const next: User = { ...existing, role: "staff", sharedPassword: password, deactivated: false };
+      save(KEYS.users, users.map((u) => (u.id === existing.id ? next : u)));
+      return { user: next, password };
+    }
+    const password = generatePassword();
+    const next: User = {
+      id: userId(),
+      role: "staff",
+      name,
+      email,
+      mobile,
+      emailVerified: true,
+      createdAt: new Date().toISOString(),
+      sharedPassword: password,
+    };
+    save(KEYS.users, [next, ...users]);
+    return { user: next, password };
+  },
+
+  createEmployerByStaff: ({ staffId, name, email, mobile, company }) => {
+    const users = load<User[]>(KEYS.users, []);
+    const existing = users.find((u) => u.email.toLowerCase() === email.toLowerCase());
+    if (existing) {
+      // Duplicate email guard — surfaces up to the caller so it can show
+      // a proper error instead of silently overwriting an existing row.
+      throw new ApiError(409, "EMAIL_TAKEN", `An account already exists for ${email}.`);
+    }
+    const password = generatePassword();
+    const next: User = {
+      id: userId(),
+      role: "employer",
+      name,
+      email,
+      mobile,
+      company,
+      emailVerified: true,
+      createdAt: new Date().toISOString(),
+      sharedPassword: password,
+      createdByStaffId: staffId,
+    };
+    save(KEYS.users, [next, ...users]);
+    return { user: next, password };
+  },
+
+  resetEmployerPassword: (employerId) => {
+    const users = load<User[]>(KEYS.users, []);
+    const target = users.find((u) => u.id === employerId);
+    if (!target) throw new ApiError(404, "NOT_FOUND", "Employer not found.");
+    const password = generatePassword();
+    const next: User = { ...target, sharedPassword: password };
+    save(KEYS.users, users.map((u) => (u.id === employerId ? next : u)));
+    // Keep the current session in sync if the reset was on the signed-in user.
+    if (get().currentUser?.id === employerId) {
+      save(KEYS.currentUser, next);
+      set({ currentUser: next });
+    }
+    return password;
+  },
+
+  updateEmployer: (employerId, patch) => {
+    const users = load<User[]>(KEYS.users, []);
+    const target = users.find((u) => u.id === employerId);
+    if (!target) return;
+    const next: User = { ...target, ...patch };
+    save(KEYS.users, users.map((u) => (u.id === employerId ? next : u)));
+    if (get().currentUser?.id === employerId) {
+      save(KEYS.currentUser, next);
+      set({ currentUser: next });
+    }
+  },
+
+  setDeactivated: (id, deactivated) => {
+    const users = load<User[]>(KEYS.users, []);
+    const updated = users.map((u) => (u.id === id ? { ...u, deactivated } : u));
+    save(KEYS.users, updated);
+    // If they've been kicked while signed in, drop the session so their
+    // next page load bounces to /staff/login (or wherever their role
+    // maps to).
+    if (deactivated && get().currentUser?.id === id) {
+      remove(KEYS.currentUser);
+      set({ currentUser: null });
+    }
   },
 }));
 

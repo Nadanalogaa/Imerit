@@ -38,6 +38,13 @@ import { AdminCandidateView } from "./pages/AdminCandidateView";
 import { SuperAdminDashboard } from "./pages/SuperAdminDashboard";
 import { SuperAdminAdmins } from "./pages/SuperAdminAdmins";
 import { SuperAdminPlans } from "./pages/SuperAdminPlans";
+import { SuperAdminStaff } from "./pages/SuperAdminStaff";
+import { StaffLogin } from "./pages/StaffLogin";
+import { StaffDashboard } from "./pages/StaffDashboard";
+import { StaffEmployers } from "./pages/StaffEmployers";
+import { StaffEmployerForm } from "./pages/StaffEmployerForm";
+import { StaffPostJob } from "./pages/StaffPostJob";
+import { StaffJobs } from "./pages/StaffJobs";
 import { RequireAuth, RedirectIfAuthed } from "./components/RequireAuth";
 import { ToastHost } from "./components/ToastHost";
 
@@ -260,6 +267,24 @@ export default function App() {
         <Route path="/super-admin/dashboard" element={<RequireAuth role="super_admin"><SuperAdminDashboard /></RequireAuth>} />
         <Route path="/super-admin/admins" element={<RequireAuth role="super_admin"><SuperAdminAdmins /></RequireAuth>} />
         <Route path="/super-admin/plans" element={<RequireAuth role="super_admin"><SuperAdminPlans /></RequireAuth>} />
+        <Route path="/super-admin/staff" element={<RequireAuth role="super_admin"><SuperAdminStaff /></RequireAuth>} />
+
+        {/* --------------------- Staff (internal ops) --------------------- */}
+        <Route path="/staff" element={<Navigate to="/staff/login" replace />} />
+        <Route
+          path="/staff/login"
+          element={
+            <RedirectIfAuthed to="/staff/dashboard" forRole="staff">
+              <StaffLogin />
+            </RedirectIfAuthed>
+          }
+        />
+        <Route path="/staff/dashboard" element={<RequireAuth role="staff"><StaffDashboard /></RequireAuth>} />
+        <Route path="/staff/employers" element={<RequireAuth role="staff"><StaffEmployers /></RequireAuth>} />
+        <Route path="/staff/employers/new" element={<RequireAuth role="staff"><StaffEmployerForm /></RequireAuth>} />
+        <Route path="/staff/employers/:id" element={<RequireAuth role="staff"><StaffEmployerForm /></RequireAuth>} />
+        <Route path="/staff/jobs/new" element={<RequireAuth role="staff"><StaffPostJob /></RequireAuth>} />
+        <Route path="/staff/jobs" element={<RequireAuth role="staff"><StaffJobs /></RequireAuth>} />
         {/* /super-admin/{candidates,employers,subscriptions} are aliases for
             the equivalent /admin/* pages — super-admin shares the admin's
             management UI for these, only the dashboards differ. */}

@@ -1,17 +1,34 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import { Eye, EyeOff, KeyRound, Mail } from "lucide-react";
 import { AuthLayout } from "../components/AuthLayout";
 import { TextField } from "../components/TextField";
 import { useAuth } from "../store/auth";
 import { generateOtp } from "../lib/otp";
 import { apiEnabled, ApiError } from "../lib/api";
 
+/**
+ * Employer sign-in has two modes now:
+ *
+ *  * **OTP** (default) — the historical path used by self-registered
+ *    employers who verified their email.
+ *  * **Password** — for employers provisioned by staff via the Employer
+ *    Master. Staff hand over creds manually until email is wired, so
+ *    those employers can't receive an OTP.
+ *
+ * The mode toggle sits inline so employers who don't know about the
+ * password path can ignore it — the OTP flow is unchanged.
+ */
 export function EmployerLogin() {
  const navigate = useNavigate();
  const loginAsync = useAuth((s) => s.loginAsync);
  const findByEmail = useAuth((s) => s.findByEmail);
+ const passwordLogin = useAuth((s) => s.passwordLogin);
 
+ const [mode, setMode] = useState<"otp" | "password">("otp");
  const [email, setEmail] = useState("");
+ const [password, setPassword] = useState("");
+ const [showPassword, setShowPassword] = useState(false);
  const [error, setError] = useState<string | null>(null);
  const [submitting, setSubmitting] = useState(false);
 
@@ -22,6 +39,31 @@ export function EmployerLogin() {
  setError("Enter a valid email");
  return;
  }
+
+ // Password path — staff-provisioned employers whose creds bypass OTP.
+ if (mode === "password") {
+ if (password.length < 6) {
+ setError("Password looks incomplete");
+ return;
+ }
+ setSubmitting(true);
+ const user = passwordLogin(email, password);
+ setSubmitting(false);
+ if (!user) {
+ setError(
+ "That email + password combo didn't match. If your recruiter didn't share a password, use email OTP instead.",
+ );
+ return;
+ }
+ if (user.role !== "employer") {
+ setError("That account isn't an employer. Use the correct login for your role.");
+ return;
+ }
+ navigate("/employer/dashboard", { replace: true });
+ return;
+ }
+
+ // Default OTP path.
  if (!apiEnabled) {
  const u = findByEmail(email);
  if (!u || u.role !== "employer") {
@@ -65,6 +107,24 @@ export function EmployerLogin() {
  ]}
 >
  <form onSubmit={submit} className="flex flex-col gap-4">
+ <div className="grid grid-cols-2 gap-1 rounded-2xl border border-zinc-200 bg-white p-1 dark:border-zinc-800 dark:bg-zinc-950">
+   {(["otp", "password"] as const).map((m) => (
+     <button
+       key={m}
+       type="button"
+       onClick={() => { setMode(m); setError(null); }}
+       className={[
+         "inline-flex items-center justify-center gap-1.5 rounded-xl px-3 py-2 text-xs font-semibold transition",
+         mode === m
+           ? "bg-gradient-to-r from-sky-500 to-sky-600 text-white shadow-sm shadow-sky-500/30"
+           : "text-zinc-600 hover:bg-zinc-50 dark:text-zinc-400 dark:hover:bg-zinc-900",
+       ].join(" ")}
+     >
+       {m === "otp" ? <><Mail size={12} /> Email OTP</> : <><KeyRound size={12} /> Password</>}
+     </button>
+   ))}
+ </div>
+
  <TextField
  label="Work email"
  type="email"
@@ -73,14 +133,39 @@ export function EmployerLogin() {
  placeholder="you@company.com"
  inputMode="email"
  autoFocus
- error={error ?? undefined}
+ error={mode === "otp" ? (error ?? undefined) : undefined}
  />
+
+ {mode === "password" && (
+   <div>
+     <label className="mb-1.5 block text-xs font-medium text-zinc-700 dark:text-zinc-300">Password</label>
+     <div className="relative">
+       <input
+         type={showPassword ? "text" : "password"}
+         value={password}
+         onChange={(e) => setPassword(e.target.value)}
+         placeholder="Ask your recruiter for the credentials"
+         className="w-full rounded-lg bg-white px-4 py-3 pr-11 text-sm placeholder:text-zinc-400 focus:border-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-500/20 dark:bg-zinc-950 dark:placeholder:text-zinc-500 border border-zinc-200 dark:border-zinc-800"
+       />
+       <button
+         type="button"
+         onClick={() => setShowPassword((v) => !v)}
+         className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300"
+         aria-label={showPassword ? "Hide password" : "Show password"}
+       >
+         {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+       </button>
+     </div>
+     {error && <p className="mt-2 text-xs text-rose-500">{error}</p>}
+   </div>
+ )}
+
  <button
  type="submit"
  disabled={submitting}
  className="mt-2 inline-flex items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-sky-500 to-sky-700 px-5 py-3 text-sm font-semibold text-white shadow-md shadow-sky-500/30 transition hover:shadow-lg hover:shadow-sky-500/40 disabled:opacity-60"
  >
- {submitting ? "Sending OTP..." : "Send Email OTP"}
+ {mode === "otp" ? (submitting ? "Sending OTP..." : "Send Email OTP") : (submitting ? "Signing in..." : "Sign in")}
  <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
  <path d="M5 12h14M12 5l7 7-7 7" />
  </svg>
