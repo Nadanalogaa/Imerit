@@ -118,9 +118,10 @@ if $DO_FRONTEND; then
   step "Frontend — syncing dist/ to $HOST:$REMOTE_WEB_DIST"
   # --delete removes stale assets from the previous build (Vite's
   # content-hashed filenames would otherwise accumulate forever).
-  # -a preserves perms; -z compresses on the wire; --info=progress2
-  # shows a single-line progress bar instead of one line per file.
-  run rsync -az --delete --info=progress2 \
+  # -a preserves perms; -z compresses on the wire. Use plain --progress
+  # (not --info=progress2) because macOS ships the openrsync fork which
+  # doesn't support the newer info= flag.
+  run rsync -az --delete --progress \
     -e "ssh -i '$KEY' -o StrictHostKeyChecking=no" \
     "$REPO_ROOT/web/dist/" \
     "$HOST:$REMOTE_WEB_DIST/"
