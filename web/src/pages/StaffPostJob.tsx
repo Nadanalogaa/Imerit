@@ -76,18 +76,26 @@ export function StaffPostJob() {
     let employer: User | null = selectedEmployer;
     let freshCreds: { email: string; password: string; name: string } | null = null;
 
+    // Any error path throws a friendly message that surfaces in the
+    // wizard's own error banner AND scrolls the page to the picker so
+    // the user can see the picker-card highlight. Without the scroll,
+    // the wizard sits at step 5 (bottom of page) and the picker card
+    // (top of page) is off-screen — the picker error is invisible.
+    const failEmployer = (msg: string): never => {
+      setPickerError(msg);
+      window.scrollTo({ top: 0, behavior: "smooth" });
+      throw new Error(msg);
+    };
+
     if (!employer) {
       if (!createMode) {
-        setPickerError("Pick an employer from the master, or click Create new employer.");
-        throw new Error("employer_required");
+        return failEmployer("Pick an employer from the master above, or click Create new employer.");
       }
       if (!newEmp.name.trim()) {
-        setPickerError("Enter a contact name for the new employer.");
-        throw new Error("employer_incomplete");
+        return failEmployer("Enter a contact name for the new employer.");
       }
       if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(newEmp.email.trim())) {
-        setPickerError("Enter a valid email for the new employer.");
-        throw new Error("employer_incomplete");
+        return failEmployer("Enter a valid work email for the new employer.");
       }
       try {
         const { user, password } = createEmployerByStaff({
@@ -101,8 +109,7 @@ export function StaffPostJob() {
         freshCreds = { email: user.email, password, name: user.name };
       } catch (err) {
         if (err instanceof ApiError && err.code === "EMAIL_TAKEN") {
-          setPickerError("An account already exists for that email — search for it in the picker above instead.");
-          throw err;
+          return failEmployer("An account already exists for that email — search for it in the picker above instead.");
         }
         throw err;
       }
@@ -274,30 +281,25 @@ function EmployerPickerCard({
       </div>
 
       <div className="relative">
-        <div className="relative">
-          <Building2 size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-zinc-400" />
-          <input
-            value={query}
-            onFocus={() => onFocusChange(true)}
-            onBlur={() => setTimeout(() => onFocusChange(false), 120)}
-            onChange={(e) => {
-              onQueryChange(e.target.value);
-              if (selectedEmployer) onClear();
-            }}
-            placeholder="Type employer name or company (e.g. Zoho)"
-            className="w-full rounded-xl border border-zinc-200 bg-white py-2.5 pl-10 pr-3 text-sm placeholder:text-zinc-400 focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500/20 dark:border-zinc-800 dark:bg-zinc-950"
-          />
-          {selectedEmployer && (
-            <button
-              type="button"
-              onClick={onClear}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300"
-              aria-label="Clear employer"
-            >
-              <X size={14} />
-            </button>
-          )}
-        </div>
+        {/* When an employer is selected we HIDE the search input entirely
+            and show a summary card with a Change button below. Previously
+            the input stayed visible with the selected name pre-filled,
+            and any keystroke (including accidental) cleared the selection
+            silently — the user then submitted the wizard and got a
+            cryptic "employer_required" error. Explicit Change is safer. */}
+        {!selectedEmployer && (
+          <div className="relative">
+            <Building2 size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-zinc-400" />
+            <input
+              value={query}
+              onFocus={() => onFocusChange(true)}
+              onBlur={() => setTimeout(() => onFocusChange(false), 120)}
+              onChange={(e) => onQueryChange(e.target.value)}
+              placeholder="Type employer name or company (e.g. Zoho)"
+              className="w-full rounded-xl border border-zinc-200 bg-white py-2.5 pl-10 pr-3 text-sm placeholder:text-zinc-400 focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500/20 dark:border-zinc-800 dark:bg-zinc-950"
+            />
+          </div>
+        )}
 
         {focused && !selectedEmployer && !createMode && (
           <div className="absolute z-10 mt-1 max-h-64 w-full overflow-y-auto rounded-2xl border border-zinc-200 bg-white shadow-lg dark:border-zinc-800 dark:bg-zinc-900">
@@ -361,16 +363,25 @@ function EmployerPickerCard({
       </div>
 
       {selectedEmployer && (
-        <div className="mt-3 rounded-xl border border-teal-200 bg-teal-50/60 p-3 dark:border-teal-500/25 dark:bg-teal-500/10">
-          <div className="flex items-center gap-2 text-[11px] font-semibold text-teal-800 dark:text-teal-300">
-            <Check size={12} /> Posting for
+        <div className="mt-3 flex items-start gap-3 rounded-xl border border-teal-200 bg-teal-50/60 p-3 dark:border-teal-500/25 dark:bg-teal-500/10">
+          <div className="min-w-0 flex-1">
+            <div className="flex items-center gap-2 text-[11px] font-semibold text-teal-800 dark:text-teal-300">
+              <Check size={12} /> Posting for
+            </div>
+            <div className="mt-0.5 truncate text-sm font-semibold text-teal-900 dark:text-teal-200">
+              {selectedEmployer.company || selectedEmployer.name}
+            </div>
+            <div className="truncate text-[11px] text-teal-800/80 dark:text-teal-300/80">
+              {selectedEmployer.name} · {selectedEmployer.email}
+            </div>
           </div>
-          <div className="mt-0.5 text-sm font-semibold text-teal-900 dark:text-teal-200">
-            {selectedEmployer.company || selectedEmployer.name}
-          </div>
-          <div className="text-[11px] text-teal-800/80 dark:text-teal-300/80">
-            {selectedEmployer.name} · {selectedEmployer.email}
-          </div>
+          <button
+            type="button"
+            onClick={onClear}
+            className="shrink-0 rounded-full border border-teal-300 bg-white px-2.5 py-1 text-[11px] font-semibold text-teal-700 transition hover:bg-teal-50 dark:border-teal-500/40 dark:bg-transparent dark:text-teal-300 dark:hover:bg-teal-500/10"
+          >
+            Change
+          </button>
         </div>
       )}
 
