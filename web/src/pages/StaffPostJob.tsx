@@ -307,8 +307,14 @@ function EmployerPickerCard({
   // state) or with the "Posting for X · Change" summary (picked state).
   // The old two-line header ("POSTING ON BEHALF OF" + subtitle + icon)
   // ate ~90px for information the label chip conveys in one line.
+  //
+  // `relative z-40` on the card creates a stacking context that sits
+  // above the wizard's framer-motion step chrome (which makes its own
+  // stacking context via transforms). Without this, the dropdown's
+  // own z-index doesn't escape the card boundary and the wizard bleeds
+  // through.
   return (
-    <div className="mb-4 rounded-xl border border-zinc-200 bg-white px-3 py-2.5 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
+    <div className="relative z-40 mb-4 rounded-xl border border-zinc-200 bg-white px-3 py-2.5 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
       <div className="relative">
         {!selectedEmployer && (
           <div className="flex flex-wrap items-center gap-2">
@@ -329,7 +335,7 @@ function EmployerPickerCard({
         )}
 
         {focused && !selectedEmployer && !createMode && (
-          <div className="absolute z-10 mt-1 max-h-64 w-full overflow-y-auto rounded-2xl border border-zinc-200 bg-white shadow-lg dark:border-zinc-800 dark:bg-zinc-900">
+          <div className="absolute z-50 mt-1 max-h-64 w-full overflow-y-auto rounded-2xl border border-zinc-200 bg-white shadow-lg dark:border-zinc-800 dark:bg-zinc-900">
             {matches.length === 0 ? (
               <button
                 type="button"

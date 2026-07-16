@@ -148,7 +148,7 @@ export function EmployerLogin() {
          value={password}
          onChange={(e) => setPassword(e.target.value)}
          placeholder="Ask your recruiter for the credentials"
-         className="w-full rounded-lg bg-white px-4 py-3 pr-11 text-sm placeholder:text-zinc-400 focus:border-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-500/20 dark:bg-zinc-950 dark:placeholder:text-zinc-500 border border-zinc-200 dark:border-zinc-800"
+         className="w-full rounded-lg bg-white px-4 py-3 pr-11 text-sm text-zinc-900 placeholder:text-zinc-400 focus:border-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-500/20 dark:bg-zinc-950 dark:text-zinc-100 dark:placeholder:text-zinc-500 border border-zinc-200 dark:border-zinc-800"
        />
        <button
          type="button"

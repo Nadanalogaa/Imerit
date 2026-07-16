@@ -143,7 +143,7 @@ export function AdminLogin() {
  value={password}
  onChange={(e) => setPassword(e.target.value)}
  placeholder="••••••••"
- className="w-full rounded-lg bg-white px-4 py-3 pr-11 text-sm placeholder:text-zinc-400 focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500/20 dark:bg-zinc-950 dark:placeholder:text-zinc-500 border border-zinc-200 dark:border-zinc-800"
+ className="w-full rounded-lg bg-white px-4 py-3 pr-11 text-sm text-zinc-900 placeholder:text-zinc-400 focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500/20 dark:bg-zinc-950 dark:text-zinc-100 dark:placeholder:text-zinc-500 border border-zinc-200 dark:border-zinc-800"
  />
  <button type="button" onClick={() => setShow((v) => !v)} className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300">
  {show ? <EyeOff size={16} /> : <Eye size={16} />}
