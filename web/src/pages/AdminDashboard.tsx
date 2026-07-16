@@ -9,6 +9,7 @@ import {
  XCircle,
  UserPlus,
  LogIn,
+ LogOut,
 } from "lucide-react";
 import { allUsers } from "../store/auth";
 import { useProfile } from "../store/profile";

@@ -47,7 +47,6 @@ import {
 } from "../store/jobs";
 import { useApplications } from "../store/applications";
 import { useLocations } from "../store/locations";
-import { StaffTopBar } from "./StaffDashboard";
 
 /**
  * Owner-facing view of a single job. Reachable from both employer and
@@ -120,18 +119,15 @@ export function EmployerJobManage({ role }: { role: "employer" | "staff" }) {
 
   const listPath = role === "staff" ? "/staff/jobs" : "/employer/my-jobs";
   const applicantsPath = `/employer/jobs/${job.id}/applicants`;
-  const Chrome: React.FC<{ children: React.ReactNode }> = ({ children }) =>
-    role === "staff" ? (
-      <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950">
-        <StaffTopBar name={user.name} onLogout={() => useAuth.getState().logout()} />
-        <main className="mx-auto max-w-6xl px-5 py-6">{children}</main>
-      </div>
-    ) : (
-      <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950">
-        <Navbar />
-        <main className="mx-auto max-w-6xl px-5 py-6">{children}</main>
-      </div>
-    );
+  // Chrome is identical for both roles now — <Navbar /> is role-aware and
+  // picks the right menu automatically. Kept as a component to preserve
+  // the existing call sites (view + edit branches).
+  const Chrome: React.FC<{ children: React.ReactNode }> = ({ children }) => (
+    <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950">
+      <Navbar />
+      <main className="mx-auto max-w-6xl px-5 py-6">{children}</main>
+    </div>
+  );
 
   if (editing) {
     return (
