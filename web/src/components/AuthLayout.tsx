@@ -55,8 +55,9 @@ export function AuthLayout({
  <div className="grid w-full items-stretch gap-6 lg:grid-cols-[1.05fr_0.95fr] lg:gap-10">
  <section className="hidden flex-col justify-between rounded-[2rem] border border-white/10 bg-white/8 p-8 shadow-2xl shadow-black/20 backdrop-blur-xl lg:flex">
  <div>
- <Brand size="md" forceTheme="dark" />
- <h2 className="mt-5 max-w-xl text-4xl font-semibold tracking-tight text-white xl:text-5xl">
+ {/* Logo is rendered once in the AuthLayout header — no need to
+     repeat it here on top of the panel copy. */}
+ <h2 className="max-w-xl text-4xl font-semibold tracking-tight text-white xl:text-5xl">
  {panelTitle ?? title}
  </h2>
  <p className="mt-4 max-w-lg text-sm leading-6 text-white/72">
