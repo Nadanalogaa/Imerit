@@ -238,6 +238,16 @@ export const useAuth = create<AuthState>((set, get) => ({
       set({ initialized: true });
       return;
     }
+    // Staff sessions are localStorage-only — the backend doesn't issue a
+    // cookie for them (staff was bootstrapped before the server-side auth
+    // was ready). Calling authApi.me() would 401, and the 401 branch
+    // below would wipe the staff user on every refresh. Skip the server
+    // round-trip and trust the cached user for the staff role.
+    const cached = get().currentUser;
+    if (cached && cached.role === "staff") {
+      set({ initialized: true });
+      return;
+    }
     try {
       const { user } = await authApi.me();
       const u = fromApiUser(user);
