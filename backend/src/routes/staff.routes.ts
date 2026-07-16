@@ -4,7 +4,7 @@ import { UserRole } from "@prisma/client";
 import { asyncHandler, HttpError } from "../middleware/error.js";
 import { requireAuth, requireRole } from "../middleware/auth.js";
 import { validate } from "../middleware/validate.js";
-import { createJobSchema } from "../schemas/jobs.schemas.js";
+import { staffCreateJobSchema } from "../schemas/jobs.schemas.js";
 import {
   createStaff,
   createEmployerByStaff,
@@ -203,12 +203,10 @@ router.patch(
 router.post(
   "/staff/jobs",
   ...staffGuard,
-  validate({ body: createJobSchema }),
+  validate({ body: staffCreateJobSchema }),
   asyncHandler(async (req, res) => {
-    const body = req.body as { employerId?: unknown } & Parameters<typeof createJob>[0]["data"];
-    if (typeof body.employerId !== "string") {
-      throw new HttpError(400, "employerId is required in the request body", "MISSING_EMPLOYER");
-    }
+    // staffCreateJobSchema guarantees employerId is a non-empty string.
+    const body = req.body as { employerId: string } & Parameters<typeof createJob>[0]["data"];
     const employer = await prisma.user.findUnique({ where: { id: body.employerId } });
     if (!employer || employer.deletedAt) throw new HttpError(404, "Employer not found", "EMPLOYER_NOT_FOUND");
     if (employer.role !== UserRole.EMPLOYER) throw new HttpError(400, "Target is not an employer account", "NOT_EMPLOYER");

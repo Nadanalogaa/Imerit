@@ -65,6 +65,16 @@ export const updateJobSchema = createJobSchema.partial().extend({
   status: z.enum(["ACTIVE", "PAUSED", "CLOSED", "DRAFT"]).optional(),
 });
 
+/**
+ * Staff variant — same job fields PLUS a required `employerId` (the
+ * employer they're posting on behalf of). Employer endpoints derive
+ * that id from the JWT sub, which doesn't work for staff since the JWT
+ * belongs to the staff user, not the target employer.
+ */
+export const staffCreateJobSchema = createJobSchema.extend({
+  employerId: z.string().min(1, "employerId is required"),
+});
+
 export const applyJobSchema = z.object({
   matchScore: z.number().int().min(0).max(100).optional(),
   coverNote: z.string().max(2000).optional(),
