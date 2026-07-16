@@ -90,6 +90,11 @@ export interface JobFormWizardProps {
   /** If true, skip the Brand step. Handy for the edit flow where brand
    *  is set once at company-onboarding and shouldn't be re-collected. */
   hideBrandStep?: boolean;
+  /** If true, keep the Brand step but only show the logo uploader —
+   *  companyName + contactEmail come from initialValues (staff picker
+   *  captures them upstream, so re-asking is redundant). Both fields
+   *  are still submitted with the form, just not re-editable here. */
+  brandStepLogoOnly?: boolean;
   /** True when the parent is in the middle of network I/O. The submit
    *  button label switches to a spinner-friendly label + disables the
    *  button so double-clicks can't fire the mutation twice. */
@@ -158,6 +163,7 @@ export function JobFormWizard({
   heading,
   subheading,
   hideBrandStep = false,
+  brandStepLogoOnly = false,
   externalSubmitting = false,
 }: JobFormWizardProps) {
   const steps = hideBrandStep ? STEPS_NO_BRAND : STEPS_WITH_BRAND;
@@ -218,7 +224,10 @@ export function JobFormWizard({
       if (skills.length === 0) errs.skills = "Add at least one required skill";
     } else if (i === 2) {
       if (!place.districtId || !place.talukId) errs.location = "Pick district and taluk";
-    } else if (i === brandStepIndex) {
+    } else if (i === brandStepIndex && !brandStepLogoOnly) {
+      // In logo-only mode companyName + contactEmail come from initialValues
+      // (staff picker captures them upstream), so skip the required-field
+      // validation — those inputs are hidden and can't be edited.
       if (!companyName.trim()) errs.companyName = "Required";
       if (!contactEmail.trim()) errs.contactEmail = "Required";
     }
@@ -350,8 +359,10 @@ export function JobFormWizard({
         {step === 4 && !hideBrandStep && (
           <StepShell
             key="brand"
-            title="Company brand"
-            subtitle="Your logo and a hiring contact go on the listing."
+            title={brandStepLogoOnly ? "Company logo" : "Company brand"}
+            subtitle={brandStepLogoOnly
+              ? "Optional — a logo on the listing helps candidates recognise the brand."
+              : "Your logo and a hiring contact go on the listing."}
             onBack={back}
             onNext={runSubmit}
             nextLabel={primaryLabel}
@@ -363,6 +374,7 @@ export function JobFormWizard({
               logoUrl={logoUrl}
               setLogoUrl={(v) => { setLogoUrl(v); setLogoDirty(true); }}
               errors={errors}
+              logoOnly={brandStepLogoOnly}
             />
             {submitError && (
               <p className="mt-3 rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-xs text-rose-700 dark:border-rose-500/30 dark:bg-rose-500/10 dark:text-rose-400">
@@ -754,6 +766,10 @@ function BrandStep(props: {
   contactEmail: string; setContactEmail: (v: string) => void;
   logoUrl: string | null; setLogoUrl: (v: string | null) => void;
   errors: Record<string, string>;
+  /** When true, hide the companyName + contactEmail fields — those came
+   *  from the parent (staff picker) and re-collecting them here is
+   *  redundant. Only the logo uploader stays. */
+  logoOnly?: boolean;
 }) {
   const [logoError, setLogoError] = useState<string | null>(null);
 
@@ -800,11 +816,20 @@ function BrandStep(props: {
         </div>
         {logoError && <p className="mt-2 text-[11px] text-rose-600">{logoError}</p>}
       </div>
-      <TextField label="Company name" value={props.companyName} onChange={props.setCompanyName} placeholder="e.g. Acme Tamil Pvt. Ltd." error={props.errors.companyName} />
-      <TextField label="Hiring contact email" value={props.contactEmail} onChange={props.setContactEmail} placeholder="hiring@yourcompany.com" type="email" error={props.errors.contactEmail} />
-      <p className="text-[11px] text-zinc-500 dark:text-zinc-400">
-        <MapPin size={11} className="-mt-0.5 inline" /> The logo + company name are saved on the employer profile and reused for every future job post.
-      </p>
+      {!props.logoOnly && (
+        <>
+          <TextField label="Company name" value={props.companyName} onChange={props.setCompanyName} placeholder="e.g. Acme Tamil Pvt. Ltd." error={props.errors.companyName} />
+          <TextField label="Hiring contact email" value={props.contactEmail} onChange={props.setContactEmail} placeholder="hiring@yourcompany.com" type="email" error={props.errors.contactEmail} />
+          <p className="text-[11px] text-zinc-500 dark:text-zinc-400">
+            <MapPin size={11} className="-mt-0.5 inline" /> The logo + company name are saved on the employer profile and reused for every future job post.
+          </p>
+        </>
+      )}
+      {props.logoOnly && (
+        <p className="text-[11px] text-zinc-500 dark:text-zinc-400">
+          Posting for <span className="font-semibold text-zinc-700 dark:text-zinc-200">{props.companyName || "the selected employer"}</span> · {props.contactEmail || "—"}
+        </p>
+      )}
     </div>
   );
 }

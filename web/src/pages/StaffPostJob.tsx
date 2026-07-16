@@ -173,6 +173,11 @@ export function StaffPostJob() {
 
         <JobFormWizard
           mode="create"
+          // Company name + contact email already came from the picker (or
+          // the inline-create form) — we DON'T want staff to re-type them
+          // on the Brand step. But the logo uploader still matters, so
+          // shrink the brand step to just the logo uploader.
+          brandStepLogoOnly
           initialValues={{
             companyName: selectedEmployer?.company || selectedEmployer?.name || "",
             contactEmail: selectedEmployer?.email || "",
@@ -263,40 +268,28 @@ function EmployerPickerCard({
   onClear,
   error,
 }: EmployerPickerCardProps) {
+  // Compact single-row layout: label chip inline with the input (empty
+  // state) or with the "Posting for X · Change" summary (picked state).
+  // The old two-line header ("POSTING ON BEHALF OF" + subtitle + icon)
+  // ate ~90px for information the label chip conveys in one line.
   return (
-    <div className="mb-6 rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
-      <div className="mb-3 flex items-center gap-2">
-        <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-teal-100 text-teal-600 dark:bg-teal-500/15 dark:text-teal-300">
-          <Building2 size={14} />
-        </div>
-        <div>
-          <p className="text-[11px] font-bold uppercase tracking-widest text-teal-600 dark:text-teal-400">
-            Posting on behalf of
-          </p>
-          <p className="text-xs text-zinc-500 dark:text-zinc-400">
-            Pick from the Employer Master, or create a new one inline.
-          </p>
-        </div>
-      </div>
-
+    <div className="mb-4 rounded-xl border border-zinc-200 bg-white px-3 py-2.5 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
       <div className="relative">
-        {/* When an employer is selected we HIDE the search input entirely
-            and show a summary card with a Change button below. Previously
-            the input stayed visible with the selected name pre-filled,
-            and any keystroke (including accidental) cleared the selection
-            silently — the user then submitted the wizard and got a
-            cryptic "employer_required" error. Explicit Change is safer. */}
         {!selectedEmployer && (
-          <div className="relative">
-            <Building2 size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-zinc-400" />
-            <input
-              value={query}
-              onFocus={() => onFocusChange(true)}
-              onBlur={() => setTimeout(() => onFocusChange(false), 120)}
-              onChange={(e) => onQueryChange(e.target.value)}
-              placeholder="Type employer name or company (e.g. Zoho)"
-              className="w-full rounded-xl border border-zinc-200 bg-white py-2.5 pl-10 pr-3 text-sm placeholder:text-zinc-400 focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500/20 dark:border-zinc-800 dark:bg-zinc-950"
-            />
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-teal-100 px-2 py-0.5 text-[10px] font-bold uppercase tracking-widest text-teal-700 dark:bg-teal-500/15 dark:text-teal-300">
+              <Building2 size={10} /> Post for
+            </span>
+            <div className="relative flex-1 min-w-[220px]">
+              <input
+                value={query}
+                onFocus={() => onFocusChange(true)}
+                onBlur={() => setTimeout(() => onFocusChange(false), 120)}
+                onChange={(e) => onQueryChange(e.target.value)}
+                placeholder="Type employer name or company (e.g. Zoho)"
+                className="w-full rounded-lg border border-zinc-200 bg-white px-3 py-1.5 text-sm placeholder:text-zinc-400 focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500/20 dark:border-zinc-800 dark:bg-zinc-950"
+              />
+            </div>
           </div>
         )}
 
@@ -362,22 +355,22 @@ function EmployerPickerCard({
       </div>
 
       {selectedEmployer && (
-        <div className="mt-3 flex items-start gap-3 rounded-xl border border-teal-200 bg-teal-50/60 p-3 dark:border-teal-500/25 dark:bg-teal-500/10">
-          <div className="min-w-0 flex-1">
-            <div className="flex items-center gap-2 text-[11px] font-semibold text-teal-800 dark:text-teal-300">
-              <Check size={12} /> Posting for
-            </div>
-            <div className="mt-0.5 truncate text-sm font-semibold text-teal-900 dark:text-teal-200">
+        <div className="flex items-center gap-2">
+          <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-teal-100 px-2 py-0.5 text-[10px] font-bold uppercase tracking-widest text-teal-700 dark:bg-teal-500/15 dark:text-teal-300">
+            <Check size={10} /> Posting for
+          </span>
+          <div className="min-w-0 flex-1 truncate text-sm">
+            <span className="font-semibold text-zinc-900 dark:text-zinc-100">
               {selectedEmployer.company || selectedEmployer.name}
-            </div>
-            <div className="truncate text-[11px] text-teal-800/80 dark:text-teal-300/80">
+            </span>
+            <span className="ml-2 text-[11px] text-zinc-500 dark:text-zinc-400">
               {selectedEmployer.name} · {selectedEmployer.email}
-            </div>
+            </span>
           </div>
           <button
             type="button"
             onClick={onClear}
-            className="shrink-0 rounded-full border border-teal-300 bg-white px-2.5 py-1 text-[11px] font-semibold text-teal-700 transition hover:bg-teal-50 dark:border-teal-500/40 dark:bg-transparent dark:text-teal-300 dark:hover:bg-teal-500/10"
+            className="shrink-0 rounded-full px-2 py-0.5 text-[11px] font-semibold text-teal-700 transition hover:bg-teal-50 dark:text-teal-300 dark:hover:bg-teal-500/10"
           >
             Change
           </button>
@@ -385,7 +378,7 @@ function EmployerPickerCard({
       )}
 
       {createMode && !selectedEmployer && (
-        <div className="mt-3 space-y-2 rounded-xl border border-amber-200 bg-amber-50/50 p-3 dark:border-amber-500/25 dark:bg-amber-500/10">
+        <div className="mt-2 space-y-2 rounded-lg border border-amber-200 bg-amber-50/50 p-2.5 dark:border-amber-500/25 dark:bg-amber-500/10">
           <div className="flex items-center justify-between">
             <span className="text-[11px] font-semibold uppercase tracking-widest text-amber-800 dark:text-amber-300">
               New employer — creates on submit

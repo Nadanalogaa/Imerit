@@ -103,12 +103,21 @@ export function Navbar() {
   const logoHref = user ? HOME_PATH[user.role] : "/";
   const appLinks = user ? APP_LINKS[user.role] : null;
 
-  /** Route match — treat sub-paths (e.g. /candidate/jobs/123) as active
-   *  under the parent /candidate/jobs so drilling into a detail keeps the
-   *  parent nav item highlighted. */
-  const isActive = (to: string) =>
-    location.pathname === to ||
-    (to !== "/" && location.pathname.startsWith(to + "/"));
+  /** Which menu item owns the current pathname — longest matching prefix
+   *  wins so /staff/jobs/new highlights "Post job" (exact match) and does
+   *  NOT also highlight "My jobs" (/staff/jobs prefix). The naive
+   *  startsWith check we had before lit up both, because /staff/jobs/new
+   *  legitimately starts with /staff/jobs/.
+   *
+   *  Sub-paths under a link (e.g. /staff/jobs/abc123 → "My jobs") still
+   *  highlight the parent, because the parent stays the longest prefix
+   *  when no more-specific menu item matches. */
+  const activeTo = appLinks
+    ? appLinks
+        .filter((l) => location.pathname === l.to || location.pathname.startsWith(l.to + "/"))
+        .reduce<string | null>((best, l) => (best && best.length >= l.to.length ? best : l.to), null)
+    : null;
+  const isActive = (to: string) => to === activeTo;
 
   return (
     <header
