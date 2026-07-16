@@ -30,6 +30,7 @@ enum UserRole {
   EMPLOYER
   ADMIN
   SUPER_ADMIN
+  STAFF
 }
 
 enum ModerationStatus {
@@ -47,6 +48,25 @@ model User {
   mobileVerified Boolean   @default(false)
   name           String
   passwordHash   String? // optional — OTP-only flow leaves this null
+
+  // Staff-flow additions:
+  //   sharedPassword — plain-text password chosen at bootstrap so
+  //     super-admin (for staff) or staff (for the employers they
+  //     provision) can reveal and share the credential. The passwordHash
+  //     column above still holds the bcrypt for actual auth.
+  //   deactivated — soft-disable a staff account without deleting audit
+  //     history. Set true → passwordLogin refuses.
+  //   createdByStaffId — for employer users, points back at the staff
+  //     user who provisioned them. NULL for self-registered employers.
+  //   jobsPostedByStaff — reverse relation surfaces "employers I created"
+  //     and "jobs I posted for other employers".
+  sharedPassword    String?
+  deactivated       Boolean  @default(false)
+  createdByStaffId  String?
+  createdByStaff    User?    @relation("StaffProvisioned", fields: [createdByStaffId], references: [id], onDelete: SetNull)
+  provisionedUsers  User[]   @relation("StaffProvisioned")
+  jobsPostedByStaff Job[]    @relation("StaffPostedJobs")
+
   createdAt      DateTime  @default(now())
   updatedAt      DateTime  @updatedAt
   deletedAt      DateTime?
@@ -63,6 +83,7 @@ model User {
 
   @@index([role])
   @@index([deletedAt])
+  @@index([createdByStaffId])
   @@map("users")
 }
 
@@ -339,6 +360,12 @@ model Job {
   employerId   String
   employer     User          @relation("EmployerJobs", fields: [employerId], references: [id], onDelete: Cascade)
   employerName String        // denormalized for fast list rendering
+
+  // Set when the job was posted by a staff user on behalf of the employer;
+  // null when the employer posted it themselves. Powers "Jobs I've posted"
+  // on the staff dashboard.
+  postedByStaffId String?
+  postedByStaff   User?      @relation("StaffPostedJobs", fields: [postedByStaffId], references: [id], onDelete: SetNull)
   title        String
   description  String        @db.Text
   // Location

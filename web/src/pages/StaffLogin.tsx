@@ -4,6 +4,7 @@ import { Eye, EyeOff, KeyRound, Users2 } from "lucide-react";
 import { AuthLayout } from "../components/AuthLayout";
 import { TextField } from "../components/TextField";
 import { useAuth } from "../store/auth";
+import { ApiError } from "../lib/api";
 
 /**
  * Staff-only login. Password-based (no OTP) because staff is an internal
@@ -21,7 +22,7 @@ export function StaffLogin() {
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
-  const submit = (e: React.FormEvent) => {
+  const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
     if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) {
@@ -33,17 +34,26 @@ export function StaffLogin() {
       return;
     }
     setSubmitting(true);
-    const user = passwordLogin(email, password);
-    setSubmitting(false);
-    if (!user) {
-      setError("No matching staff account — check the credentials your super-admin shared.");
-      return;
+    try {
+      const user = await passwordLogin(email, password);
+      if (user.role !== "staff") {
+        setError("That account isn't a staff account. Use the correct login for your role.");
+        return;
+      }
+      navigate("/staff/dashboard", { replace: true });
+    } catch (err) {
+      if (err instanceof ApiError) {
+        if (err.code === "ACCOUNT_DEACTIVATED") {
+          setError("This staff account is deactivated. Ask a super-admin to reactivate it.");
+        } else {
+          setError("Incorrect email or password.");
+        }
+      } else {
+        setError("Login failed — please try again in a moment.");
+      }
+    } finally {
+      setSubmitting(false);
     }
-    if (user.role !== "staff") {
-      setError("That account isn't a staff account. Use the correct login for your role.");
-      return;
-    }
-    navigate("/staff/dashboard", { replace: true });
   };
 
   return (

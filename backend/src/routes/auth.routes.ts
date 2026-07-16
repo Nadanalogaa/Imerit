@@ -1,6 +1,7 @@
 import { Router } from "express";
 import rateLimit from "express-rate-limit";
-import { AuditAction, OtpPurpose } from "@prisma/client";
+import bcrypt from "bcryptjs";
+import { AuditAction, OtpPurpose, UserRole } from "@prisma/client";
 
 import { prisma } from "../lib/prisma.js";
 import { logger } from "../lib/logger.js";
@@ -130,6 +131,71 @@ router.post(
     });
   }),
 );
+
+/* --------------------- Password login (staff + provisioned employers) --------------------- */
+
+/**
+ * Password login — used by two lanes:
+ *   1. Staff accounts (role=STAFF), always. Staff was bootstrapped by a
+ *      super-admin who already knows the person, so no OTP.
+ *   2. Employer accounts (role=EMPLOYER) whose credentials were minted
+ *      by a staff member (their `sharedPassword` field is set). Those
+ *      employers can log in via password as well as via OTP.
+ *
+ * All other roles must use the OTP path — this route refuses them.
+ */
+const passwordLoginLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  limit: 20,
+  standardHeaders: "draft-7",
+  legacyHeaders: false,
+  message: { error: { code: "RATE_LIMIT", message: "Too many login attempts — try again shortly" } },
+});
+
+const passwordLoginHandler = asyncHandler(async (req, res) => {
+  const body = req.body as { email?: unknown; password?: unknown };
+  const email = typeof body.email === "string" ? body.email.toLowerCase().trim() : "";
+  const password = typeof body.password === "string" ? body.password : "";
+  if (!email || !password) {
+    throw new HttpError(400, "Email and password are required", "MISSING_CREDENTIALS");
+  }
+
+  const user = await prisma.user.findUnique({ where: { email } });
+  // Same error message for missing account / wrong password / role
+  // ineligible so we don't leak which of the three is the case.
+  const denyMsg = "Incorrect email or password";
+  if (!user || user.deletedAt) {
+    throw new HttpError(401, denyMsg, "AUTH_INVALID");
+  }
+  const eligible =
+    user.role === UserRole.STAFF ||
+    (user.role === UserRole.EMPLOYER && !!user.sharedPassword);
+  if (!eligible) {
+    throw new HttpError(401, denyMsg, "AUTH_INVALID");
+  }
+  if (user.deactivated) {
+    throw new HttpError(403, "This account is deactivated. Ask a super-admin to reactivate it.", "ACCOUNT_DEACTIVATED");
+  }
+  if (!user.passwordHash) {
+    // Employer with sharedPassword but no hash: possible if the row was
+    // seeded before the staff-provisioning flow, so treat it as auth-fail.
+    throw new HttpError(401, denyMsg, "AUTH_INVALID");
+  }
+  const ok = await bcrypt.compare(password, user.passwordHash);
+  if (!ok) throw new HttpError(401, denyMsg, "AUTH_INVALID");
+
+  const access = signAccessToken({ sub: user.id, role: user.role, email: user.email });
+  const refresh = signRefreshToken({ sub: user.id, jti: crypto.randomUUID() });
+  setAuthCookies(res, access, refresh);
+  await touchLastSeen(user.id);
+  await recordAudit({ req, actorId: user.id, actorRole: user.role, action: AuditAction.USER_LOGIN });
+  res.json({ user: publicUser(user), message: "Logged in" });
+});
+
+// Primary route + legacy alias so the previous /auth/staff/login path
+// keeps working (frontend uses `/auth/password/login` now).
+router.post("/auth/password/login", passwordLoginLimiter, passwordLoginHandler);
+router.post("/auth/staff/login", passwordLoginLimiter, passwordLoginHandler);
 
 /* ------------------------------- Refresh ------------------------------- */
 

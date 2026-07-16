@@ -8,7 +8,7 @@ import { api } from "../api";
 
 /** Roles the public API accepts at register-time. Backend uses uppercase. */
 export type ApiPublicRole = "CANDIDATE" | "EMPLOYER";
-export type ApiRole = ApiPublicRole | "ADMIN" | "SUPER_ADMIN";
+export type ApiRole = ApiPublicRole | "ADMIN" | "SUPER_ADMIN" | "STAFF";
 
 export type ApiOtpPurpose = "REGISTER" | "LOGIN";
 
@@ -72,4 +72,17 @@ export const authApi = {
   refresh: () => api<{ ok: true }>("/auth/refresh", { method: "POST" }),
 
   logout: () => api<{ ok: true }>("/auth/logout", { method: "POST" }),
+
+  /**
+   * Password login — for staff AND for employers whose credentials were
+   * minted by staff (they have a `sharedPassword` on the row). No OTP.
+   * Backend validates bcrypt-hash + issues the same JWT cookies as the
+   * OTP flow. Throws ApiError code=AUTH_INVALID for bad creds or an
+   * ineligible role; ACCOUNT_DEACTIVATED for a disabled account.
+   */
+  passwordLogin: (email: string, password: string) =>
+    api<{ user: ApiUser; message: string }>("/auth/password/login", {
+      method: "POST",
+      json: { email, password },
+    }),
 };

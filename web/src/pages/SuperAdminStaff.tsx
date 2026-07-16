@@ -30,21 +30,25 @@ export function SuperAdminStaff() {
     [tick],
   );
 
-  const submit = (e: React.FormEvent) => {
+  const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
     if (!form.name.trim()) return setError("Enter a name.");
     if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(form.email.trim())) return setError("Enter a valid email.");
 
-    const { user, password } = createStaff({
-      name: form.name.trim(),
-      email: form.email.trim(),
-      mobile: form.mobile.trim() || undefined,
-    });
-    setFreshCreds({ email: user.email, password, name: user.name });
-    setForm({ name: "", email: "", mobile: "" });
-    setShowForm(false);
-    setTick((t) => t + 1);
+    try {
+      const { user, password } = await createStaff({
+        name: form.name.trim(),
+        email: form.email.trim(),
+        mobile: form.mobile.trim() || undefined,
+      });
+      setFreshCreds({ email: user.email, password, name: user.name });
+      setForm({ name: "", email: "", mobile: "" });
+      setShowForm(false);
+      setTick((t) => t + 1);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Could not create staff account.");
+    }
   };
 
   return (
@@ -148,9 +152,13 @@ export function SuperAdminStaff() {
                     <td className="px-4 py-3 text-right">
                       <button
                         type="button"
-                        onClick={() => {
-                          setDeactivated(u.id, !u.deactivated);
-                          setTick((t) => t + 1);
+                        onClick={async () => {
+                          try {
+                            await setDeactivated(u.id, !u.deactivated);
+                            setTick((t) => t + 1);
+                          } catch (err) {
+                            alert(err instanceof Error ? err.message : "Could not toggle account.");
+                          }
                         }}
                         className={[
                           "inline-flex items-center gap-1 rounded-lg border px-2 py-1 text-[11px] font-semibold transition",

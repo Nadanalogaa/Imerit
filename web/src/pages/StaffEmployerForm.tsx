@@ -48,24 +48,28 @@ export function StaffEmployerForm() {
     );
   }
 
-  const submit = (e: React.FormEvent) => {
+  const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
     if (!name.trim()) return setError("Enter a contact name");
     if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email.trim())) return setError("Enter a valid email");
 
     if (editing && target) {
-      updateEmployer(target.id, {
-        name: name.trim(),
-        mobile: mobile.trim() || undefined,
-        company: company.trim() || undefined,
-      });
-      navigate("/staff/employers", { replace: true });
+      try {
+        await updateEmployer(target.id, {
+          name: name.trim(),
+          mobile: mobile.trim() || undefined,
+          company: company.trim() || undefined,
+        });
+        navigate("/staff/employers", { replace: true });
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "Could not update employer.");
+      }
       return;
     }
 
     try {
-      const { user, password } = createEmployerByStaff({
+      const { user, password } = await createEmployerByStaff({
         staffId: me.id,
         name: name.trim(),
         email: email.trim(),
@@ -82,11 +86,15 @@ export function StaffEmployerForm() {
     }
   };
 
-  const handleReset = () => {
+  const handleReset = async () => {
     if (!target) return;
     if (!confirm(`Generate a new password for ${target.name}? The old one will stop working.`)) return;
-    const password = resetEmployerPassword(target.id);
-    setFreshCreds({ email: target.email, password, name: target.name });
+    try {
+      const password = await resetEmployerPassword(target.id);
+      setFreshCreds({ email: target.email, password, name: target.name });
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Could not reset password.");
+    }
   };
 
   return (

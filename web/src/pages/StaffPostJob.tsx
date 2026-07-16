@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { ArrowLeft, Building2, Check, UserPlus, X } from "lucide-react";
 import { allUsers, useAuth, type User } from "../store/auth";
@@ -8,7 +8,9 @@ import { JobFormWizard } from "../components/JobFormWizard";
 import { TextField } from "../components/TextField";
 import { Navbar } from "../components/Navbar";
 import { CredentialShareModal } from "../components/staff/CredentialShareModal";
-import { ApiError } from "../lib/api";
+import { apiEnabled, ApiError } from "../lib/api";
+import { staffApi } from "../lib/api/staff";
+import { KEYS, get as loadStorage, set as saveStorage } from "../lib/storage";
 
 /**
  * Staff post-job. Uses the same [JobFormWizard] as EmployerPostJob so
@@ -23,13 +25,52 @@ export function StaffPostJob() {
   const [searchParams] = useSearchParams();
   const me = useAuth((s) => s.currentUser)!;
   const createEmployerByStaff = useAuth((s) => s.createEmployerByStaff);
-  const addJobAsync = useJobs((s) => s.addJobAsync);
   const talukById = useLocations((s) => s.talukById);
+
+  // Trigger a re-render when we merge fresh employer rows from the server
+  // — allUsers() reads localStorage, and we can't put that into a Zustand
+  // selector without a bigger refactor, so a tick counter is enough.
+  const [employersTick, setEmployersTick] = useState(0);
 
   const employers = useMemo(
     () => allUsers().filter((u) => u.role === "employer").sort((a, b) => a.name.localeCompare(b.name)),
-    [],
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [employersTick],
   );
+
+  // Pull the live employer master from the server on mount so the picker
+  // sees every employer — even ones created from another browser or by a
+  // different staff user. Merges into the local users cache so subsequent
+  // reads via allUsers() stay hot.
+  useEffect(() => {
+    if (!apiEnabled) return;
+    let alive = true;
+    staffApi.listEmployers()
+      .then(({ items }) => {
+        if (!alive) return;
+        const existing = loadStorage<User[]>(KEYS.users, []);
+        const byId = new Map(existing.map((u) => [u.id, u]));
+        for (const e of items) {
+          byId.set(e.id, {
+            id: e.id,
+            role: "employer",
+            name: e.name,
+            email: e.email,
+            mobile: e.mobile ?? undefined,
+            company: e.company ?? undefined,
+            emailVerified: true,
+            createdAt: e.createdAt,
+            sharedPassword: e.sharedPassword ?? undefined,
+            createdByStaffId: e.createdByStaffId ?? undefined,
+            deactivated: e.deactivated,
+          });
+        }
+        saveStorage(KEYS.users, Array.from(byId.values()));
+        setEmployersTick((t) => t + 1);
+      })
+      .catch(() => { /* stale local list is fine as fallback */ });
+    return () => { alive = false; };
+  }, []);
 
   const initialEmployerId = searchParams.get("employerId");
   const initialEmployer = initialEmployerId
@@ -97,7 +138,7 @@ export function StaffPostJob() {
         return failEmployer("Enter a valid work email for the new employer.");
       }
       try {
-        const { user, password } = createEmployerByStaff({
+        const { user, password } = await createEmployerByStaff({
           staffId: me.id,
           name: newEmp.name.trim(),
           email: newEmp.email.trim(),
@@ -117,15 +158,12 @@ export function StaffPostJob() {
     const taluk = v.place.talukId ? talukById(v.place.talukId) : undefined;
     const locationLabel = taluk ? `${taluk.taluk.name}, ${taluk.district.name}` : "";
 
-    // Post the job. Note: addJobAsync uses the SIGNED-IN user's employer
-    // context on the server side, so when a staff member is signed in
-    // the server can't attribute the job to a different employer.
-    // Until the backend gets a `/staff/jobs` endpoint that accepts an
-    // employerId, we route through the local addJob (which respects the
-    // one we pass explicitly). This is the same tradeoff Staff has for
-    // the createEmployerByStaff flow — localStorage-first, backend port
-    // to follow.
-    const job = useJobs.getState().addJob({
+    // Post the job via the server-side /staff/jobs endpoint — the row
+    // lands in Postgres, the employer sees it on their dashboard,
+    // candidates see it in the public feed. Backend stamps
+    // `postedByStaffId` from the JWT so we can list "jobs I posted"
+    // later without a client-side join.
+    const job = await useJobs.getState().addJobAsStaffAsync({
       employerId: employer!.id,
       employerName: employer!.company || employer!.name,
       title: v.title,
@@ -147,9 +185,6 @@ export function StaffPostJob() {
       benefits: v.benefits,
       contactEmail: v.contactEmail || undefined,
     });
-    // Keep addJobAsync in scope so the tree-shaker doesn't drop it (we'll
-    // use it once the backend has a staff endpoint).
-    void addJobAsync;
 
     if (freshCreds) {
       // New employer created — hold on the credentials modal, redirect

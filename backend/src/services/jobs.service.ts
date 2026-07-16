@@ -114,11 +114,14 @@ interface CreateJobArgs {
  * so the demo flow is friction-free; an admin can later flip a job to
  * REJECTED via the moderation endpoint and the public list will hide it.
  */
-export async function createJob(args: CreateJobArgs): Promise<Job> {
+export async function createJob(args: CreateJobArgs & { postedByStaffId?: string }): Promise<Job> {
   return prisma.job.create({
     data: {
       employerId: args.employerId,
       employerName: args.employerName,
+      // Optional back-reference to the staff user who posted on behalf of
+      // this employer. NULL when the employer posted the job themselves.
+      postedByStaffId: args.postedByStaffId,
       ...args.data,
       skills: args.data.skills,
       benefits: args.data.benefits ?? [],

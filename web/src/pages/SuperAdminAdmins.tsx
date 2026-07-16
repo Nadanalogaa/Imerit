@@ -129,10 +129,10 @@ export function SuperAdminAdmins() {
  setCreating(true);
  try {
  if (newRole === "STAFF") {
-   // Staff path is localStorage-first — no server API for the role
-   // yet. The generated password comes back so we can pop the
-   // one-time CredentialShareModal for hand-off.
-   const { user, password } = createStaff({
+   // Staff creation now hits the server — hashes the password (for
+   // login) and stores plaintext (for reveal). Fresh creds come back
+   // so we pop the one-time CredentialShareModal for hand-off.
+   const { user, password } = await createStaff({
      name: newName.trim(),
      email: newEmail.trim(),
      mobile: newMobile.trim() || undefined,
@@ -354,11 +354,15 @@ export function SuperAdminAdmins() {
  <KeyRound size={11} /> Change
  </button>
  <button
-   onClick={() => {
+   onClick={async () => {
      if (!confirm(`Generate a new password for ${s.name}? The old one stops working immediately, and their live session (if any) is dropped.`)) return;
-     const password = resetSharedPassword(s.id);
-     setFreshStaffCreds({ email: s.email, password, name: s.name, flavor: "reset" });
-     setStaffTick((t) => t + 1);
+     try {
+       const password = await resetSharedPassword(s.id);
+       setFreshStaffCreds({ email: s.email, password, name: s.name, flavor: "reset" });
+       setStaffTick((t) => t + 1);
+     } catch (err) {
+       alert(err instanceof Error ? err.message : "Could not reset password.");
+     }
    }}
    title="Auto-generate a fresh password and pop the share sheet"
    className="inline-flex items-center gap-1.5 rounded-full border border-amber-300 px-2.5 py-1 text-[11px] font-semibold text-amber-700 transition hover:bg-amber-50 dark:border-amber-500/40 dark:text-amber-300 dark:hover:bg-amber-500/10"
@@ -366,9 +370,13 @@ export function SuperAdminAdmins() {
  <RotateCcw size={11} /> Reset
  </button>
  <button
-   onClick={() => {
-     setDeactivated(s.id, !s.deactivated);
-     setStaffTick((t) => t + 1);
+   onClick={async () => {
+     try {
+       await setDeactivated(s.id, !s.deactivated);
+       setStaffTick((t) => t + 1);
+     } catch (err) {
+       alert(err instanceof Error ? err.message : "Could not toggle account.");
+     }
    }}
    title={s.deactivated ? "Reactivate this staff account" : "Deactivate — they can't sign in and their live session drops"}
    className={[
@@ -509,20 +517,24 @@ export function SuperAdminAdmins() {
  </button>
  <button
    type="button"
-   onClick={() => {
+   onClick={async () => {
      const pwd = nextPwd.trim();
      if (pwd.length < 6) {
        setChangeError("Password must be at least 6 characters");
        return;
      }
-     setSharedPassword(changeTarget.id, pwd);
-     const target = changeTarget;
-     setChangeTarget(null);
-     setNextPwd("");
-     setStaffTick((t) => t + 1);
-     // Pop the same share modal so super-admin has the copy-both
-     // affordance for handing off to the staff member.
-     setFreshStaffCreds({ email: target.email, password: pwd, name: target.name, flavor: "reset" });
+     try {
+       await setSharedPassword(changeTarget.id, pwd);
+       const target = changeTarget;
+       setChangeTarget(null);
+       setNextPwd("");
+       setStaffTick((t) => t + 1);
+       // Pop the same share modal so super-admin has the copy-both
+       // affordance for handing off to the staff member.
+       setFreshStaffCreds({ email: target.email, password: pwd, name: target.name, flavor: "reset" });
+     } catch (err) {
+       setChangeError(err instanceof Error ? err.message : "Could not set password.");
+     }
    }}
    className="inline-flex items-center gap-2 rounded-2xl bg-gradient-to-r from-teal-500 to-emerald-600 px-4 py-2 text-sm font-semibold text-white shadow-md shadow-emerald-500/30 transition hover:shadow-lg"
  >

@@ -47,19 +47,22 @@ export function EmployerLogin() {
  return;
  }
  setSubmitting(true);
- const user = passwordLogin(email, password);
- setSubmitting(false);
- if (!user) {
- setError(
- "That email + password combo didn't match. If your recruiter didn't share a password, use email OTP instead.",
- );
- return;
- }
+ try {
+ const user = await passwordLogin(email, password);
  if (user.role !== "employer") {
  setError("That account isn't an employer. Use the correct login for your role.");
  return;
  }
  navigate("/employer/dashboard", { replace: true });
+ } catch (err) {
+ setError(
+ err instanceof ApiError && err.code === "ACCOUNT_DEACTIVATED"
+ ? "This employer account is deactivated. Ask your recruiter to reactivate it."
+ : "That email + password combo didn't match. If your recruiter didn't share a password, use email OTP instead.",
+ );
+ } finally {
+ setSubmitting(false);
+ }
  return;
  }
 

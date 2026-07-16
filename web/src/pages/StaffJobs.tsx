@@ -1,9 +1,11 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { Briefcase, Plus, Search, MapPin, ExternalLink, Timer } from "lucide-react";
 import { allUsers, useAuth } from "../store/auth";
-import { useJobs, isExpired, daysUntilExpiry } from "../store/jobs";
+import { useJobs, isExpired, daysUntilExpiry, fromApiJob, type Job } from "../store/jobs";
 import { Navbar } from "../components/Navbar";
+import { apiEnabled } from "../lib/api";
+import { staffApi } from "../lib/api/staff";
 
 /**
  * Jobs staff has posted — the readback lane. "Posted by me" isn't a
@@ -18,18 +20,38 @@ import { Navbar } from "../components/Navbar";
  */
 export function StaffJobs() {
   const me = useAuth((s) => s.currentUser)!;
-  const jobs = useJobs((s) => s.jobs);
+  const localJobs = useJobs((s) => s.jobs);
   const [query, setQuery] = useState("");
 
+  // Authoritative list: /staff/jobs returns exactly the jobs this staff
+  // user posted (postedByStaffId = me.sub, server-enforced). Falls back
+  // to the localStorage filter — jobs whose employer was provisioned by
+  // this staff user — when the API is unavailable or still loading.
+  const [apiJobs, setApiJobs] = useState<Job[] | null>(null);
+  useEffect(() => {
+    if (!apiEnabled) return;
+    let alive = true;
+    staffApi.listJobs()
+      .then(({ items }) => {
+        if (!alive) return;
+        setApiJobs(items.map(fromApiJob));
+      })
+      .catch(() => { /* fall back to localStorage filter */ });
+    return () => { alive = false; };
+  }, []);
+
+  // localStorage fallback: any job whose employer was provisioned by this
+  // staff user. Kept for offline/dev + as a safety net if /staff/jobs is
+  // temporarily slow.
   const myEmployerIds = useMemo(
     () => new Set(allUsers().filter((u) => u.createdByStaffId === me.id).map((u) => u.id)),
     [me.id],
   );
+  const sourceJobs = apiJobs ?? localJobs.filter((j) => myEmployerIds.has(j.employerId));
 
   const mine = useMemo(() => {
     const q = query.trim().toLowerCase();
-    return jobs
-      .filter((j) => myEmployerIds.has(j.employerId))
+    return sourceJobs
       .filter((j) => {
         if (!q) return true;
         return (
@@ -39,7 +61,7 @@ export function StaffJobs() {
         );
       })
       .sort((a, b) => new Date(b.postedAt).getTime() - new Date(a.postedAt).getTime());
-  }, [jobs, myEmployerIds, query]);
+  }, [sourceJobs, query]);
 
   const active = mine.filter((j) => !isExpired(j));
   const expired = mine.filter((j) => isExpired(j));

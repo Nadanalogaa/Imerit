@@ -2,6 +2,7 @@ import { create } from "zustand";
 import { get as load, set as save, remove, KEYS } from "../lib/storage";
 import { apiEnabled, ApiError } from "../lib/api";
 import { authApi, type ApiUser } from "../lib/api/auth";
+import { staffApi, superAdminStaffApi, type ApiEmployerRowForStaff, type ApiStaff } from "../lib/api/staff";
 
 export type Role = "candidate" | "employer" | "admin" | "super_admin" | "staff";
 
@@ -74,6 +75,7 @@ function fromApiUser(u: ApiUser): User {
     EMPLOYER: "employer",
     ADMIN: "admin",
     SUPER_ADMIN: "super_admin",
+    STAFF: "staff",
   };
   return {
     id: u.id,
@@ -137,25 +139,29 @@ interface AuthState {
   /* --------------- Staff + Employer Master (localStorage-only) --------------- */
 
   /**
-   * Password-based login used by staff and by employers whose accounts
-   * were provisioned by staff. Returns the matched user or null.
+   * Password-based login for staff. Hits POST /auth/staff/login which
+   * validates bcrypt-hash + mints the same JWT cookies as the OTP flow,
+   * so downstream code doesn't have to branch by role. Falls back to
+   * localStorage lookup when apiEnabled is off.
    *
-   * Staff always authenticate this way (no OTP for the internal role).
-   * Employers can *also* authenticate this way when their creds came
-   * from staff — otherwise they use the normal OTP flow.
+   * Returns the User on success, throws ApiError on bad creds or
+   * deactivated account.
    */
-  passwordLogin: (email: string, password: string) => User | null;
+  passwordLogin: (email: string, password: string) => Promise<User>;
 
   /**
-   * Super-admin creates a staff account. Password is generated + surfaced
-   * once in the CredentialShareModal so the super-admin can hand it over.
+   * Super-admin creates a staff account. Backend hashes the generated
+   * password (for login) + stores it plain (for the reveal/copy UX
+   * super-admin needs when handing creds off). Returns { user, password }
+   * so the CredentialShareModal can show the plaintext exactly once.
    */
-  createStaff: (input: { name: string; email: string; mobile?: string }) => { user: User; password: string };
+  createStaff: (input: { name: string; email: string; mobile?: string }) => Promise<{ user: User; password: string }>;
 
   /**
-   * Staff creates a new employer in the Employer Master. Password is
-   * generated automatically and stored on the employer row so staff can
-   * copy it later from the master view.
+   * Staff creates a new employer. Same tradeoff as createStaff — server
+   * bcrypt-hashes for auth AND stores the plaintext on the row so staff
+   * can reveal + copy it later from the master. Also creates an
+   * EmployerProfile with the company name if provided.
    */
   createEmployerByStaff: (input: {
     staffId: string;
@@ -163,46 +169,80 @@ interface AuthState {
     email: string;
     mobile?: string;
     company?: string;
-  }) => { user: User; password: string };
+  }) => Promise<{ user: User; password: string }>;
 
   /**
-   * Overwrite any shared-password user's credential (staff OR employer)
-   * with a freshly-generated one. Returns the new plaintext password so
-   * the caller can hand it off via CredentialShareModal.
-   *
-   * The role check is intentionally loose — an id belonging to a user
-   * without a `sharedPassword` still gets one on reset, which is the
-   * right behavior for cases where a self-registered employer wants to
-   * be given a shared credential.
+   * Regenerate a fresh random password for a staff OR employer account
+   * (server picks the right endpoint based on the target's role — see
+   * impl). Returns the new plaintext.
    */
-  resetSharedPassword: (userId: string) => string;
+  resetSharedPassword: (userId: string) => Promise<string>;
 
-  /**
-   * Set an explicit password on any user — used by the super-admin's
-   * "Change password" flow so they can pick a memorable string instead
-   * of accepting the generated one. Same session-sync behavior as
-   * `resetSharedPassword`.
-   *
-   * The caller is responsible for validating the password (length,
-   * complexity) — the store just persists whatever it's given.
-   */
-  setSharedPassword: (userId: string, password: string) => void;
+  /** Super-admin sets an explicit staff password (bypasses random gen). */
+  setSharedPassword: (userId: string, password: string) => Promise<void>;
 
-  /** @deprecated Prefer `resetSharedPassword`. Kept as a thin alias so
-   *  existing staff-facing employer flows don't need to churn. */
-  resetEmployerPassword: (employerId: string) => string;
+  /** Alias for resetSharedPassword — staff-side employer resets. */
+  resetEmployerPassword: (employerId: string) => Promise<string>;
 
-  /** Patch limited fields on an existing employer (staff-owned edit). */
+  /** Patch limited fields on an employer staff has provisioned. */
   updateEmployer: (
     employerId: string,
     patch: Partial<Pick<User, "name" | "mobile" | "company">>,
-  ) => void;
+  ) => Promise<void>;
 
-  /** Toggle the `deactivated` flag — used by the super-admin staff manager. */
-  setDeactivated: (userId: string, deactivated: boolean) => void;
+  /** Toggle the `deactivated` flag — super-admin's staff manager only. */
+  setDeactivated: (userId: string, deactivated: boolean) => Promise<void>;
 }
 
 const userId = () => "u_" + Math.random().toString(36).slice(2, 10);
+
+/**
+ * Fold a staff API row into the frontend User shape. Includes sharedPassword
+ * + deactivated so the SuperAdminAdmins reveal/copy UI works.
+ */
+function fromApiStaff(s: ApiStaff): User {
+  return {
+    id: s.id,
+    role: "staff",
+    name: s.name,
+    email: s.email,
+    mobile: s.mobile ?? undefined,
+    emailVerified: true,
+    createdAt: s.createdAt,
+    sharedPassword: s.sharedPassword ?? undefined,
+    deactivated: s.deactivated,
+  };
+}
+
+/** Same but for an employer row returned by the staff-scoped endpoints. */
+function fromApiEmployerRow(e: ApiEmployerRowForStaff): User {
+  return {
+    id: e.id,
+    role: "employer",
+    name: e.name,
+    email: e.email,
+    mobile: e.mobile ?? undefined,
+    company: e.company ?? undefined,
+    emailVerified: true,
+    createdAt: e.createdAt,
+    sharedPassword: e.sharedPassword ?? undefined,
+    createdByStaffId: e.createdByStaffId ?? undefined,
+    deactivated: e.deactivated,
+  };
+}
+
+/**
+ * Server responses for staff/employer CRUD don't refresh the whole `users`
+ * localStorage cache — they only touch the affected row. Merge helper so
+ * every mutation keeps the local cache aligned with what other pages read
+ * from `allUsers()`.
+ */
+function upsertLocalUser(u: User) {
+  const users = load<User[]>(KEYS.users, []);
+  const idx = users.findIndex((x) => x.id === u.id);
+  const next = idx === -1 ? [u, ...users] : users.map((x) => (x.id === u.id ? { ...x, ...u } : x));
+  save(KEYS.users, next);
+}
 
 /**
  * Generate a memorable-ish password for staff-provisioned employer + staff
@@ -235,16 +275,6 @@ export const useAuth = create<AuthState>((set, get) => ({
   init: async () => {
     if (get().initialized) return;
     if (!apiEnabled) {
-      set({ initialized: true });
-      return;
-    }
-    // Staff sessions are localStorage-only — the backend doesn't issue a
-    // cookie for them (staff was bootstrapped before the server-side auth
-    // was ready). Calling authApi.me() would 401, and the 401 branch
-    // below would wipe the staff user on every refresh. Skip the server
-    // round-trip and trust the cached user for the staff role.
-    const cached = get().currentUser;
-    if (cached && cached.role === "staff") {
       set({ initialized: true });
       return;
     }
@@ -393,9 +423,18 @@ export const useAuth = create<AuthState>((set, get) => ({
     return users.find((u) => u.email.toLowerCase() === email.toLowerCase()) ?? null;
   },
 
-  /* ------------- Staff + Employer Master (localStorage-only) ------------- */
+  /* ------------- Staff + Employer Master (API-first, localStorage fallback) ------------- */
 
-  passwordLogin: (email, password) => {
+  passwordLogin: async (email, password) => {
+    if (apiEnabled) {
+      const { user } = await authApi.passwordLogin(email, password);
+      const u = fromApiUser(user);
+      save(KEYS.currentUser, u);
+      upsertLocalUser(u);
+      set({ currentUser: u });
+      return u;
+    }
+    // localStorage fallback — kept so dev without a backend still works.
     const users = load<User[]>(KEYS.users, []);
     const match = users.find(
       (u) =>
@@ -403,24 +442,25 @@ export const useAuth = create<AuthState>((set, get) => ({
         u.sharedPassword &&
         u.sharedPassword === password,
     );
-    if (!match) return null;
-    if (match.deactivated) return null;
-    // Auto-verify — the shared credential path bypasses OTP entirely.
+    if (!match) throw new ApiError(401, "AUTH_INVALID", "Incorrect email or password");
+    if (match.deactivated) throw new ApiError(403, "ACCOUNT_DEACTIVATED", "Account is deactivated.");
     const verified: User = { ...match, emailVerified: true };
-    const updated = users.map((u) => (u.id === match.id ? verified : u));
-    save(KEYS.users, updated);
+    save(KEYS.users, users.map((u) => (u.id === match.id ? verified : u)));
     save(KEYS.currentUser, verified);
     set({ currentUser: verified });
     return verified;
   },
 
-  createStaff: ({ name, email, mobile }) => {
+  createStaff: async ({ name, email, mobile }) => {
+    if (apiEnabled) {
+      const { user, password } = await superAdminStaffApi.create({ name, email, mobile });
+      const u = fromApiStaff(user);
+      upsertLocalUser({ ...u, sharedPassword: password });
+      return { user: u, password };
+    }
     const users = load<User[]>(KEYS.users, []);
     const existing = users.find((u) => u.email.toLowerCase() === email.toLowerCase());
     if (existing) {
-      // Idempotent: if the email is already taken, hand back the same row
-      // with a freshly-generated password so the super-admin can still
-      // share creds. Prevents accidental orphaned dupes.
       const password = generatePassword();
       const next: User = { ...existing, role: "staff", sharedPassword: password, deactivated: false };
       save(KEYS.users, users.map((u) => (u.id === existing.id ? next : u)));
@@ -441,12 +481,16 @@ export const useAuth = create<AuthState>((set, get) => ({
     return { user: next, password };
   },
 
-  createEmployerByStaff: ({ staffId, name, email, mobile, company }) => {
+  createEmployerByStaff: async ({ staffId, name, email, mobile, company }) => {
+    if (apiEnabled) {
+      const { user, password } = await staffApi.createEmployer({ name, email, mobile, company });
+      const u = fromApiEmployerRow(user);
+      upsertLocalUser({ ...u, sharedPassword: password });
+      return { user: u, password };
+    }
     const users = load<User[]>(KEYS.users, []);
     const existing = users.find((u) => u.email.toLowerCase() === email.toLowerCase());
     if (existing) {
-      // Duplicate email guard — surfaces up to the caller so it can show
-      // a proper error instead of silently overwriting an existing row.
       throw new ApiError(409, "EMAIL_TAKEN", `An account already exists for ${email}.`);
     }
     const password = generatePassword();
@@ -466,37 +510,67 @@ export const useAuth = create<AuthState>((set, get) => ({
     return { user: next, password };
   },
 
-  resetSharedPassword: (userId) => {
+  resetSharedPassword: async (targetId) => {
+    if (apiEnabled) {
+      // Which endpoint depends on the target's role. We look at the local
+      // cache first (fresh from listStaff/listEmployers), fall back to the
+      // signed-in user's context, and default to super-admin's staff reset
+      // when the role is ambiguous.
+      const users = load<User[]>(KEYS.users, []);
+      const target = users.find((u) => u.id === targetId);
+      if (target?.role === "employer") {
+        const { user, password } = await staffApi.resetEmployerPassword(targetId);
+        upsertLocalUser({ ...fromApiEmployerRow(user), sharedPassword: password });
+        return password;
+      }
+      const { user, password } = await superAdminStaffApi.resetPassword(targetId);
+      upsertLocalUser({ ...fromApiStaff(user), sharedPassword: password });
+      return password;
+    }
     const users = load<User[]>(KEYS.users, []);
-    const target = users.find((u) => u.id === userId);
+    const target = users.find((u) => u.id === targetId);
     if (!target) throw new ApiError(404, "NOT_FOUND", "Account not found.");
     const password = generatePassword();
     const next: User = { ...target, sharedPassword: password };
-    save(KEYS.users, users.map((u) => (u.id === userId ? next : u)));
-    // Keep the current session in sync if the reset was on the signed-in user.
-    if (get().currentUser?.id === userId) {
+    save(KEYS.users, users.map((u) => (u.id === targetId ? next : u)));
+    if (get().currentUser?.id === targetId) {
       save(KEYS.currentUser, next);
       set({ currentUser: next });
     }
     return password;
   },
 
-  setSharedPassword: (userId, password) => {
+  setSharedPassword: async (targetId, password) => {
+    if (apiEnabled) {
+      // Only supported for staff accounts server-side today. Employer
+      // password changes flow through resetSharedPassword.
+      const { user } = await superAdminStaffApi.setPassword(targetId, password);
+      upsertLocalUser({ ...fromApiStaff(user), sharedPassword: password });
+      return;
+    }
     const users = load<User[]>(KEYS.users, []);
-    const target = users.find((u) => u.id === userId);
+    const target = users.find((u) => u.id === targetId);
     if (!target) throw new ApiError(404, "NOT_FOUND", "Account not found.");
     const next: User = { ...target, sharedPassword: password };
-    save(KEYS.users, users.map((u) => (u.id === userId ? next : u)));
-    if (get().currentUser?.id === userId) {
+    save(KEYS.users, users.map((u) => (u.id === targetId ? next : u)));
+    if (get().currentUser?.id === targetId) {
       save(KEYS.currentUser, next);
       set({ currentUser: next });
     }
   },
 
-  // Backwards-compat alias — see interface comment.
   resetEmployerPassword: (employerId) => get().resetSharedPassword(employerId),
 
-  updateEmployer: (employerId, patch) => {
+  updateEmployer: async (employerId, patch) => {
+    if (apiEnabled) {
+      const { user } = await staffApi.updateEmployer(employerId, {
+        name: patch.name,
+        mobile: patch.mobile ?? null,
+        company: patch.company ?? null,
+      });
+      upsertLocalUser(fromApiEmployerRow(user));
+      return;
+    }
     const users = load<User[]>(KEYS.users, []);
     const target = users.find((u) => u.id === employerId);
     if (!target) return;
@@ -508,13 +582,17 @@ export const useAuth = create<AuthState>((set, get) => ({
     }
   },
 
-  setDeactivated: (id, deactivated) => {
-    const users = load<User[]>(KEYS.users, []);
-    const updated = users.map((u) => (u.id === id ? { ...u, deactivated } : u));
-    save(KEYS.users, updated);
-    // If they've been kicked while signed in, drop the session so their
-    // next page load bounces to /staff/login (or wherever their role
-    // maps to).
+  setDeactivated: async (id, deactivated) => {
+    if (apiEnabled) {
+      const { user } = await superAdminStaffApi.setDeactivated(id, deactivated);
+      upsertLocalUser(fromApiStaff(user));
+    } else {
+      const users = load<User[]>(KEYS.users, []);
+      const updated = users.map((u) => (u.id === id ? { ...u, deactivated } : u));
+      save(KEYS.users, updated);
+    }
+    // If they've been kicked while signed in, drop the local session so
+    // their next page load bounces to /staff/login.
     if (deactivated && get().currentUser?.id === id) {
       remove(KEYS.currentUser);
       set({ currentUser: null });

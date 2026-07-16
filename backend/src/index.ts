@@ -14,6 +14,7 @@ import profileRouter from "./routes/profile.routes.js";
 import adminRouter from "./routes/admin.routes.js";
 import plansRouter from "./routes/plans.routes.js";
 import jobsRouter from "./routes/jobs.routes.js";
+import staffRouter from "./routes/staff.routes.js";
 import { ensureAdminUsers } from "./services/seed.service.js";
 import { ensureDefaultPlans } from "./services/plans.service.js";
 import { ensureDemoJobs } from "./services/jobs-seed.service.js";
@@ -85,6 +86,7 @@ app.use(profileRouter);
 app.use(adminRouter);
 app.use(plansRouter);
 app.use(jobsRouter);
+app.use(staffRouter);
 app.get("/", (_req, res) => {
   res.json({ name: "itamil-recruit-backend", version: "0.1.0", env: env.NODE_ENV });
 });

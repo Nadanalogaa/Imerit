@@ -2,6 +2,7 @@ import { create } from "zustand";
 import { get as load, set as save, KEYS } from "../lib/storage";
 import { apiEnabled } from "../lib/api";
 import { employerJobsApi, jobsApi, type ApiJob, type ApiJobExperience, type ApiJobField, type ApiJobType } from "../lib/api/jobs";
+import { staffApi } from "../lib/api/staff";
 
 export type JobField = "it" | "non_it";
 export type JobType =
@@ -223,6 +224,17 @@ interface JobsState {
    */
   addJobAsync: (input: Omit<Job, "id" | "postedAt" | "employerId" | "employerName">) => Promise<Job>;
 
+  /**
+   * Staff posts a job on behalf of a specific employer. Same shape as
+   * addJobAsync but with `employerId` + `employerName` supplied by the
+   * caller (they came from the staff picker). Hits POST /staff/jobs
+   * server-side, which enforces role=STAFF and looks the employer up
+   * before writing.
+   */
+  addJobAsStaffAsync: (
+    input: Omit<Job, "id" | "postedAt"> & { employerId: string; employerName: string },
+  ) => Promise<Job>;
+
   /** Repost — resets postedAt to now and extends expiresAt by 45 days. */
   repostJobAsync: (id: string) => Promise<Job | undefined>;
 
@@ -348,6 +360,43 @@ export const useJobs = create<JobsState>((set, get) => ({
     return local;
   },
 
+  addJobAsStaffAsync: async (input) => {
+    // Staff routes are API-only — there's no localStorage equivalent
+    // because the whole point of this path is that the job lives in the
+    // real DB (and shows up for the employer + candidates cross-device).
+    if (!apiEnabled) {
+      // Dev/offline fallback: write it locally so the staff UI at least
+      // renders. The row won't propagate to any other browser.
+      return get().addJob({ ...input });
+    }
+    const { job } = await staffApi.createJob({
+      employerId: input.employerId,
+      title: input.title,
+      description: input.description,
+      location: input.location,
+      districtId: input.districtId,
+      talukId: input.talukId,
+      lat: input.lat,
+      lng: input.lng,
+      pincode: input.pincode,
+      street: input.street,
+      field: FIELD_TO_API[input.field],
+      type: TYPE_TO_API[input.type],
+      experience: EXPERIENCE_TO_API[input.experience],
+      yearsMin: input.yearsMin,
+      yearsMax: input.yearsMax,
+      salaryRange: input.salaryRange,
+      skills: input.skills,
+      benefits: input.benefits,
+      contactEmail: input.contactEmail,
+    });
+    const local = fromApiJob(job);
+    const next = [local, ...get().jobs];
+    save(STORAGE_KEY, next);
+    set({ jobs: next });
+    return local;
+  },
+
   repostJobAsync: async (id) => {
     if (!apiEnabled) {
       // In local mode, just bump the postedAt to now.
@@ -439,7 +488,9 @@ const EXPERIENCE_FROM_API: Record<ApiJobExperience, JobExperience> = {
   FRESHER: "fresher", EXPERIENCED: "experienced", ANY: "any",
 };
 
-function fromApiJob(j: ApiJob): Job {
+// Exported so staff pages can re-materialize `/staff/jobs` server rows into
+// the same local Job shape the rest of the UI already renders.
+export function fromApiJob(j: ApiJob): Job {
   return {
     id: j.id,
     employerId: j.employerId,

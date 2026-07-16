@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import {
   Building2,
@@ -17,6 +17,9 @@ import { allUsers, useAuth, type User } from "../store/auth";
 import { useJobs } from "../store/jobs";
 import { Navbar } from "../components/Navbar";
 import { CredentialShareModal } from "../components/staff/CredentialShareModal";
+import { apiEnabled } from "../lib/api";
+import { staffApi } from "../lib/api/staff";
+import { KEYS, get as loadStorage, set as saveStorage } from "../lib/storage";
 
 /**
  * Employer Master — the directory staff manages. Shows every employer on
@@ -39,6 +42,39 @@ export function StaffEmployers() {
   const [copied, setCopied] = useState<string | null>(null);
   const [freshCreds, setFreshCreds] = useState<{ email: string; password: string; name: string } | null>(null);
   const [tick, setTick] = useState(0);
+
+  // Pull the master from the server on mount so every staff browser sees
+  // the same authoritative list. Merges into the local users cache so
+  // allUsers() picks it up without touching every consumer.
+  useEffect(() => {
+    if (!apiEnabled) return;
+    let alive = true;
+    staffApi.listEmployers()
+      .then(({ items }) => {
+        if (!alive) return;
+        const existing = loadStorage<User[]>(KEYS.users, []);
+        const byId = new Map(existing.map((u) => [u.id, u]));
+        for (const e of items) {
+          byId.set(e.id, {
+            id: e.id,
+            role: "employer",
+            name: e.name,
+            email: e.email,
+            mobile: e.mobile ?? undefined,
+            company: e.company ?? undefined,
+            emailVerified: true,
+            createdAt: e.createdAt,
+            sharedPassword: e.sharedPassword ?? undefined,
+            createdByStaffId: e.createdByStaffId ?? undefined,
+            deactivated: e.deactivated,
+          });
+        }
+        saveStorage(KEYS.users, Array.from(byId.values()));
+        setTick((t) => t + 1);
+      })
+      .catch(() => { /* stale local list is fine */ });
+    return () => { alive = false; };
+  }, []);
 
   const employers = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -76,13 +112,17 @@ export function StaffEmployers() {
     }
   };
 
-  const handleReset = (employer: User) => {
+  const handleReset = async (employer: User) => {
     if (!confirm(`Generate a new password for ${employer.name}? The old one will stop working.`)) {
       return;
     }
-    const password = resetEmployerPassword(employer.id);
-    setFreshCreds({ email: employer.email, password, name: employer.name });
-    setTick((t) => t + 1);
+    try {
+      const password = await resetEmployerPassword(employer.id);
+      setFreshCreds({ email: employer.email, password, name: employer.name });
+      setTick((t) => t + 1);
+    } catch (err) {
+      alert(err instanceof Error ? err.message : "Could not reset password.");
+    }
   };
 
   return (
