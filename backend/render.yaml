@@ -37,9 +37,9 @@ services:
       - key: JWT_REFRESH_TTL_DAYS
         value: 30
       - key: CORS_ORIGINS
-        # IMPORTANT: update this once you know your real Vercel URL.
-        # Multiple origins comma-separated.
-        value: https://itamil-recruit.vercel.app,http://localhost:5173
+        # Live frontend is imerit.vercel.app (not itamil-recruit.vercel.app —
+        # the old placeholder). Add any preview URLs here too, comma-separated.
+        value: https://imerit.vercel.app,http://localhost:5173
       - key: OTP_TTL_MIN
         value: 10
       - key: COOKIE_SECURE

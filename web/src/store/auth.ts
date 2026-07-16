@@ -165,7 +165,31 @@ interface AuthState {
     company?: string;
   }) => { user: User; password: string };
 
-  /** Overwrite an employer's shared password with a freshly-generated one. */
+  /**
+   * Overwrite any shared-password user's credential (staff OR employer)
+   * with a freshly-generated one. Returns the new plaintext password so
+   * the caller can hand it off via CredentialShareModal.
+   *
+   * The role check is intentionally loose — an id belonging to a user
+   * without a `sharedPassword` still gets one on reset, which is the
+   * right behavior for cases where a self-registered employer wants to
+   * be given a shared credential.
+   */
+  resetSharedPassword: (userId: string) => string;
+
+  /**
+   * Set an explicit password on any user — used by the super-admin's
+   * "Change password" flow so they can pick a memorable string instead
+   * of accepting the generated one. Same session-sync behavior as
+   * `resetSharedPassword`.
+   *
+   * The caller is responsible for validating the password (length,
+   * complexity) — the store just persists whatever it's given.
+   */
+  setSharedPassword: (userId: string, password: string) => void;
+
+  /** @deprecated Prefer `resetSharedPassword`. Kept as a thin alias so
+   *  existing staff-facing employer flows don't need to churn. */
   resetEmployerPassword: (employerId: string) => string;
 
   /** Patch limited fields on an existing employer (staff-owned edit). */
@@ -432,20 +456,35 @@ export const useAuth = create<AuthState>((set, get) => ({
     return { user: next, password };
   },
 
-  resetEmployerPassword: (employerId) => {
+  resetSharedPassword: (userId) => {
     const users = load<User[]>(KEYS.users, []);
-    const target = users.find((u) => u.id === employerId);
-    if (!target) throw new ApiError(404, "NOT_FOUND", "Employer not found.");
+    const target = users.find((u) => u.id === userId);
+    if (!target) throw new ApiError(404, "NOT_FOUND", "Account not found.");
     const password = generatePassword();
     const next: User = { ...target, sharedPassword: password };
-    save(KEYS.users, users.map((u) => (u.id === employerId ? next : u)));
+    save(KEYS.users, users.map((u) => (u.id === userId ? next : u)));
     // Keep the current session in sync if the reset was on the signed-in user.
-    if (get().currentUser?.id === employerId) {
+    if (get().currentUser?.id === userId) {
       save(KEYS.currentUser, next);
       set({ currentUser: next });
     }
     return password;
   },
+
+  setSharedPassword: (userId, password) => {
+    const users = load<User[]>(KEYS.users, []);
+    const target = users.find((u) => u.id === userId);
+    if (!target) throw new ApiError(404, "NOT_FOUND", "Account not found.");
+    const next: User = { ...target, sharedPassword: password };
+    save(KEYS.users, users.map((u) => (u.id === userId ? next : u)));
+    if (get().currentUser?.id === userId) {
+      save(KEYS.currentUser, next);
+      set({ currentUser: next });
+    }
+  },
+
+  // Backwards-compat alias — see interface comment.
+  resetEmployerPassword: (employerId) => get().resetSharedPassword(employerId),
 
   updateEmployer: (employerId, patch) => {
     const users = load<User[]>(KEYS.users, []);

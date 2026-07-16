@@ -41,3 +41,7 @@ mobile/ios/.symlinks/
 .env
 .env.local
 **/.env.local
+
+# SSH keys — never commit private keys
+pemkey/
+*.pem

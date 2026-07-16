@@ -26,6 +26,13 @@ import 'pages/employer_my_jobs_page.dart';
 import 'pages/employer_job_applicants_page.dart';
 import 'pages/admin_login_page.dart';
 import 'pages/admin_dashboard_page.dart';
+import 'pages/staff_login_page.dart';
+import 'pages/staff_dashboard_page.dart';
+import 'pages/staff_employers_page.dart';
+import 'pages/staff_employer_form_page.dart';
+import 'pages/staff_post_job_page.dart';
+import 'pages/staff_jobs_page.dart';
+import 'pages/super_admin_staff_page.dart';
 import 'storage/storage.dart';
 
 bool _isLoggedInAs(String role) {
@@ -225,6 +232,52 @@ final appRouter = GoRouter(
       path: '/super-admin/dashboard',
       redirect: (_, _) => _isLoggedInAs('super_admin') ? null : '/super-admin',
       builder: (_, _) => const AdminDashboardPage(isSuperAdmin: true),
+    ),
+    GoRoute(
+      path: '/super-admin/staff',
+      redirect: (_, _) => _isLoggedInAs('super_admin') ? null : '/super-admin',
+      builder: (_, _) => const SuperAdminStaffPage(),
+    ),
+
+    // ------------------------ Staff (internal ops) ------------------------
+    GoRoute(path: '/staff', redirect: (_, _) => '/staff/login'),
+    GoRoute(
+      path: '/staff/login',
+      redirect: (_, _) => _isLoggedInAs('staff') ? '/staff/dashboard' : null,
+      builder: (_, _) => const StaffLoginPage(),
+    ),
+    GoRoute(
+      path: '/staff/dashboard',
+      redirect: (_, _) => _isLoggedInAs('staff') ? null : '/staff/login',
+      builder: (_, _) => const StaffDashboardPage(),
+    ),
+    GoRoute(
+      path: '/staff/employers',
+      redirect: (_, _) => _isLoggedInAs('staff') ? null : '/staff/login',
+      builder: (_, _) => const StaffEmployersPage(),
+    ),
+    GoRoute(
+      path: '/staff/employers/new',
+      redirect: (_, _) => _isLoggedInAs('staff') ? null : '/staff/login',
+      builder: (_, _) => const StaffEmployerFormPage(),
+    ),
+    GoRoute(
+      path: '/staff/employers/:id',
+      redirect: (_, _) => _isLoggedInAs('staff') ? null : '/staff/login',
+      builder: (_, state) =>
+          StaffEmployerFormPage(employerId: state.pathParameters['id']),
+    ),
+    GoRoute(
+      path: '/staff/jobs/new',
+      redirect: (_, _) => _isLoggedInAs('staff') ? null : '/staff/login',
+      builder: (_, state) => StaffPostJobPage(
+        initialEmployerId: state.uri.queryParameters['employerId'],
+      ),
+    ),
+    GoRoute(
+      path: '/staff/jobs',
+      redirect: (_, _) => _isLoggedInAs('staff') ? null : '/staff/login',
+      builder: (_, _) => const StaffJobsPage(),
     ),
   ],
 );

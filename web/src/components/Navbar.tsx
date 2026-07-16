@@ -46,8 +46,11 @@ const APP_LINKS: Record<Role, { label: string; to: string }[]> = {
     { label: "Overview", to: "/super-admin/dashboard" },
     { label: "Candidates", to: "/admin/candidates" },
     { label: "Employers", to: "/admin/employers" },
-    { label: "Admins", to: "/super-admin/admins" },
-    { label: "Staff", to: "/super-admin/staff" },
+    // "Admins & staff" — the invite form on this page lets super-admin
+    // create both admin/super_admin AND staff accounts; the standalone
+    // /super-admin/staff route is kept as an alias/bookmark target but
+    // the primary nav entry points here now.
+    { label: "Admins & staff", to: "/super-admin/admins" },
     { label: "Plans", to: "/super-admin/plans" },
   ],
   // Staff has its own top-bar rendered inside every /staff/* page (see

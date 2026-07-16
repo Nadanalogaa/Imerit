@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -10,11 +10,27 @@ import {
  Shield,
  LogOut,
  AlertTriangle,
+ Users2,
+ ShieldOff,
+ ShieldCheck as ShieldCheckIcon,
+ RotateCcw,
+ Eye,
+ EyeOff,
+ Copy,
+ Check,
+ KeyRound,
+ X,
 } from "lucide-react";
-import { useAuth } from "../store/auth";
+import { allUsers, useAuth, type User } from "../store/auth";
 import { ThemeToggle } from "../components/ThemeToggle";
+import { CredentialShareModal } from "../components/staff/CredentialShareModal";
 import { ApiError } from "../lib/api";
 import { superAdminApi, type AdminAccount } from "../lib/api/admin";
+
+/** Invite dropdown options. STAFF is routed locally (localStorage-first
+ *  + CredentialShareModal); ADMIN / SUPER_ADMIN keep going through the
+ *  server-side API. */
+type InviteRole = "ADMIN" | "SUPER_ADMIN" | "STAFF";
 
 /**
  * Super-admin-only page for managing the privileged accounts: list every
@@ -26,17 +42,65 @@ export function SuperAdminAdmins() {
  const me = useAuth((s) => s.currentUser);
  const logout = useAuth((s) => s.logoutAsync);
 
+ const createStaff = useAuth((s) => s.createStaff);
+ const setDeactivated = useAuth((s) => s.setDeactivated);
+ const resetSharedPassword = useAuth((s) => s.resetSharedPassword);
+ const setSharedPassword = useAuth((s) => s.setSharedPassword);
+
+ // Per-row reveal + copy state for the staff password. Keyed by user id
+ // so revealing one row doesn't show every password on the page.
+ const [revealedPwd, setRevealedPwd] = useState<Record<string, boolean>>({});
+ const [copiedId, setCopiedId] = useState<string | null>(null);
+
+ // Change-password modal state. `staffId` targets the row; `nextPwd` is
+ // the working text; a fresh preview password auto-generates on open.
+ const [changeTarget, setChangeTarget] = useState<User | null>(null);
+ const [nextPwd, setNextPwd] = useState("");
+ const [showNextPwd, setShowNextPwd] = useState(false);
+ const [changeError, setChangeError] = useState<string | null>(null);
+
+ const copyPwd = async (id: string, text: string) => {
+   try {
+     await navigator.clipboard.writeText(text);
+     setCopiedId(id);
+     setTimeout(() => setCopiedId(null), 1400);
+   } catch {
+     window.prompt("Copy manually:", text);
+   }
+ };
+
  const [items, setItems] = useState<AdminAccount[]>([]);
  const [loading, setLoading] = useState(true);
  const [loadError, setLoadError] = useState<string | null>(null);
 
- // New admin form state
+ // Local staff list (localStorage-first; no server-side staff API yet).
+ // Bumping `staffTick` after create/deactivate forces the derived list to
+ // re-read from storage.
+ const [staffTick, setStaffTick] = useState(0);
+ const staffAccounts = useMemo(
+   () => allUsers().filter((u): u is User => u.role === "staff"),
+   // eslint-disable-next-line react-hooks/exhaustive-deps
+   [staffTick],
+ );
+
+ // New admin/staff form state
  const [newName, setNewName] = useState("");
  const [newEmail, setNewEmail] = useState("");
- const [newRole, setNewRole] = useState<"ADMIN" | "SUPER_ADMIN">("ADMIN");
+ const [newMobile, setNewMobile] = useState("");
+ const [newRole, setNewRole] = useState<InviteRole>("ADMIN");
  const [creating, setCreating] = useState(false);
  const [createError, setCreateError] = useState<string | null>(null);
  const [createSuccess, setCreateSuccess] = useState<string | null>(null);
+
+ // Fresh staff credentials — populated after a STAFF invite OR a reset
+ // so the same CredentialShareModal handles both flows. `flavor` toggles
+ // the copy so a reset says "Password reset" instead of "Staff invited".
+ const [freshStaffCreds, setFreshStaffCreds] = useState<{
+   email: string;
+   password: string;
+   name: string;
+   flavor: "invite" | "reset";
+ } | null>(null);
 
  const [confirmingDelete, setConfirmingDelete] = useState<string | null>(null);
  const [deleting, setDeleting] = useState<string | null>(null);
@@ -66,6 +130,24 @@ export function SuperAdminAdmins() {
 
  setCreating(true);
  try {
+ if (newRole === "STAFF") {
+   // Staff path is localStorage-first — no server API for the role
+   // yet. The generated password comes back so we can pop the
+   // one-time CredentialShareModal for hand-off.
+   const { user, password } = createStaff({
+     name: newName.trim(),
+     email: newEmail.trim(),
+     mobile: newMobile.trim() || undefined,
+   });
+   setFreshStaffCreds({ email: user.email, password, name: user.name, flavor: "invite" });
+   setCreateSuccess(`Invited staff ${user.email}. Copy the credentials from the sheet to hand off.`);
+   setNewName("");
+   setNewEmail("");
+   setNewMobile("");
+   setNewRole("ADMIN");
+   setStaffTick((t) => t + 1);
+   return;
+ }
  const { user } = await superAdminApi.createAdmin({
  email: newEmail.trim(),
  name: newName.trim(),
@@ -74,6 +156,7 @@ export function SuperAdminAdmins() {
  setCreateSuccess(`Created ${user.role === "SUPER_ADMIN" ? "super admin" : "admin"} ${user.email}. They can now log in via the admin sign-in page.`);
  setNewName("");
  setNewEmail("");
+ setNewMobile("");
  setNewRole("ADMIN");
  await refresh();
  } catch (err) {
@@ -166,9 +249,10 @@ export function SuperAdminAdmins() {
  </div>
  <div>
  <label className="mb-1 block text-[11px] font-medium text-zinc-600 dark:text-zinc-400">Role</label>
- <select value={newRole} onChange={(e) => setNewRole(e.target.value as typeof newRole)} className="w-full rounded-lg bg-white px-3 py-2.5 text-sm focus:border-violet-500 focus:outline-none focus:ring-2 focus:ring-violet-500/20 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800">
+ <select value={newRole} onChange={(e) => setNewRole(e.target.value as InviteRole)} className="w-full rounded-lg bg-white px-3 py-2.5 text-sm focus:border-violet-500 focus:outline-none focus:ring-2 focus:ring-violet-500/20 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800">
  <option value="ADMIN">Admin</option>
  <option value="SUPER_ADMIN">Super admin</option>
+ <option value="STAFF">Staff (post jobs for employers)</option>
  </select>
  </div>
  <div className="flex items-end">
@@ -177,6 +261,23 @@ export function SuperAdminAdmins() {
  </button>
  </div>
  </form>
+
+ {/* Extra optional field: mobile — only relevant for staff invites,
+     since admin auth is OTP-only and their mobile isn't used yet. */}
+ {newRole === "STAFF" && (
+ <div className="mt-3">
+ <label className="mb-1 block text-[11px] font-medium text-zinc-600 dark:text-zinc-400">
+ Mobile (optional — for sharing credentials over the phone)
+ </label>
+ <input
+   value={newMobile}
+   onChange={(e) => setNewMobile(e.target.value.replace(/\D/g, "").slice(0, 10))}
+   placeholder="9876543210"
+   inputMode="tel"
+   className="w-full rounded-lg bg-white px-3 py-2.5 text-sm focus:border-teal-500 focus:outline-none focus:ring-2 focus:ring-teal-500/20 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800"
+ />
+ </div>
+ )}
  {createError && (
  <p className="mt-3 rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-xs text-rose-700 dark:border-rose-500/30 dark:bg-rose-500/10 dark:text-rose-400">{createError}</p>
  )}
@@ -188,6 +289,124 @@ export function SuperAdminAdmins() {
  <AlertTriangle size={12} className="mt-0.5 shrink-0" />
  <span>Super admins can create + delete other admins, including you. Only invite people you fully trust.</span>
  </div>
+ )}
+ {newRole === "STAFF" && (
+ <div className="mt-3 flex items-start gap-2 rounded-xl border border-teal-200 bg-teal-50 px-3 py-2 text-[11px] text-teal-700 dark:border-teal-500/30 dark:bg-teal-500/10 dark:text-teal-400">
+ <Users2 size={12} className="mt-0.5 shrink-0" />
+ <span>Staff post jobs on behalf of employers and manage the Employer Master. Sign-in is password-based (no OTP) — you'll see the password once and can share it manually.</span>
+ </div>
+ )}
+ </motion.section>
+
+ {/* Staff accounts (localStorage-first — no server-side staff API yet) */}
+ <motion.section
+   initial={{ opacity: 0, y: 10 }}
+   animate={{ opacity: 1, y: 0 }}
+   transition={{ delay: 0.08 }}
+   className="mb-8 rounded-3xl bg-white p-6 shadow-[0_4px_16px_rgba(15,23,42,0.06)] dark:shadow-[0_4px_16px_rgba(0,0,0,0.35)] dark:bg-zinc-900"
+ >
+ <div className="mb-4 flex items-center gap-2">
+ <Users2 size={16} className="text-teal-600 dark:text-teal-400" />
+ <h2 className="text-base font-semibold tracking-tight">Staff accounts ({staffAccounts.length})</h2>
+ </div>
+ {staffAccounts.length === 0 ? (
+ <p className="text-xs text-zinc-500 dark:text-zinc-400">
+ No staff invited yet. Pick <strong>Staff</strong> in the role dropdown above to add one.
+ </p>
+ ) : (
+ <ul className="flex flex-col gap-2">
+ {staffAccounts.map((s) => {
+   const revealed = !!revealedPwd[s.id];
+   const copied = copiedId === s.id;
+   return (
+ <li key={s.id} className="flex flex-wrap items-center gap-3 rounded-2xl bg-zinc-50/40 p-3 dark:bg-zinc-950/30">
+ <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-teal-500 to-emerald-600 text-white shadow-md">
+ <Users2 size={14} />
+ </div>
+ <div className="min-w-0 flex-1">
+ <p className="truncate text-sm font-semibold text-zinc-900 dark:text-zinc-100">{s.name}</p>
+ <p className="truncate text-[11px] text-zinc-500 dark:text-zinc-400">{s.email}{s.mobile ? ` · ${s.mobile}` : ""}</p>
+ {/* Password reveal + copy — inline on the row so super-admin
+     can verify the current credential without having to Reset
+     first (which was the "nothing changed" perception). */}
+ {s.sharedPassword && (
+ <div className="mt-1 inline-flex items-center gap-1 rounded-md bg-white px-1.5 py-0.5 text-[11px] shadow-sm dark:bg-zinc-950">
+ <KeyRound size={10} className="text-zinc-400" />
+ <span className={["font-mono text-[11px] tabular-nums", revealed ? "text-zinc-900 dark:text-zinc-100" : "text-zinc-400 tracking-widest"].join(" ")}>
+ {revealed ? s.sharedPassword : "••••••••••"}
+ </span>
+ <button
+   type="button"
+   onClick={() => setRevealedPwd((r) => ({ ...r, [s.id]: !r[s.id] }))}
+   className="rounded p-0.5 text-zinc-400 transition hover:text-zinc-700 dark:hover:text-zinc-300"
+   title={revealed ? "Hide password" : "Reveal password"}
+ >
+   {revealed ? <EyeOff size={11} /> : <Eye size={11} />}
+ </button>
+ <button
+   type="button"
+   onClick={() => copyPwd(s.id, s.sharedPassword!)}
+   className="rounded p-0.5 text-zinc-400 transition hover:text-teal-600 dark:hover:text-teal-300"
+   title="Copy password"
+ >
+   {copied ? <Check size={11} className="text-teal-600" /> : <Copy size={11} />}
+ </button>
+ </div>
+ )}
+ </div>
+ <span className={[
+   "rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider",
+   s.deactivated
+     ? "bg-rose-100 text-rose-700 dark:bg-rose-500/15 dark:text-rose-300"
+     : "bg-emerald-100 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300",
+ ].join(" ")}>
+ {s.deactivated ? "Deactivated" : "Active"}
+ </span>
+ <button
+   onClick={() => {
+     setChangeTarget(s);
+     // Prefill with the current password so the super-admin sees what
+     // it is and can either type over it, or clear + type fresh.
+     setNextPwd(s.sharedPassword ?? "");
+     setChangeError(null);
+     setShowNextPwd(true);
+   }}
+   title="Type a specific new password"
+   className="inline-flex items-center gap-1.5 rounded-full border border-teal-300 px-2.5 py-1 text-[11px] font-semibold text-teal-700 transition hover:bg-teal-50 dark:border-teal-500/40 dark:text-teal-300 dark:hover:bg-teal-500/10"
+ >
+ <KeyRound size={11} /> Change
+ </button>
+ <button
+   onClick={() => {
+     if (!confirm(`Generate a new password for ${s.name}? The old one stops working immediately, and their live session (if any) is dropped.`)) return;
+     const password = resetSharedPassword(s.id);
+     setFreshStaffCreds({ email: s.email, password, name: s.name, flavor: "reset" });
+     setStaffTick((t) => t + 1);
+   }}
+   title="Auto-generate a fresh password and pop the share sheet"
+   className="inline-flex items-center gap-1.5 rounded-full border border-amber-300 px-2.5 py-1 text-[11px] font-semibold text-amber-700 transition hover:bg-amber-50 dark:border-amber-500/40 dark:text-amber-300 dark:hover:bg-amber-500/10"
+ >
+ <RotateCcw size={11} /> Reset
+ </button>
+ <button
+   onClick={() => {
+     setDeactivated(s.id, !s.deactivated);
+     setStaffTick((t) => t + 1);
+   }}
+   title={s.deactivated ? "Reactivate this staff account" : "Deactivate — they can't sign in and their live session drops"}
+   className={[
+     "inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[11px] font-semibold transition",
+     s.deactivated
+       ? "border-emerald-300 text-emerald-700 hover:bg-emerald-50 dark:border-emerald-500/40 dark:text-emerald-300 dark:hover:bg-emerald-500/10"
+       : "border-rose-300 text-rose-700 hover:bg-rose-50 dark:border-rose-500/40 dark:text-rose-300 dark:hover:bg-rose-500/10",
+   ].join(" ")}
+ >
+ {s.deactivated ? <><ShieldCheckIcon size={11} /> Reactivate</> : <><ShieldOff size={11} /> Deactivate</>}
+ </button>
+ </li>
+   );
+ })}
+ </ul>
  )}
  </motion.section>
 
@@ -245,6 +464,113 @@ export function SuperAdminAdmins() {
  )}
  </motion.section>
  </main>
+
+ {/* Change-password modal — super-admin types the exact password. */}
+ <AnimatePresence>
+ {changeTarget && (
+ <motion.div
+   initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+   className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
+   onClick={() => setChangeTarget(null)}
+ >
+ <motion.div
+   initial={{ scale: 0.95, y: 10 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.95, opacity: 0 }}
+   onClick={(e) => e.stopPropagation()}
+   className="w-full max-w-md rounded-3xl bg-white p-6 shadow-2xl dark:bg-zinc-900"
+ >
+ <div className="mb-4 flex items-start gap-3">
+ <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-teal-500 to-emerald-600 text-white">
+ <KeyRound size={16} />
+ </div>
+ <div className="min-w-0 flex-1">
+ <h3 className="text-lg font-semibold tracking-tight">Change password</h3>
+ <p className="mt-0.5 truncate text-xs text-zinc-500 dark:text-zinc-400">for {changeTarget.name} · {changeTarget.email}</p>
+ </div>
+ <button
+   type="button"
+   onClick={() => setChangeTarget(null)}
+   className="inline-flex h-8 w-8 items-center justify-center rounded-full text-zinc-500 transition hover:bg-zinc-100 dark:hover:bg-zinc-800"
+   aria-label="Close"
+ >
+ <X size={15} />
+ </button>
+ </div>
+ <label className="mb-1.5 block text-xs font-medium text-zinc-700 dark:text-zinc-300">New password</label>
+ <div className="relative">
+ <input
+   type={showNextPwd ? "text" : "password"}
+   value={nextPwd}
+   onChange={(e) => setNextPwd(e.target.value)}
+   placeholder="Type a memorable password"
+   autoFocus
+   className="w-full rounded-lg bg-white px-4 py-3 pr-11 text-sm font-mono placeholder:text-zinc-400 focus:border-teal-500 focus:outline-none focus:ring-2 focus:ring-teal-500/20 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800"
+ />
+ <button
+   type="button"
+   onClick={() => setShowNextPwd((v) => !v)}
+   className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300"
+   aria-label={showNextPwd ? "Hide password" : "Show password"}
+ >
+ {showNextPwd ? <EyeOff size={16} /> : <Eye size={16} />}
+ </button>
+ </div>
+ <p className="mt-1.5 text-[11px] text-zinc-500 dark:text-zinc-400">
+ Minimum 6 characters. This exact string becomes the sign-in password — no hashing, no email. Share it manually.
+ </p>
+ {changeError && (
+ <p className="mt-2 rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-xs text-rose-700 dark:border-rose-500/30 dark:bg-rose-500/10 dark:text-rose-400">
+ {changeError}
+ </p>
+ )}
+ <div className="mt-5 flex justify-end gap-2">
+ <button
+   type="button"
+   onClick={() => setChangeTarget(null)}
+   className="rounded-2xl px-4 py-2 text-sm font-semibold text-zinc-700 hover:bg-zinc-50 dark:text-zinc-200 dark:hover:bg-zinc-800"
+ >
+ Cancel
+ </button>
+ <button
+   type="button"
+   onClick={() => {
+     const pwd = nextPwd.trim();
+     if (pwd.length < 6) {
+       setChangeError("Password must be at least 6 characters");
+       return;
+     }
+     setSharedPassword(changeTarget.id, pwd);
+     const target = changeTarget;
+     setChangeTarget(null);
+     setNextPwd("");
+     setStaffTick((t) => t + 1);
+     // Pop the same share modal so super-admin has the copy-both
+     // affordance for handing off to the staff member.
+     setFreshStaffCreds({ email: target.email, password: pwd, name: target.name, flavor: "reset" });
+   }}
+   className="inline-flex items-center gap-2 rounded-2xl bg-gradient-to-r from-teal-500 to-emerald-600 px-4 py-2 text-sm font-semibold text-white shadow-md shadow-emerald-500/30 transition hover:shadow-lg"
+ >
+ <Check size={14} /> Save password
+ </button>
+ </div>
+ </motion.div>
+ </motion.div>
+ )}
+ </AnimatePresence>
+
+ {/* One-time credential share — same modal for invite + reset flows, copy switches on flavor */}
+ {freshStaffCreds && (
+ <CredentialShareModal
+   title={freshStaffCreds.flavor === "reset" ? "Password reset" : "Staff invited"}
+   subtitle={
+     freshStaffCreds.flavor === "reset"
+       ? `New credentials for ${freshStaffCreds.name}`
+       : `${freshStaffCreds.name} can now sign in at /staff/login`
+   }
+   email={freshStaffCreds.email}
+   password={freshStaffCreds.password}
+   onClose={() => setFreshStaffCreds(null)}
+ />
+ )}
 
  {/* Delete confirmation modal */}
  <AnimatePresence>
