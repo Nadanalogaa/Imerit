@@ -16,7 +16,7 @@ import {
 import { useEffect, useMemo, useState } from "react";
 import { allUsers } from "../store/auth";
 import { useProfile } from "../store/profile";
-import { ThemeToggle } from "../components/ThemeToggle";
+import { Navbar } from "../components/Navbar";
 import { exportExcel, exportWord, exportSummaryPdf } from "../lib/export";
 import { apiEnabled, ApiError } from "../lib/api";
 import { adminApi, type AdminProfileListItem, type AdminUserListItem, type ApiModerationStatus } from "../lib/api/admin";
@@ -150,7 +150,7 @@ export function AdminCandidates() {
 
  return (
  <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950">
- <Header title="Candidates" />
+ <Navbar />
  <main className="mx-auto max-w-7xl px-5 py-6 md:py-6 md:py-10">
  <Link to="/admin/dashboard" className="mb-6 inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-xs font-semibold text-zinc-700 transition hover:bg-zinc-100 dark:border-zinc-700 dark:text-zinc-200 dark:hover:bg-zinc-800">
  <ArrowLeft size={14} /> Dashboard
@@ -362,22 +362,6 @@ function StatusBadge({ status, hasResume }: { status: ApiModerationStatus | "—
  <span className="inline-flex items-center gap-1 text-emerald-600 dark:text-emerald-400"><CheckCircle2 size={13} /> Complete</span>
  ) : (
  <span className="inline-flex items-center gap-1 text-amber-600 dark:text-amber-400"><Clock size={13} /> In progress</span>
- );
-}
-
-export function Header({ title }: { title: string }) {
- return (
- <header className="border-b border-zinc-200 bg-white px-5 py-3 dark:bg-zinc-900">
- <div className="mx-auto flex max-w-7xl items-center justify-between">
- <div className="flex items-center gap-2.5">
- <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-zinc-900 to-zinc-700 text-white shadow-md dark:from-zinc-100 dark:to-zinc-300 dark:text-zinc-900">
- <span className="text-xs font-bold">A</span>
- </div>
- <p className="text-sm font-semibold tracking-tight">Admin · {title}</p>
- </div>
- <ThemeToggle />
- </div>
- </header>
  );
 }
 

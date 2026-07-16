@@ -1,14 +1,12 @@
 import { useEffect, useMemo, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import {
- ShieldCheck,
  ArrowLeft,
  UserPlus,
  Trash2,
  Crown,
  Shield,
- LogOut,
  AlertTriangle,
  Users2,
  ShieldOff,
@@ -22,7 +20,7 @@ import {
  X,
 } from "lucide-react";
 import { allUsers, useAuth, type User } from "../store/auth";
-import { ThemeToggle } from "../components/ThemeToggle";
+import { Navbar } from "../components/Navbar";
 import { CredentialShareModal } from "../components/staff/CredentialShareModal";
 import { ApiError } from "../lib/api";
 import { superAdminApi, type AdminAccount } from "../lib/api/admin";
@@ -38,9 +36,9 @@ type InviteRole = "ADMIN" | "SUPER_ADMIN" | "STAFF";
  * login), or revoke access (soft delete). Self-deletion is blocked server-side.
  */
 export function SuperAdminAdmins() {
- const navigate = useNavigate();
+ // Sign-out + brand nav live in <Navbar />; this page just needs auth
+ // context for the me?.id row-highlight check below.
  const me = useAuth((s) => s.currentUser);
- const logout = useAuth((s) => s.logoutAsync);
 
  const createStaff = useAuth((s) => s.createStaff);
  const setDeactivated = useAuth((s) => s.setDeactivated);
@@ -190,28 +188,7 @@ export function SuperAdminAdmins() {
 
  return (
  <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950">
- <header className="border-b border-zinc-200 bg-white px-5 py-3 dark:bg-zinc-900">
- <div className="mx-auto flex max-w-5xl items-center justify-between">
- <div className="flex items-center gap-2.5">
- <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-violet-600 to-fuchsia-600 text-white shadow-md">
- <ShieldCheck size={16} />
- </div>
- <div>
- <p className="text-sm font-semibold tracking-tight">Super Admin · Admin Accounts</p>
- <p className="text-[10px] text-zinc-500 dark:text-zinc-400">{me?.name} · {me?.email}</p>
- </div>
- </div>
- <div className="flex items-center gap-2">
- <ThemeToggle />
- <button
- onClick={async () => { await logout(); navigate("/"); }}
- className="inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold text-zinc-700 transition hover:bg-zinc-100 dark:border-zinc-700 dark:text-zinc-200 dark:hover:bg-zinc-800"
- >
- <LogOut size={12} /> Sign out
- </button>
- </div>
- </div>
- </header>
+ <Navbar />
 
  <main className="mx-auto max-w-7xl px-5 py-6 md:py-6 md:py-10">
  <div className="mb-5 flex items-center justify-between gap-3">

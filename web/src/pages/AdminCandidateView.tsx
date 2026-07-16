@@ -5,7 +5,7 @@ import { ArrowLeft, CheckCircle2, FileType2, Mail, Phone, XCircle, Clock, Notebo
 import { allUsers, type User } from "../store/auth";
 import { fromApiProfile, useProfile, type CandidateProfile } from "../store/profile";
 import { RenderTemplate } from "../components/templates";
-import { Header } from "./AdminCandidates";
+import { Navbar } from "../components/Navbar";
 import { apiEnabled, ApiError } from "../lib/api";
 import { profileApi } from "../lib/api/profile";
 import { adminApi } from "../lib/api/admin";
@@ -79,7 +79,7 @@ export function AdminCandidateView() {
  if (apiEnabled && loading) {
  return (
  <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950">
- <Header title="Candidate" />
+ <Navbar />
  <main className="mx-auto max-w-7xl px-5 py-6 md:py-10 text-center text-xs text-zinc-500 dark:text-zinc-400">
  Loading profile from the server…
  </main>
@@ -89,7 +89,7 @@ export function AdminCandidateView() {
  if (apiEnabled && loadError) {
  return (
  <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950">
- <Header title="Candidate" />
+ <Navbar />
  <main className="mx-auto max-w-7xl px-5 py-6 md:py-10 text-center">
  <p className="text-sm font-semibold text-rose-700 dark:text-rose-400">{loadError}</p>
  <Link to="/admin/candidates" className="mt-3 inline-flex items-center gap-2 text-xs font-semibold text-brand-600 hover:underline dark:text-brand-400">
@@ -140,7 +140,7 @@ export function AdminCandidateView() {
 
  return (
  <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950">
- <Header title="Candidate" />
+ <Navbar />
  <main className="mx-auto max-w-7xl px-5 py-6 md:py-6 md:py-10">
  <div className="mb-6 flex flex-wrap items-center justify-between gap-3 print:hidden">
  <div className="flex items-center gap-2">

@@ -6,7 +6,7 @@ import { useJobs } from "../store/jobs";
 import { useLocations } from "../store/locations";
 import { JobFormWizard } from "../components/JobFormWizard";
 import { TextField } from "../components/TextField";
-import { StaffTopBar } from "./StaffDashboard";
+import { Navbar } from "../components/Navbar";
 import { CredentialShareModal } from "../components/staff/CredentialShareModal";
 import { ApiError } from "../lib/api";
 
@@ -22,7 +22,6 @@ export function StaffPostJob() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const me = useAuth((s) => s.currentUser)!;
-  const logout = useAuth((s) => s.logout);
   const createEmployerByStaff = useAuth((s) => s.createEmployerByStaff);
   const addJobAsync = useJobs((s) => s.addJobAsync);
   const talukById = useLocations((s) => s.talukById);
@@ -163,7 +162,7 @@ export function StaffPostJob() {
 
   return (
     <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950">
-      <StaffTopBar name={me.name} onLogout={logout} />
+      <Navbar />
       <main className="mx-auto max-w-6xl px-5 py-6">
         <Link
           to="/staff/dashboard"

@@ -1,9 +1,10 @@
 import { useMemo } from "react";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
-import { Building2, Briefcase, Plus, ArrowRight, Users2, LogOut } from "lucide-react";
+import { Building2, Briefcase, Plus, ArrowRight, Users2 } from "lucide-react";
 import { allUsers, useAuth } from "../store/auth";
 import { useJobs, isExpired } from "../store/jobs";
+import { Navbar } from "../components/Navbar";
 
 /**
  * Staff landing page. Reads only from local state (no separate staff API
@@ -13,7 +14,6 @@ import { useJobs, isExpired } from "../store/jobs";
  */
 export function StaffDashboard() {
   const me = useAuth((s) => s.currentUser)!;
-  const logout = useAuth((s) => s.logout);
   const jobs = useJobs((s) => s.jobs);
 
   const stats = useMemo(() => {
@@ -34,7 +34,7 @@ export function StaffDashboard() {
 
   return (
     <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950">
-      <StaffTopBar name={me.name} onLogout={logout} />
+      <Navbar />
       <main className="mx-auto max-w-7xl px-5 py-8 md:py-10">
         <header className="mb-6">
           <p className="text-xs font-semibold uppercase tracking-widest text-teal-600 dark:text-teal-400">
@@ -77,51 +77,6 @@ export function StaffDashboard() {
         </div>
       </main>
     </div>
-  );
-}
-
-function StaffTopBar({ name, onLogout }: { name: string; onLogout: () => void }) {
-  return (
-    <header className="border-b border-zinc-200 bg-white/80 backdrop-blur dark:border-zinc-800 dark:bg-zinc-950/80">
-      <div className="mx-auto flex max-w-7xl items-center justify-between px-5 py-3">
-        <Link to="/staff/dashboard" className="flex items-center gap-2">
-          <div className="flex h-9 w-9 items-center justify-center rounded-2xl bg-gradient-to-br from-teal-500 to-emerald-600 text-white shadow-md">
-            <Users2 size={16} />
-          </div>
-          <div className="leading-tight">
-            <div className="text-sm font-semibold tracking-tight text-zinc-900 dark:text-zinc-100">Staff console</div>
-            <div className="text-[11px] text-zinc-500 dark:text-zinc-400">Post jobs for employers</div>
-          </div>
-        </Link>
-        <div className="flex items-center gap-2">
-          <nav className="hidden gap-1 md:flex">
-            <NavLink to="/staff/dashboard" label="Dashboard" />
-            <NavLink to="/staff/employers" label="Employers" />
-            <NavLink to="/staff/jobs/new" label="Post job" />
-            <NavLink to="/staff/jobs" label="My jobs" />
-          </nav>
-          <span className="hidden text-xs text-zinc-500 sm:inline dark:text-zinc-400">{name}</span>
-          <button
-            type="button"
-            onClick={onLogout}
-            className="inline-flex items-center gap-1.5 rounded-xl border border-zinc-200 px-3 py-1.5 text-xs font-semibold text-zinc-700 transition hover:border-rose-300 hover:text-rose-600 dark:border-zinc-800 dark:text-zinc-300 dark:hover:border-rose-500/40 dark:hover:text-rose-400"
-          >
-            <LogOut size={12} /> Sign out
-          </button>
-        </div>
-      </div>
-    </header>
-  );
-}
-
-function NavLink({ to, label }: { to: string; label: string }) {
-  return (
-    <Link
-      to={to}
-      className="rounded-full px-3 py-1.5 text-xs font-semibold text-zinc-700 transition hover:bg-teal-50 hover:text-teal-700 dark:text-zinc-300 dark:hover:bg-teal-500/10 dark:hover:text-teal-300"
-    >
-      {label}
-    </Link>
   );
 }
 
@@ -191,6 +146,3 @@ function ActionCard({
   );
 }
 
-// Exported so StaffEmployers / StaffPostJob / StaffJobs can reuse the same
-// chrome without re-importing every icon each time.
-export { StaffTopBar };

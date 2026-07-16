@@ -15,7 +15,7 @@ import {
 } from "lucide-react";
 import { allUsers, useAuth, type User } from "../store/auth";
 import { useJobs } from "../store/jobs";
-import { StaffTopBar } from "./StaffDashboard";
+import { Navbar } from "../components/Navbar";
 import { CredentialShareModal } from "../components/staff/CredentialShareModal";
 
 /**
@@ -30,7 +30,6 @@ import { CredentialShareModal } from "../components/staff/CredentialShareModal";
  */
 export function StaffEmployers() {
   const me = useAuth((s) => s.currentUser)!;
-  const logout = useAuth((s) => s.logout);
   const resetEmployerPassword = useAuth((s) => s.resetEmployerPassword);
   const jobs = useJobs((s) => s.jobs);
 
@@ -88,7 +87,7 @@ export function StaffEmployers() {
 
   return (
     <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950">
-      <StaffTopBar name={me.name} onLogout={logout} />
+      <Navbar />
       <main className="mx-auto max-w-7xl px-5 py-8 md:py-10">
         <div className="mb-6 flex flex-wrap items-end justify-between gap-4">
           <div>

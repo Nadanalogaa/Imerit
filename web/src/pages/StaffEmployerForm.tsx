@@ -2,7 +2,7 @@ import { useMemo, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { ArrowLeft, Save, Building2, KeyRound, RotateCcw } from "lucide-react";
 import { allUsers, useAuth } from "../store/auth";
-import { StaffTopBar } from "./StaffDashboard";
+import { Navbar } from "../components/Navbar";
 import { CredentialShareModal } from "../components/staff/CredentialShareModal";
 import { TextField } from "../components/TextField";
 import { ApiError } from "../lib/api";
@@ -23,7 +23,6 @@ export function StaffEmployerForm() {
   const editing = !!id;
   const navigate = useNavigate();
   const me = useAuth((s) => s.currentUser)!;
-  const logout = useAuth((s) => s.logout);
   const createEmployerByStaff = useAuth((s) => s.createEmployerByStaff);
   const updateEmployer = useAuth((s) => s.updateEmployer);
   const resetEmployerPassword = useAuth((s) => s.resetEmployerPassword);
@@ -92,7 +91,7 @@ export function StaffEmployerForm() {
 
   return (
     <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950">
-      <StaffTopBar name={me.name} onLogout={logout} />
+      <Navbar />
       <main className="mx-auto max-w-2xl px-5 py-8 md:py-10">
         <Link
           to="/staff/employers"

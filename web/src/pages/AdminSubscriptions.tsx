@@ -3,7 +3,7 @@ import { motion } from "framer-motion";
 import { ArrowLeft, FileSpreadsheet, FileText, FileType2, IndianRupee, TrendingUp } from "lucide-react";
 import { allUsers } from "../store/auth";
 import { useSubscriptions, planById } from "../store/subscriptions";
-import { Header } from "./AdminCandidates";
+import { Navbar } from "../components/Navbar";
 import { exportExcel, exportWord, exportSummaryPdf } from "../lib/export";
 
 export function AdminSubscriptions() {
@@ -33,7 +33,7 @@ export function AdminSubscriptions() {
 
  return (
  <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950">
- <Header title="Subscriptions" />
+ <Navbar />
  <main className="mx-auto max-w-7xl px-5 py-6 md:py-6 md:py-10">
  <Link to="/admin/dashboard" className="mb-6 inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-xs font-semibold text-zinc-700 transition hover:bg-zinc-100 dark:border-zinc-700 dark:text-zinc-200 dark:hover:bg-zinc-800">
  <ArrowLeft size={14} /> Dashboard

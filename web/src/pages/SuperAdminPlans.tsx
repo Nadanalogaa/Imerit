@@ -1,20 +1,17 @@
 import { useEffect, useMemo, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import {
  ArrowLeft,
- Crown,
  IndianRupee,
  Plus,
  Save,
  Trash2,
  ToggleLeft,
  ToggleRight,
- LogOut,
  Receipt,
 } from "lucide-react";
-import { useAuth } from "../store/auth";
-import { ThemeToggle } from "../components/ThemeToggle";
+import { Navbar } from "../components/Navbar";
 import { Checkbox } from "../components/Checkbox";
 import { ApiError } from "../lib/api";
 import { plansApi, type ApiPlan, type ApiPlanAudience, type UpdatePlanInput } from "../lib/api/plans";
@@ -34,9 +31,7 @@ const AUDIENCE_COLORS: Record<ApiPlanAudience, string> = {
 const inr = new Intl.NumberFormat("en-IN", { maximumFractionDigits: 0 });
 
 export function SuperAdminPlans() {
- const navigate = useNavigate();
- const me = useAuth((s) => s.currentUser);
- const logout = useAuth((s) => s.logoutAsync);
+ // Auth + sign-out handled by <Navbar />.
 
  const [items, setItems] = useState<ApiPlan[]>([]);
  const [loading, setLoading] = useState(true);
@@ -178,25 +173,7 @@ export function SuperAdminPlans() {
 
  return (
  <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950">
- <header className="border-b border-zinc-200 bg-white px-5 py-3 dark:bg-zinc-900">
- <div className="mx-auto flex max-w-7xl items-center justify-between">
- <div className="flex items-center gap-2.5">
- <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-amber-400 to-amber-600 text-zinc-900 shadow-md">
- <Crown size={16} />
- </div>
- <div>
- <p className="text-sm font-semibold tracking-tight">Super Admin · Subscription Plans</p>
- <p className="text-[10px] text-zinc-500 dark:text-zinc-400">{me?.name} · {me?.email}</p>
- </div>
- </div>
- <div className="flex items-center gap-2">
- <ThemeToggle />
- <button onClick={async () => { await logout(); navigate("/"); }} className="inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold text-zinc-700 transition hover:bg-zinc-100 dark:border-zinc-700 dark:text-zinc-200 dark:hover:bg-zinc-800">
- <LogOut size={12} /> Sign out
- </button>
- </div>
- </div>
- </header>
+ <Navbar />
 
  <main className="mx-auto max-w-7xl px-5 py-6 md:py-6 md:py-10">
  <div className="mb-5 flex items-center justify-between gap-3">

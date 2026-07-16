@@ -1,11 +1,8 @@
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
 import { motion, type Variants } from "framer-motion";
 import {
  Users,
  Building2,
- ShieldCheck,
- LogOut,
  FileSpreadsheet,
  Activity,
  CheckCircle2,
@@ -13,19 +10,16 @@ import {
  UserPlus,
  LogIn,
 } from "lucide-react";
-import { useAuth, allUsers } from "../store/auth";
+import { allUsers } from "../store/auth";
 import { useProfile } from "../store/profile";
 import { useSubscriptions } from "../store/subscriptions";
-import { ThemeToggle } from "../components/ThemeToggle";
-import { NotificationBell } from "../components/NotificationBell";
+import { Navbar } from "../components/Navbar";
 import { StatTile } from "../components/StatTile";
 import { apiEnabled } from "../lib/api";
 import { adminApi, type AdminActivityItem, type AdminStats, type AdminTrends } from "../lib/api/admin";
 
 export function AdminDashboard() {
- const user = useAuth((s) => s.currentUser)!;
- const logout = useAuth((s) => s.logoutAsync);
- const navigate = useNavigate();
+ // Auth state is consumed by <Navbar />; this page just needs profile + stats.
  const profilesMap = useProfile((s) => s.byUser);
  const subs = useSubscriptions((s) => s.subscriptions);
 
@@ -81,29 +75,7 @@ export function AdminDashboard() {
 
  return (
  <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950">
- <header className="border-b border-zinc-200 bg-white px-5 py-3 dark:bg-zinc-900">
- <div className="mx-auto flex max-w-7xl items-center justify-between">
- <div className="flex items-center gap-2.5">
- <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-zinc-900 to-zinc-700 text-white shadow-md dark:from-zinc-100 dark:to-zinc-300 dark:text-zinc-900">
- <ShieldCheck size={16} />
- </div>
- <div>
- <p className="text-sm font-semibold tracking-tight">Admin Panel</p>
- <p className="text-[10px] text-zinc-500 dark:text-zinc-400">{user.name} · {user.email}</p>
- </div>
- </div>
- <div className="flex items-center gap-2">
- <NotificationBell />
- <ThemeToggle />
- <button
- onClick={async () => { await logout(); navigate("/"); }}
- className="inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold text-zinc-700 transition hover:bg-zinc-100 dark:border-zinc-700 dark:text-zinc-200 dark:hover:bg-zinc-800"
- >
- <LogOut size={12} /> Sign out
- </button>
- </div>
- </div>
- </header>
+ <Navbar />
 
  <main className="mx-auto max-w-7xl px-5 py-6 md:py-10">
  <motion.div variants={containerV} initial="hidden" animate="visible" className="flex flex-col gap-6">

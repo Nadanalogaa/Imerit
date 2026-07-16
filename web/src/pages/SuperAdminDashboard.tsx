@@ -1,4 +1,4 @@
-import { Link, useNavigate } from "react-router-dom";
+import { Link } from "react-router-dom";
 import { motion, type Variants } from "framer-motion";
 import {
  Users,
@@ -6,7 +6,6 @@ import {
  CreditCard,
  Crown,
  ArrowRight,
- LogOut,
  TrendingUp,
  IndianRupee,
  ScrollText,
@@ -14,21 +13,18 @@ import {
  ShieldCheck,
 } from "lucide-react";
 import { useEffect, useState } from "react";
-import { useAuth, allUsers } from "../store/auth";
+import { allUsers } from "../store/auth";
 import { useProfile } from "../store/profile";
 import { useSubscriptions, PLANS } from "../store/subscriptions";
 import { useApplications } from "../store/applications";
 import { useJobs } from "../store/jobs";
-import { ThemeToggle } from "../components/ThemeToggle";
-import { NotificationBell } from "../components/NotificationBell";
+import { Navbar } from "../components/Navbar";
 import { StatTile } from "../components/StatTile";
 import { apiEnabled } from "../lib/api";
 import { adminApi, type AdminStats, type AdminTrends } from "../lib/api/admin";
 
 export function SuperAdminDashboard() {
- const user = useAuth((s) => s.currentUser)!;
- const logout = useAuth((s) => s.logout);
- const navigate = useNavigate();
+ // Auth + sign-out handled by <Navbar />.
  const profilesMap = useProfile((s) => s.byUser);
  const subs = useSubscriptions((s) => s.subscriptions);
  const apps = useApplications((s) => s.applications);
@@ -73,28 +69,7 @@ export function SuperAdminDashboard() {
 
  return (
  <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950">
- <header className="border-b border-zinc-200 bg-gradient-to-r from-zinc-900 via-zinc-800 to-zinc-900 px-5 py-3 text-white">
- <div className="mx-auto flex max-w-7xl items-center justify-between">
- <div className="flex items-center gap-2.5">
- <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-amber-400 to-amber-600 text-zinc-900 shadow-md">
- <Crown size={16} />
- </div>
- <div>
- <p className="text-sm font-semibold tracking-tight">Super Admin</p>
- <p className="text-[10px] text-zinc-400">{user.name} · {user.email}</p>
- </div>
- </div>
- <div className="flex items-center gap-2">
- <div className="text-white [&_button]:text-white [&_button]:hover:bg-white/10 dark:[&_button]:text-zinc-300">
- <NotificationBell />
- </div>
- <ThemeToggle />
- <button onClick={() => { logout(); navigate("/"); }} className="inline-flex items-center gap-1.5 rounded-full border border-white/15 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-white/10">
- <LogOut size={12} /> Sign out
- </button>
- </div>
- </div>
- </header>
+ <Navbar />
 
  <main className="mx-auto max-w-7xl px-5 py-6 md:py-10">
  <motion.div variants={containerV} initial="hidden" animate="visible" className="flex flex-col gap-6">

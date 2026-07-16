@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 import { Briefcase, Plus, Search, MapPin, ExternalLink, Timer } from "lucide-react";
 import { allUsers, useAuth } from "../store/auth";
 import { useJobs, isExpired, daysUntilExpiry } from "../store/jobs";
-import { StaffTopBar } from "./StaffDashboard";
+import { Navbar } from "../components/Navbar";
 
 /**
  * Jobs staff has posted — the readback lane. "Posted by me" isn't a
@@ -18,7 +18,6 @@ import { StaffTopBar } from "./StaffDashboard";
  */
 export function StaffJobs() {
   const me = useAuth((s) => s.currentUser)!;
-  const logout = useAuth((s) => s.logout);
   const jobs = useJobs((s) => s.jobs);
   const [query, setQuery] = useState("");
 
@@ -47,7 +46,7 @@ export function StaffJobs() {
 
   return (
     <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950">
-      <StaffTopBar name={me.name} onLogout={logout} />
+      <Navbar />
       <main className="mx-auto max-w-6xl px-5 py-8 md:py-10">
         <div className="mb-6 flex flex-wrap items-end justify-between gap-4">
           <div>
