@@ -5,9 +5,17 @@ import { Link } from "react-router-dom";
  * lockup — icon + "Tamil Recruit" text + tagline — so callers just pick a
  * height and get a properly-scaled banner.
  *
- * Pass `to` to render as a router `<Link>` (nav / footer); omit `to` for a
- * plain `<img>` (auth pages, hero, print). The `variant` prop controls the
- * pixel height: nav ~ 32-40px, hero ~ 56-72px, footer ~ 40px.
+ * Two art files ship so the wordmark stays legible in both themes:
+ *   - /logo-dark.png   — dark ink, used on light theme (default)
+ *   - /logo-white.png  — white ink, used on dark theme
+ *
+ * We render BOTH `<img>`s and toggle visibility with `dark:hidden` /
+ * `hidden dark:inline-block`. That's cheaper than JS + no flicker on
+ * theme swap since browsers pre-decode both variants once.
+ *
+ * Both files are pre-trimmed of transparent padding at build time (see
+ * scripts/trim-logos.py or `logo/` folder README) so the sizes here map
+ * directly to visible glyph height. Sizes: nav ~ 32-40px, hero ~ 56-72px.
  */
 export type BrandSize = "sm" | "md" | "lg" | "xl";
 
@@ -18,6 +26,8 @@ const HEIGHTS: Record<BrandSize, string> = {
   xl: "h-20",
 };
 
+const ALT = "i-Tamil Recruit — Job Portal for Skilled Talent";
+
 export function Brand({
   size = "md",
   to,
@@ -27,17 +37,20 @@ export function Brand({
   to?: string;
   className?: string;
 }) {
-  const img = (
-    <img
-      src="/logo-orange.jpeg"
-      alt="Tamil Recruit — Job Portal for Skilled Talent"
-      className={[HEIGHTS[size], "w-auto object-contain", className].join(" ")}
-    />
+  const wrapClass = ["inline-flex items-center", className].join(" ");
+  const imgClass = [HEIGHTS[size], "w-auto object-contain"].join(" ");
+  const art = (
+    <>
+      {/* Light theme — dark ink logo. Hidden in dark mode. */}
+      <img src="/logo-dark.png" alt={ALT} className={[imgClass, "dark:hidden"].join(" ")} />
+      {/* Dark theme — white ink logo. Only rendered visible in dark mode. */}
+      <img src="/logo-white.png" alt="" aria-hidden="true" className={[imgClass, "hidden dark:inline-block"].join(" ")} />
+    </>
   );
-  if (!to) return img;
+  if (!to) return <span className={wrapClass}>{art}</span>;
   return (
-    <Link to={to} className="inline-flex items-center">
-      {img}
+    <Link to={to} className={wrapClass}>
+      {art}
     </Link>
   );
 }
