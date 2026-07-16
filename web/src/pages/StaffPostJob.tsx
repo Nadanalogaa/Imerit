@@ -1,52 +1,22 @@
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
-import {
-  ArrowLeft,
-  Building2,
-  Briefcase,
-  Send,
-  Check,
-  Plus,
-  Sparkles,
-  MapPin,
-  X,
-  UserPlus,
-  IndianRupee,
-} from "lucide-react";
+import { ArrowLeft, Building2, Check, UserPlus, X } from "lucide-react";
 import { allUsers, useAuth, type User } from "../store/auth";
-import {
-  JOB_BENEFITS,
-  useJobs,
-  type JobBenefit,
-  type JobExperience,
-  type JobField,
-  type JobType,
-} from "../store/jobs";
-import { publicLabel, type PlaceRef, isPlaceSet } from "../store/locations";
-import { LocationPicker } from "../components/LocationPicker";
+import { useJobs } from "../store/jobs";
+import { useLocations } from "../store/locations";
+import { JobFormWizard } from "../components/JobFormWizard";
 import { TextField } from "../components/TextField";
 import { StaffTopBar } from "./StaffDashboard";
 import { CredentialShareModal } from "../components/staff/CredentialShareModal";
 import { ApiError } from "../lib/api";
 
-const JOB_TYPES: { id: JobType; label: string }[] = [
-  { id: "full_time", label: "Full-time" },
-  { id: "part_time", label: "Part-time" },
-  { id: "internship_training", label: "Internship / Training" },
-  { id: "apprentice", label: "Apprentice" },
-  { id: "contract", label: "Contract" },
-  { id: "consultant", label: "Consultant" },
-  { id: "freelancer", label: "Freelancer" },
-  { id: "gig_delivery", label: "Gig / Delivery" },
-];
-
 /**
- * Staff-flavored post-job flow. Lean single-page form (no wizard) — staff
- * volume-post, so extra clicks per job compound. The centrepiece is the
- * Employer combobox at the top: type the employer name, see live matches
- * from the master, tap one to auto-fill; if nothing matches, a
- * "+ Create new employer" chip inlines the create flow so it happens as
- * part of Submit rather than a detour.
+ * Staff post-job. Uses the same [JobFormWizard] as EmployerPostJob so
+ * fields, styling, skill suggestions, and validation match one-for-one.
+ * The staff-specific bit is the Employer picker on top: type an employer
+ * name, pick from live matches, OR create a new employer inline (the
+ * inline-create fields appear below the picker, and on submit BOTH the
+ * employer AND the job are created in one action).
  */
 export function StaffPostJob() {
   const navigate = useNavigate();
@@ -54,52 +24,29 @@ export function StaffPostJob() {
   const me = useAuth((s) => s.currentUser)!;
   const logout = useAuth((s) => s.logout);
   const createEmployerByStaff = useAuth((s) => s.createEmployerByStaff);
-  const addJob = useJobs((s) => s.addJob);
+  const addJobAsync = useJobs((s) => s.addJobAsync);
+  const talukById = useLocations((s) => s.talukById);
 
-  // ---------- employer picker state ----------
   const employers = useMemo(
     () => allUsers().filter((u) => u.role === "employer").sort((a, b) => a.name.localeCompare(b.name)),
     [],
   );
 
   const initialEmployerId = searchParams.get("employerId");
-  const initialEmployer = initialEmployerId ? employers.find((u) => u.id === initialEmployerId) ?? null : null;
+  const initialEmployer = initialEmployerId
+    ? employers.find((u) => u.id === initialEmployerId) ?? null
+    : null;
 
   const [selectedEmployer, setSelectedEmployer] = useState<User | null>(initialEmployer);
   const [employerQuery, setEmployerQuery] = useState(initialEmployer?.name ?? "");
   const [employerFocused, setEmployerFocused] = useState(false);
-
-  // Inline new-employer create fields — shown when staff opts to create
-  // rather than pick.
   const [createMode, setCreateMode] = useState(false);
   const [newEmp, setNewEmp] = useState({ name: "", email: "", mobile: "", company: "" });
-
-  // ---------- job fields ----------
-  const [title, setTitle] = useState("");
-  const [description, setDescription] = useState("");
-  const [field, setField] = useState<JobField>("it");
-  const [type, setType] = useState<JobType>("full_time");
-  const [experience, setExperience] = useState<JobExperience>("any");
-  const [yearsMin, setYearsMin] = useState<string>("");
-  const [yearsMax, setYearsMax] = useState<string>("");
-  const [salaryRange, setSalaryRange] = useState("");
-  const [skillDraft, setSkillDraft] = useState("");
-  const [skills, setSkills] = useState<string[]>([]);
-  const [benefits, setBenefits] = useState<JobBenefit[]>([]);
-  const [contactEmail, setContactEmail] = useState("");
-  const [place, setPlace] = useState<PlaceRef>({});
-
-  const [error, setError] = useState<string | null>(null);
-  const [submitting, setSubmitting] = useState(false);
-  // When the created job spawns fresh credentials for a NEW employer,
-  // hold them here so we can show the modal + only navigate away when
-  // staff acknowledges the share.
+  const [pickerError, setPickerError] = useState<string | null>(null);
+  // When Submit spawns a new employer, hold the fresh creds so we can
+  // pop the share modal AFTER the job posts and only navigate away
+  // when the staff member acknowledges.
   const [pendingCreds, setPendingCreds] = useState<{ email: string; password: string; name: string; jobId: string } | null>(null);
-
-  // Prefill contact email from selected employer if staff hasn't typed one.
-  useEffect(() => {
-    if (selectedEmployer && !contactEmail) setContactEmail(selectedEmployer.email);
-  }, [selectedEmployer, contactEmail]);
 
   const employerMatches = useMemo(() => {
     const q = employerQuery.trim().toLowerCase();
@@ -122,30 +69,8 @@ export function StaffPostJob() {
     );
   }, [employerQuery, employers]);
 
-  /* ---------- skills chip helpers ---------- */
-
-  const addSkill = () => {
-    const v = skillDraft.trim();
-    if (!v) return;
-    if (skills.some((s) => s.toLowerCase() === v.toLowerCase())) {
-      setSkillDraft("");
-      return;
-    }
-    setSkills([...skills, v]);
-    setSkillDraft("");
-  };
-
-  /* ---------- benefits toggle ---------- */
-
-  const toggleBenefit = (id: JobBenefit) => {
-    setBenefits((cur) => (cur.includes(id) ? cur.filter((x) => x !== id) : [...cur, id]));
-  };
-
-  /* ---------- submit ---------- */
-
-  const submit = (e: React.FormEvent) => {
-    e.preventDefault();
-    setError(null);
+  const handleSubmit = async (v: Parameters<React.ComponentProps<typeof JobFormWizard>["onSubmit"]>[0]) => {
+    setPickerError(null);
 
     // Resolve the employer we're posting for.
     let employer: User | null = selectedEmployer;
@@ -153,12 +78,16 @@ export function StaffPostJob() {
 
     if (!employer) {
       if (!createMode) {
-        setError("Pick an employer from the master, or tap “Create new employer”.");
-        return;
+        setPickerError("Pick an employer from the master, or click Create new employer.");
+        throw new Error("employer_required");
       }
-      if (!newEmp.name.trim()) return setError("Enter the employer contact name.");
+      if (!newEmp.name.trim()) {
+        setPickerError("Enter a contact name for the new employer.");
+        throw new Error("employer_incomplete");
+      }
       if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(newEmp.email.trim())) {
-        return setError("Enter a valid email for the employer.");
+        setPickerError("Enter a valid email for the new employer.");
+        throw new Error("employer_incomplete");
       }
       try {
         const { user, password } = createEmployerByStaff({
@@ -172,432 +101,106 @@ export function StaffPostJob() {
         freshCreds = { email: user.email, password, name: user.name };
       } catch (err) {
         if (err instanceof ApiError && err.code === "EMAIL_TAKEN") {
-          return setError(
-            "An account already exists for that email — search for it in the picker above instead.",
-          );
+          setPickerError("An account already exists for that email — search for it in the picker above instead.");
+          throw err;
         }
-        return setError(err instanceof Error ? err.message : "Could not create employer.");
+        throw err;
       }
     }
 
-    // Field validation for the job itself.
-    if (!title.trim()) return setError("Job title is required.");
-    if (description.trim().length < 20) {
-      return setError("Add at least a short description (20+ characters).");
-    }
-    if (!isPlaceSet(place)) return setError("Pick a location (district + taluk).");
-    if (skills.length === 0) return setError("Add at least one required skill.");
-    if (contactEmail && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(contactEmail.trim())) {
-      return setError("Contact email looks invalid.");
-    }
-    if (experience === "experienced") {
-      const min = yearsMin === "" ? null : Number(yearsMin);
-      const max = yearsMax === "" ? null : Number(yearsMax);
-      if (min == null) return setError("Set the minimum years of experience.");
-      if (max != null && max < min) return setError("Max years must be ≥ min years.");
-    }
+    const taluk = v.place.talukId ? talukById(v.place.talukId) : undefined;
+    const locationLabel = taluk ? `${taluk.taluk.name}, ${taluk.district.name}` : "";
 
-    setSubmitting(true);
-    const locationLabel = publicLabel(place);
-    const job = addJob({
-      employerId: employer.id,
-      employerName: employer.company || employer.name,
-      title: title.trim(),
-      description: description.trim(),
+    // Post the job. Note: addJobAsync uses the SIGNED-IN user's employer
+    // context on the server side, so when a staff member is signed in
+    // the server can't attribute the job to a different employer.
+    // Until the backend gets a `/staff/jobs` endpoint that accepts an
+    // employerId, we route through the local addJob (which respects the
+    // one we pass explicitly). This is the same tradeoff Staff has for
+    // the createEmployerByStaff flow — localStorage-first, backend port
+    // to follow.
+    const job = useJobs.getState().addJob({
+      employerId: employer!.id,
+      employerName: employer!.company || employer!.name,
+      title: v.title,
+      description: v.description,
       location: locationLabel,
-      districtId: place.districtId,
-      talukId: place.talukId,
-      lat: place.lat,
-      lng: place.lng,
-      street: place.street,
-      pincode: place.pincode,
-      field,
-      type,
-      experience,
-      yearsMin: experience === "experienced" ? Number(yearsMin) : undefined,
-      yearsMax: experience === "experienced" && yearsMax !== "" ? Number(yearsMax) : undefined,
-      salaryRange: salaryRange.trim() || undefined,
-      skills,
-      benefits: benefits.length > 0 ? benefits : undefined,
-      contactEmail: contactEmail.trim() || undefined,
+      districtId: v.place.districtId,
+      talukId: v.place.talukId,
+      lat: v.place.lat,
+      lng: v.place.lng,
+      pincode: v.place.pincode,
+      street: v.place.street,
+      field: v.field!,
+      type: v.type!,
+      experience: v.experience!,
+      yearsMin: v.yearsMin,
+      yearsMax: v.yearsMax,
+      salaryRange: v.salaryRange,
+      skills: v.skills,
+      benefits: v.benefits,
+      contactEmail: v.contactEmail || undefined,
     });
-    setSubmitting(false);
+    // Keep addJobAsync in scope so the tree-shaker doesn't drop it (we'll
+    // use it once the backend has a staff endpoint).
+    void addJobAsync;
 
     if (freshCreds) {
       // New employer created — hold on the credentials modal, redirect
       // only when staff acknowledges the share.
       setPendingCreds({ ...freshCreds, jobId: job.id });
     } else {
-      navigate("/staff/jobs", { replace: true });
+      navigate(`/staff/jobs/${job.id}`);
     }
   };
 
   return (
     <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950">
       <StaffTopBar name={me.name} onLogout={logout} />
-      <main className="mx-auto max-w-3xl px-5 py-8 md:py-10">
+      <main className="mx-auto max-w-6xl px-5 py-6">
         <Link
           to="/staff/dashboard"
-          className="mb-4 inline-flex items-center gap-1.5 text-xs font-semibold text-zinc-600 transition hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100"
+          className="mb-5 inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-xs font-semibold text-zinc-700 transition hover:bg-zinc-100 dark:border-zinc-700 dark:text-zinc-200 dark:hover:bg-zinc-800"
         >
-          <ArrowLeft size={12} /> Dashboard
+          <ArrowLeft size={14} /> Dashboard
         </Link>
 
-        <div className="mb-6 flex items-center gap-3">
-          <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-gradient-to-br from-brand-500 to-brand-700 text-white shadow-md shadow-brand-500/30">
-            <Briefcase size={20} />
-          </div>
-          <div>
-            <p className="text-xs font-semibold uppercase tracking-widest text-brand-600 dark:text-brand-400">
-              Post a job on behalf of…
-            </p>
-            <h1 className="text-lg font-semibold tracking-tight text-zinc-900 dark:text-zinc-100">
-              New job posting
-            </h1>
-          </div>
-        </div>
-
-        <form onSubmit={submit} className="space-y-5">
-          {/* Employer picker */}
-          <FormCard title="Employer" hint="Pick from the master, or create a new one inline.">
-            <div className="relative">
-              <div className="relative">
-                <Building2 size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-zinc-400" />
-                <input
-                  value={employerQuery}
-                  onFocus={() => setEmployerFocused(true)}
-                  onBlur={() => setTimeout(() => setEmployerFocused(false), 120)}
-                  onChange={(e) => {
-                    setEmployerQuery(e.target.value);
-                    setSelectedEmployer(null);
-                    setCreateMode(false);
-                  }}
-                  placeholder="Type employer name or company (e.g. Zoho)"
-                  className="w-full rounded-xl border border-zinc-200 bg-white py-2.5 pl-10 pr-3 text-sm placeholder:text-zinc-400 focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500/20 dark:border-zinc-800 dark:bg-zinc-900"
-                />
-                {selectedEmployer && (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setSelectedEmployer(null);
-                      setEmployerQuery("");
-                    }}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300"
-                    aria-label="Clear employer"
-                  >
-                    <X size={14} />
-                  </button>
-                )}
-              </div>
-
-              {employerFocused && !selectedEmployer && !createMode && (
-                <div className="absolute z-10 mt-1 max-h-64 w-full overflow-y-auto rounded-2xl border border-zinc-200 bg-white shadow-lg dark:border-zinc-800 dark:bg-zinc-900">
-                  {employerMatches.length === 0 ? (
-                    <button
-                      type="button"
-                      onMouseDown={(e) => e.preventDefault()}
-                      onClick={() => {
-                        setCreateMode(true);
-                        setNewEmp((n) => ({ ...n, name: employerQuery, company: employerQuery }));
-                      }}
-                      className="flex w-full items-center gap-2 px-3 py-3 text-left text-sm font-semibold text-teal-700 transition hover:bg-teal-50 dark:text-teal-300 dark:hover:bg-teal-500/10"
-                    >
-                      <UserPlus size={14} /> Create "{employerQuery}" as a new employer
-                    </button>
-                  ) : (
-                    <>
-                      {employerMatches.map((u) => (
-                        <button
-                          type="button"
-                          key={u.id}
-                          onMouseDown={(e) => e.preventDefault()}
-                          onClick={() => {
-                            setSelectedEmployer(u);
-                            setEmployerQuery(u.company || u.name);
-                            setCreateMode(false);
-                          }}
-                          className="flex w-full items-start gap-2.5 px-3 py-2.5 text-left transition hover:bg-zinc-50 dark:hover:bg-zinc-800"
-                        >
-                          <div className="mt-0.5 flex h-8 w-8 items-center justify-center rounded-xl bg-gradient-to-br from-sky-500 to-sky-700 text-[10px] font-bold text-white">
-                            {u.name.split(/\s+/).slice(0, 2).map((p) => p[0]?.toUpperCase() ?? "").join("")}
-                          </div>
-                          <div className="min-w-0 flex-1">
-                            <div className="truncate text-sm font-semibold text-zinc-900 dark:text-zinc-100">
-                              {u.company || u.name}
-                            </div>
-                            <div className="truncate text-[11px] text-zinc-500 dark:text-zinc-400">
-                              {u.name} · {u.email}
-                            </div>
-                          </div>
-                          {u.createdByStaffId === me.id && (
-                            <span className="rounded-full bg-teal-100 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-widest text-teal-700 dark:bg-teal-500/15 dark:text-teal-300">
-                              Yours
-                            </span>
-                          )}
-                        </button>
-                      ))}
-                      {!hasExactMatch && employerQuery.trim() && (
-                        <button
-                          type="button"
-                          onMouseDown={(e) => e.preventDefault()}
-                          onClick={() => {
-                            setCreateMode(true);
-                            setNewEmp((n) => ({ ...n, name: employerQuery, company: employerQuery }));
-                          }}
-                          className="flex w-full items-center gap-2 border-t border-zinc-100 px-3 py-2.5 text-left text-sm font-semibold text-teal-700 transition hover:bg-teal-50 dark:border-zinc-800 dark:text-teal-300 dark:hover:bg-teal-500/10"
-                        >
-                          <UserPlus size={14} /> Create "{employerQuery.trim()}" as a new employer
-                        </button>
-                      )}
-                    </>
-                  )}
-                </div>
-              )}
-            </div>
-
-            {selectedEmployer && (
-              <div className="mt-3 rounded-xl border border-teal-200 bg-teal-50/60 p-3 dark:border-teal-500/25 dark:bg-teal-500/10">
-                <div className="flex items-center gap-2 text-[11px] font-semibold text-teal-800 dark:text-teal-300">
-                  <Check size={12} /> Posting for
-                </div>
-                <div className="mt-0.5 text-sm font-semibold text-teal-900 dark:text-teal-200">
-                  {selectedEmployer.company || selectedEmployer.name}
-                </div>
-                <div className="text-[11px] text-teal-800/80 dark:text-teal-300/80">
-                  {selectedEmployer.name} · {selectedEmployer.email}
-                </div>
-              </div>
-            )}
-
-            {createMode && !selectedEmployer && (
-              <div className="mt-3 space-y-2 rounded-xl border border-amber-200 bg-amber-50/50 p-3 dark:border-amber-500/25 dark:bg-amber-500/10">
-                <div className="flex items-center justify-between">
-                  <span className="text-[11px] font-semibold uppercase tracking-widest text-amber-800 dark:text-amber-300">
-                    New employer — creates on submit
-                  </span>
-                  <button
-                    type="button"
-                    onClick={() => setCreateMode(false)}
-                    className="text-amber-700 hover:text-amber-900 dark:text-amber-300"
-                    aria-label="Cancel new employer"
-                  >
-                    <X size={13} />
-                  </button>
-                </div>
-                <div className="grid gap-2 sm:grid-cols-2">
-                  <TextField
-                    label="Contact name"
-                    value={newEmp.name}
-                    onChange={(v) => setNewEmp((n) => ({ ...n, name: v }))}
-                    placeholder="Priya Ramesh"
-                  />
-                  <TextField
-                    label="Company"
-                    value={newEmp.company}
-                    onChange={(v) => setNewEmp((n) => ({ ...n, company: v }))}
-                    placeholder="Zoho Corporation"
-                  />
-                  <TextField
-                    label="Work email"
-                    type="email"
-                    value={newEmp.email}
-                    onChange={(v) => setNewEmp((n) => ({ ...n, email: v }))}
-                    placeholder="priya@zoho.com"
-                    inputMode="email"
-                  />
-                  <TextField
-                    label="Mobile"
-                    value={newEmp.mobile}
-                    onChange={(v) => setNewEmp((n) => ({ ...n, mobile: v }))}
-                    placeholder="9876543210"
-                    inputMode="tel"
-                    maxLength={10}
-                  />
-                </div>
-                <p className="text-[10px] text-amber-800/80 dark:text-amber-300/80">
-                  A password will be generated on Submit — you'll see it once so you can share it.
-                </p>
-              </div>
-            )}
-          </FormCard>
-
-          {/* Basics */}
-          <FormCard title="Role basics">
-            <div className="space-y-3">
-              <TextField
-                label="Job title"
-                value={title}
-                onChange={setTitle}
-                placeholder="e.g. Senior React Developer"
-              />
-              <div>
-                <label className="mb-1.5 block text-xs font-medium text-zinc-700 dark:text-zinc-300">
-                  Description
-                </label>
-                <textarea
-                  value={description}
-                  onChange={(e) => setDescription(e.target.value)}
-                  rows={5}
-                  placeholder="What the role involves, who you're looking for, what a great week looks like…"
-                  className="w-full rounded-xl border border-zinc-200 bg-white px-3 py-2.5 text-sm placeholder:text-zinc-400 focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500/20 dark:border-zinc-800 dark:bg-zinc-900"
-                />
-              </div>
-              <div className="grid gap-3 sm:grid-cols-3">
-                <SegField label="Field">
-                  <Seg selected={field === "it"} onClick={() => setField("it")}>IT</Seg>
-                  <Seg selected={field === "non_it"} onClick={() => setField("non_it")}>Non-IT</Seg>
-                </SegField>
-                <SegField label="Experience">
-                  <Seg selected={experience === "fresher"} onClick={() => setExperience("fresher")}>Fresher</Seg>
-                  <Seg selected={experience === "experienced"} onClick={() => setExperience("experienced")}>Experienced</Seg>
-                  <Seg selected={experience === "any"} onClick={() => setExperience("any")}>Any</Seg>
-                </SegField>
-                <div>
-                  <label className="mb-1.5 block text-xs font-medium text-zinc-700 dark:text-zinc-300">Job type</label>
-                  <select
-                    value={type}
-                    onChange={(e) => setType(e.target.value as JobType)}
-                    className="w-full rounded-xl border border-zinc-200 bg-white px-3 py-2 text-sm focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500/20 dark:border-zinc-800 dark:bg-zinc-900"
-                  >
-                    {JOB_TYPES.map((t) => (
-                      <option key={t.id} value={t.id}>{t.label}</option>
-                    ))}
-                  </select>
-                </div>
-              </div>
-              {experience === "experienced" && (
-                <div className="grid gap-3 sm:grid-cols-2">
-                  <TextField
-                    label="Min years"
-                    value={yearsMin}
-                    onChange={setYearsMin}
-                    placeholder="2"
-                    inputMode="numeric"
-                    maxLength={2}
-                  />
-                  <TextField
-                    label="Max years (optional)"
-                    value={yearsMax}
-                    onChange={setYearsMax}
-                    placeholder="5"
-                    inputMode="numeric"
-                    maxLength={2}
-                  />
-                </div>
-              )}
-              <TextField
-                label="Salary range (optional)"
-                value={salaryRange}
-                onChange={setSalaryRange}
-                placeholder="₹8–15 LPA"
-              />
-              <TextField
-                label="Applications go to (optional)"
-                type="email"
-                value={contactEmail}
-                onChange={setContactEmail}
-                placeholder={selectedEmployer?.email ?? "hiring@company.com"}
-                inputMode="email"
-              />
-            </div>
-          </FormCard>
-
-          {/* Location */}
-          <FormCard title="Location" hint="Where the role sits. Candidates match on district/taluk distance.">
-            <LocationPicker value={place} onChange={setPlace} allowStreet allowPincode />
-            {isPlaceSet(place) && (
-              <div className="mt-2 inline-flex items-center gap-1.5 rounded-full bg-emerald-100 px-2.5 py-1 text-[11px] font-semibold text-emerald-800 dark:bg-emerald-500/15 dark:text-emerald-300">
-                <MapPin size={11} /> {publicLabel(place)}
-              </div>
-            )}
-          </FormCard>
-
-          {/* Skills */}
-          <FormCard title="Required skills" hint="Hit Enter to add. Fuzzy-matched against candidate skill sets.">
-            <div className="flex flex-wrap items-center gap-1.5 rounded-xl border border-zinc-200 bg-white p-2 dark:border-zinc-800 dark:bg-zinc-900">
-              {skills.map((s) => (
-                <span
-                  key={s}
-                  className="inline-flex items-center gap-1 rounded-full bg-gradient-to-r from-indigo-500 to-indigo-600 px-2 py-0.5 text-[11px] font-semibold text-white shadow-sm shadow-indigo-500/30"
-                >
-                  {s}
-                  <button
-                    type="button"
-                    onClick={() => setSkills(skills.filter((x) => x !== s))}
-                    aria-label={`Remove ${s}`}
-                  >
-                    <X size={10} />
-                  </button>
-                </span>
-              ))}
-              <input
-                value={skillDraft}
-                onChange={(e) => setSkillDraft(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter") {
-                    e.preventDefault();
-                    addSkill();
-                  }
-                }}
-                onBlur={addSkill}
-                placeholder={skills.length === 0 ? "e.g. React, Node.js, PostgreSQL" : "Add another…"}
-                className="min-w-[120px] flex-1 bg-transparent text-sm placeholder:text-zinc-400 focus:outline-none"
-              />
-            </div>
-          </FormCard>
-
-          {/* Benefits */}
-          <FormCard title="Benefits" hint="Optional — shown as pills on the job card.">
-            <div className="flex flex-wrap gap-1.5">
-              {JOB_BENEFITS.map((b) => {
-                const selected = benefits.includes(b.id);
-                return (
-                  <button
-                    key={b.id}
-                    type="button"
-                    onClick={() => toggleBenefit(b.id)}
-                    className={[
-                      "inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-[11px] font-semibold transition",
-                      selected
-                        ? "border-brand-500 bg-gradient-to-r from-brand-500 to-brand-600 text-white shadow-sm shadow-brand-500/30"
-                        : "border-zinc-200 bg-white text-zinc-700 hover:border-brand-300 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-300",
-                    ].join(" ")}
-                  >
-                    {selected ? <Check size={11} /> : <Plus size={11} />}
-                    {b.label}
-                  </button>
-                );
-              })}
-            </div>
-          </FormCard>
-
-          {error && (
-            <div className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-800 dark:border-rose-500/30 dark:bg-rose-500/10 dark:text-rose-300">
-              {error}
-            </div>
-          )}
-
-          <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl bg-white p-4 shadow-sm dark:bg-zinc-900">
-            <div className="text-xs text-zinc-500 dark:text-zinc-400">
-              Posts live for <strong>45 days</strong>. Can be reposted from the employer's my-jobs.
-            </div>
-            <div className="flex gap-2">
-              <Link
-                to="/staff/dashboard"
-                className="inline-flex items-center gap-1.5 rounded-2xl border border-zinc-200 px-4 py-2 text-sm font-semibold text-zinc-700 transition hover:bg-zinc-50 dark:border-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-800"
-              >
-                Cancel
-              </Link>
-              <button
-                type="submit"
-                disabled={submitting}
-                className="inline-flex items-center gap-1.5 rounded-2xl bg-gradient-to-r from-brand-500 to-brand-700 px-5 py-2 text-sm font-semibold text-white shadow-md shadow-brand-500/30 transition hover:shadow-lg disabled:opacity-60"
-              >
-                <Send size={14} /> {submitting ? "Publishing…" : "Publish job"}
-              </button>
-            </div>
-          </div>
-        </form>
+        <JobFormWizard
+          mode="create"
+          initialValues={{
+            companyName: selectedEmployer?.company || selectedEmployer?.name || "",
+            contactEmail: selectedEmployer?.email || "",
+          }}
+          topSection={
+            <EmployerPickerCard
+              selectedEmployer={selectedEmployer}
+              query={employerQuery}
+              onQueryChange={setEmployerQuery}
+              focused={employerFocused}
+              onFocusChange={setEmployerFocused}
+              matches={employerMatches}
+              hasExactMatch={hasExactMatch}
+              createMode={createMode}
+              setCreateMode={setCreateMode}
+              newEmp={newEmp}
+              setNewEmp={setNewEmp}
+              me={me}
+              onSelect={(u) => {
+                setSelectedEmployer(u);
+                setEmployerQuery(u.company || u.name);
+                setCreateMode(false);
+                setPickerError(null);
+              }}
+              onClear={() => {
+                setSelectedEmployer(null);
+                setEmployerQuery("");
+                setPickerError(null);
+              }}
+              error={pickerError}
+            />
+          }
+          onSubmit={handleSubmit}
+        />
       </main>
 
       {pendingCreds && (
@@ -607,7 +210,9 @@ export function StaffPostJob() {
           email={pendingCreds.email}
           password={pendingCreds.password}
           onClose={() => {
-            navigate("/staff/jobs", { replace: true });
+            const jobId = pendingCreds.jobId;
+            setPendingCreds(null);
+            navigate(`/staff/jobs/${jobId}`);
           }}
         />
       )}
@@ -615,65 +220,216 @@ export function StaffPostJob() {
   );
 }
 
-/* --------------------------------- primitives -------------------------------- */
+/* --------------------------- employer picker card --------------------------- */
 
-function FormCard({
-  title,
-  hint,
-  children,
-}: {
-  title: string;
-  hint?: string;
-  children: React.ReactNode;
-}) {
+interface EmployerPickerCardProps {
+  selectedEmployer: User | null;
+  query: string;
+  onQueryChange: (v: string) => void;
+  focused: boolean;
+  onFocusChange: (v: boolean) => void;
+  matches: User[];
+  hasExactMatch: boolean;
+  createMode: boolean;
+  setCreateMode: (v: boolean) => void;
+  newEmp: { name: string; email: string; mobile: string; company: string };
+  setNewEmp: (v: { name: string; email: string; mobile: string; company: string }) => void;
+  me: User;
+  onSelect: (u: User) => void;
+  onClear: () => void;
+  error: string | null;
+}
+
+function EmployerPickerCard({
+  selectedEmployer,
+  query,
+  onQueryChange,
+  focused,
+  onFocusChange,
+  matches,
+  hasExactMatch,
+  createMode,
+  setCreateMode,
+  newEmp,
+  setNewEmp,
+  me,
+  onSelect,
+  onClear,
+  error,
+}: EmployerPickerCardProps) {
   return (
-    <div className="rounded-3xl border border-zinc-200 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
-      <div className="mb-3 flex items-baseline justify-between">
-        <h2 className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">{title}</h2>
-        {hint && <span className="text-[11px] text-zinc-500 dark:text-zinc-400">{hint}</span>}
+    <div className="mb-6 rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
+      <div className="mb-3 flex items-center gap-2">
+        <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-teal-100 text-teal-600 dark:bg-teal-500/15 dark:text-teal-300">
+          <Building2 size={14} />
+        </div>
+        <div>
+          <p className="text-[11px] font-bold uppercase tracking-widest text-teal-600 dark:text-teal-400">
+            Posting on behalf of
+          </p>
+          <p className="text-xs text-zinc-500 dark:text-zinc-400">
+            Pick from the Employer Master, or create a new one inline.
+          </p>
+        </div>
       </div>
-      {children}
+
+      <div className="relative">
+        <div className="relative">
+          <Building2 size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-zinc-400" />
+          <input
+            value={query}
+            onFocus={() => onFocusChange(true)}
+            onBlur={() => setTimeout(() => onFocusChange(false), 120)}
+            onChange={(e) => {
+              onQueryChange(e.target.value);
+              if (selectedEmployer) onClear();
+            }}
+            placeholder="Type employer name or company (e.g. Zoho)"
+            className="w-full rounded-xl border border-zinc-200 bg-white py-2.5 pl-10 pr-3 text-sm placeholder:text-zinc-400 focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500/20 dark:border-zinc-800 dark:bg-zinc-950"
+          />
+          {selectedEmployer && (
+            <button
+              type="button"
+              onClick={onClear}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300"
+              aria-label="Clear employer"
+            >
+              <X size={14} />
+            </button>
+          )}
+        </div>
+
+        {focused && !selectedEmployer && !createMode && (
+          <div className="absolute z-10 mt-1 max-h-64 w-full overflow-y-auto rounded-2xl border border-zinc-200 bg-white shadow-lg dark:border-zinc-800 dark:bg-zinc-900">
+            {matches.length === 0 ? (
+              <button
+                type="button"
+                onMouseDown={(e) => e.preventDefault()}
+                onClick={() => {
+                  setCreateMode(true);
+                  setNewEmp({ ...newEmp, name: query, company: query });
+                }}
+                className="flex w-full items-center gap-2 px-3 py-3 text-left text-sm font-semibold text-teal-700 transition hover:bg-teal-50 dark:text-teal-300 dark:hover:bg-teal-500/10"
+              >
+                <UserPlus size={14} /> Create "{query}" as a new employer
+              </button>
+            ) : (
+              <>
+                {matches.map((u) => (
+                  <button
+                    type="button"
+                    key={u.id}
+                    onMouseDown={(e) => e.preventDefault()}
+                    onClick={() => onSelect(u)}
+                    className="flex w-full items-start gap-2.5 px-3 py-2.5 text-left transition hover:bg-zinc-50 dark:hover:bg-zinc-800"
+                  >
+                    <div className="mt-0.5 flex h-8 w-8 items-center justify-center rounded-xl bg-gradient-to-br from-sky-500 to-sky-700 text-[10px] font-bold text-white">
+                      {u.name.split(/\s+/).slice(0, 2).map((p) => p[0]?.toUpperCase() ?? "").join("")}
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <div className="truncate text-sm font-semibold text-zinc-900 dark:text-zinc-100">
+                        {u.company || u.name}
+                      </div>
+                      <div className="truncate text-[11px] text-zinc-500 dark:text-zinc-400">
+                        {u.name} · {u.email}
+                      </div>
+                    </div>
+                    {u.createdByStaffId === me.id && (
+                      <span className="rounded-full bg-teal-100 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-widest text-teal-700 dark:bg-teal-500/15 dark:text-teal-300">
+                        Yours
+                      </span>
+                    )}
+                  </button>
+                ))}
+                {!hasExactMatch && query.trim() && (
+                  <button
+                    type="button"
+                    onMouseDown={(e) => e.preventDefault()}
+                    onClick={() => {
+                      setCreateMode(true);
+                      setNewEmp({ ...newEmp, name: query, company: query });
+                    }}
+                    className="flex w-full items-center gap-2 border-t border-zinc-100 px-3 py-2.5 text-left text-sm font-semibold text-teal-700 transition hover:bg-teal-50 dark:border-zinc-800 dark:text-teal-300 dark:hover:bg-teal-500/10"
+                  >
+                    <UserPlus size={14} /> Create "{query.trim()}" as a new employer
+                  </button>
+                )}
+              </>
+            )}
+          </div>
+        )}
+      </div>
+
+      {selectedEmployer && (
+        <div className="mt-3 rounded-xl border border-teal-200 bg-teal-50/60 p-3 dark:border-teal-500/25 dark:bg-teal-500/10">
+          <div className="flex items-center gap-2 text-[11px] font-semibold text-teal-800 dark:text-teal-300">
+            <Check size={12} /> Posting for
+          </div>
+          <div className="mt-0.5 text-sm font-semibold text-teal-900 dark:text-teal-200">
+            {selectedEmployer.company || selectedEmployer.name}
+          </div>
+          <div className="text-[11px] text-teal-800/80 dark:text-teal-300/80">
+            {selectedEmployer.name} · {selectedEmployer.email}
+          </div>
+        </div>
+      )}
+
+      {createMode && !selectedEmployer && (
+        <div className="mt-3 space-y-2 rounded-xl border border-amber-200 bg-amber-50/50 p-3 dark:border-amber-500/25 dark:bg-amber-500/10">
+          <div className="flex items-center justify-between">
+            <span className="text-[11px] font-semibold uppercase tracking-widest text-amber-800 dark:text-amber-300">
+              New employer — creates on submit
+            </span>
+            <button
+              type="button"
+              onClick={() => setCreateMode(false)}
+              className="text-amber-700 hover:text-amber-900 dark:text-amber-300"
+              aria-label="Cancel new employer"
+            >
+              <X size={13} />
+            </button>
+          </div>
+          <div className="grid gap-2 sm:grid-cols-2">
+            <TextField
+              label="Contact name"
+              value={newEmp.name}
+              onChange={(v) => setNewEmp({ ...newEmp, name: v })}
+              placeholder="Priya Ramesh"
+            />
+            <TextField
+              label="Company"
+              value={newEmp.company}
+              onChange={(v) => setNewEmp({ ...newEmp, company: v })}
+              placeholder="Zoho Corporation"
+            />
+            <TextField
+              label="Work email"
+              type="email"
+              value={newEmp.email}
+              onChange={(v) => setNewEmp({ ...newEmp, email: v })}
+              placeholder="priya@zoho.com"
+              inputMode="email"
+            />
+            <TextField
+              label="Mobile"
+              value={newEmp.mobile}
+              onChange={(v) => setNewEmp({ ...newEmp, mobile: v })}
+              placeholder="9876543210"
+              inputMode="tel"
+              maxLength={10}
+            />
+          </div>
+          <p className="text-[10px] text-amber-800/80 dark:text-amber-300/80">
+            A password will be generated on Submit — you'll see it once so you can share it.
+          </p>
+        </div>
+      )}
+
+      {error && (
+        <p className="mt-3 rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-xs text-rose-700 dark:border-rose-500/30 dark:bg-rose-500/10 dark:text-rose-400">
+          {error}
+        </p>
+      )}
     </div>
   );
 }
-
-function SegField({ label, children }: { label: string; children: React.ReactNode }) {
-  return (
-    <div>
-      <label className="mb-1.5 block text-xs font-medium text-zinc-700 dark:text-zinc-300">{label}</label>
-      <div className="flex gap-1 rounded-xl border border-zinc-200 bg-white p-1 dark:border-zinc-800 dark:bg-zinc-900">
-        {children}
-      </div>
-    </div>
-  );
-}
-
-function Seg({
-  selected,
-  onClick,
-  children,
-}: {
-  selected: boolean;
-  onClick: () => void;
-  children: React.ReactNode;
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className={[
-        "flex-1 rounded-lg px-2 py-1.5 text-xs font-semibold transition",
-        selected
-          ? "bg-brand-500 text-white shadow-sm shadow-brand-500/30"
-          : "text-zinc-700 hover:bg-zinc-100 dark:text-zinc-300 dark:hover:bg-zinc-800",
-      ].join(" ")}
-    >
-      {children}
-    </button>
-  );
-}
-
-// Referenced icon imports we ended up needing beyond the initial set —
-// kept here so a future edit that reorders sections doesn't accidentally
-// tree-shake the icons away.
-export const _ICONS_USED = { Sparkles, IndianRupee };

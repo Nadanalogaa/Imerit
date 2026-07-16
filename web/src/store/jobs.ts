@@ -225,6 +225,13 @@ interface JobsState {
 
   /** Repost — resets postedAt to now and extends expiresAt by 45 days. */
   repostJobAsync: (id: string) => Promise<Job | undefined>;
+
+  /**
+   * Edit an existing job. Preserves postedAt + expiresAt — editing isn't
+   * the same as reposting; use repostJobAsync for the timer bump. Returns
+   * the updated Job on success, undefined if the id isn't ours.
+   */
+  updateJobAsync: (id: string, patch: Partial<Omit<Job, "id" | "employerId" | "employerName" | "postedAt">>) => Promise<Job | undefined>;
 }
 
 const STORAGE_KEY = KEYS.jobs;
@@ -352,6 +359,47 @@ export const useJobs = create<JobsState>((set, get) => ({
       return next.find((j) => j.id === id);
     }
     const { job } = await employerJobsApi.repost(id);
+    const local = fromApiJob(job);
+    const next = get().jobs.map((j) => (j.id === id ? local : j));
+    save(STORAGE_KEY, next);
+    set({ jobs: next });
+    return local;
+  },
+
+  updateJobAsync: async (id, patch) => {
+    // Local-only branch: merge the patch straight in. Keeps postedAt +
+    // expiresAt intact (editing isn't reposting — the timer stays put).
+    if (!apiEnabled) {
+      const target = get().jobs.find((j) => j.id === id);
+      if (!target) return undefined;
+      const updated: Job = { ...target, ...patch };
+      const next = get().jobs.map((j) => (j.id === id ? updated : j));
+      save(STORAGE_KEY, next);
+      set({ jobs: next });
+      return updated;
+    }
+    // API branch: transform enum-shaped fields into the backend's shape.
+    // Only send keys the caller actually provided so we don't accidentally
+    // null out unrelated fields.
+    const apiPatch: Partial<Parameters<typeof employerJobsApi.update>[1]> = {};
+    if ("title" in patch) apiPatch.title = patch.title!;
+    if ("description" in patch) apiPatch.description = patch.description!;
+    if ("location" in patch) apiPatch.location = patch.location!;
+    if ("districtId" in patch) apiPatch.districtId = patch.districtId;
+    if ("talukId" in patch) apiPatch.talukId = patch.talukId;
+    if ("lat" in patch) apiPatch.lat = patch.lat;
+    if ("lng" in patch) apiPatch.lng = patch.lng;
+    if ("pincode" in patch) apiPatch.pincode = patch.pincode;
+    if ("field" in patch && patch.field) apiPatch.field = FIELD_TO_API[patch.field];
+    if ("type" in patch && patch.type) apiPatch.type = TYPE_TO_API[patch.type];
+    if ("experience" in patch && patch.experience) apiPatch.experience = EXPERIENCE_TO_API[patch.experience];
+    if ("yearsMin" in patch) apiPatch.yearsMin = patch.yearsMin;
+    if ("yearsMax" in patch) apiPatch.yearsMax = patch.yearsMax;
+    if ("salaryRange" in patch) apiPatch.salaryRange = patch.salaryRange;
+    if ("skills" in patch) apiPatch.skills = patch.skills!;
+    if ("benefits" in patch) apiPatch.benefits = patch.benefits;
+    if ("contactEmail" in patch) apiPatch.contactEmail = patch.contactEmail;
+    const { job } = await employerJobsApi.update(id, apiPatch);
     const local = fromApiJob(job);
     const next = get().jobs.map((j) => (j.id === id ? local : j));
     save(STORAGE_KEY, next);

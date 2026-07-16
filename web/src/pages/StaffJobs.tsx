@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import { Briefcase, Plus, Search, MapPin, ExternalLink, Timer, RotateCcw } from "lucide-react";
+import { Briefcase, Plus, Search, MapPin, ExternalLink, Timer } from "lucide-react";
 import { allUsers, useAuth } from "../store/auth";
 import { useJobs, isExpired, daysUntilExpiry } from "../store/jobs";
 import { StaffTopBar } from "./StaffDashboard";
@@ -113,7 +113,10 @@ function JobRow({ job }: { job: ReturnType<typeof useJobs.getState>["jobs"][numb
   const dLeft = daysUntilExpiry(job);
   const expired = isExpired(job);
   return (
-    <div className="flex flex-wrap items-start gap-3 rounded-2xl border border-zinc-200 bg-white p-4 shadow-sm transition hover:border-zinc-300 dark:border-zinc-800 dark:bg-zinc-900 dark:hover:border-zinc-700">
+    <Link
+      to={`/staff/jobs/${job.id}`}
+      className="flex flex-wrap items-start gap-3 rounded-2xl border border-zinc-200 bg-white p-4 shadow-sm transition hover:-translate-y-0.5 hover:border-brand-300 hover:shadow-lg dark:border-zinc-800 dark:bg-zinc-900 dark:hover:border-brand-500/40"
+    >
       <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-brand-500 to-brand-700 text-white shadow-sm">
         <Briefcase size={18} />
       </div>
@@ -148,22 +151,11 @@ function JobRow({ job }: { job: ReturnType<typeof useJobs.getState>["jobs"][numb
         </div>
       </div>
       <div className="flex shrink-0 items-center gap-1">
-        {expired && (
-          <Link
-            to={`/employer/my-jobs`}
-            className="inline-flex items-center gap-1 rounded-lg border border-zinc-200 px-2 py-1 text-[11px] font-semibold text-zinc-700 hover:border-emerald-300 hover:text-emerald-700 dark:border-zinc-800 dark:text-zinc-300 dark:hover:border-emerald-500/40"
-            title="Reposting is done from the employer's own my-jobs page"
-          >
-            <RotateCcw size={11} /> Repost
-          </Link>
-        )}
-        <Link
-          to={`/employer/jobs/${job.id}/applicants`}
-          className="inline-flex items-center gap-1 rounded-lg bg-teal-600 px-2 py-1 text-[11px] font-semibold text-white transition hover:bg-teal-700"
-        >
-          <ExternalLink size={11} /> Applicants
-        </Link>
+        {/* Actions live on the manage page (/staff/jobs/:id) now — the
+            whole card is a link, so users click through and use the
+            Edit / Repost / Applicants / Delete buttons there. */}
+        <ExternalLink size={13} className="text-zinc-400" />
       </div>
-    </div>
+    </Link>
   );
 }

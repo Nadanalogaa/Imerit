@@ -123,7 +123,7 @@ export function EmployerMyJobs() {
  <Briefcase size={20} />
  </div>
  <div className="min-w-0 flex-1">
- <Link to={`/employer/jobs/${job.id}/applicants`} className="block">
+ <Link to={`/employer/jobs/${job.id}`} className="block">
  <div className="flex items-center gap-2">
  <h2 className="truncate text-sm font-semibold tracking-tight">{job.title}</h2>
  {expired && (
@@ -170,7 +170,7 @@ export function EmployerMyJobs() {
  <Trash2 size={14} />
  </button>
  </div>
- <Link to={`/employer/jobs/${job.id}/applicants`} className="ml-1">
+ <Link to={`/employer/jobs/${job.id}`} className="ml-1">
  <ChevronRight size={18} className="text-zinc-400 transition group-hover:translate-x-0.5 group-hover:text-sky-500" />
  </Link>
  </motion.div>

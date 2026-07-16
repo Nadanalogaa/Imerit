@@ -29,6 +29,7 @@ import { EmployerPayment } from "./pages/EmployerPayment";
 import { EmployerPostJob } from "./pages/EmployerPostJob";
 import { EmployerMyJobs } from "./pages/EmployerMyJobs";
 import { EmployerJobApplicants } from "./pages/EmployerJobApplicants";
+import { EmployerJobManage } from "./pages/EmployerJobManage";
 import { AdminLogin } from "./pages/AdminLogin";
 import { AdminDashboard } from "./pages/AdminDashboard";
 import { AdminCandidates } from "./pages/AdminCandidates";
@@ -257,6 +258,19 @@ export default function App() {
             </RequireAuth>
           }
         />
+        {/* Owner-facing manage view — full job detail + Edit / Repost /
+            Delete / Applicants actions. Same component gates on
+            role="employer" for the employer path and role="staff" for
+            the staff path; the component itself branches its chrome
+            based on the `role` prop. */}
+        <Route
+          path="/employer/jobs/:id"
+          element={
+            <RequireAuth role="employer">
+              <EmployerJobManage role="employer" />
+            </RequireAuth>
+          }
+        />
         <Route path="/admin" element={<AdminLogin />} />
         <Route path="/admin/dashboard" element={<RequireAuth role="admin"><AdminDashboard /></RequireAuth>} />
         <Route path="/admin/candidates" element={<RequireAuth role="admin"><AdminCandidates /></RequireAuth>} />
@@ -285,6 +299,7 @@ export default function App() {
         <Route path="/staff/employers/:id" element={<RequireAuth role="staff"><StaffEmployerForm /></RequireAuth>} />
         <Route path="/staff/jobs/new" element={<RequireAuth role="staff"><StaffPostJob /></RequireAuth>} />
         <Route path="/staff/jobs" element={<RequireAuth role="staff"><StaffJobs /></RequireAuth>} />
+        <Route path="/staff/jobs/:id" element={<RequireAuth role="staff"><EmployerJobManage role="staff" /></RequireAuth>} />
         {/* /super-admin/{candidates,employers,subscriptions} are aliases for
             the equivalent /admin/* pages — super-admin shares the admin's
             management UI for these, only the dashboards differ. */}
