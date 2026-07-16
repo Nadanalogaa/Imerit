@@ -47,7 +47,7 @@ export function AuthLayout({
  <div className="absolute inset-0 -z-10 bg-[radial-gradient(circle_at_15%_20%,rgba(249,115,22,0.22),transparent_26%),radial-gradient(circle_at_85%_15%,rgba(14,165,233,0.18),transparent_24%),radial-gradient(circle_at_80%_85%,rgba(255,255,255,0.08),transparent_22%)]" />
 
  <header className="relative z-10 flex items-center justify-between px-4 py-4 sm:px-6 lg:px-8">
- <Brand to="/" size="md" className="rounded-lg bg-white/95 px-2 py-1" />
+ <Brand to="/" size="md" forceTheme="dark" />
  <ThemeToggle />
  </header>
 
@@ -55,7 +55,7 @@ export function AuthLayout({
  <div className="grid w-full items-stretch gap-6 lg:grid-cols-[1.05fr_0.95fr] lg:gap-10">
  <section className="hidden flex-col justify-between rounded-[2rem] border border-white/10 bg-white/8 p-8 shadow-2xl shadow-black/20 backdrop-blur-xl lg:flex">
  <div>
- <Brand size="md" className="rounded-lg bg-white/95 px-2 py-1" />
+ <Brand size="md" forceTheme="dark" />
  <h2 className="mt-5 max-w-xl text-4xl font-semibold tracking-tight text-white xl:text-5xl">
  {panelTitle ?? title}
  </h2>

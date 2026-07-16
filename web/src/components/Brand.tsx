@@ -32,21 +32,42 @@ export function Brand({
   size = "md",
   to,
   className = "",
+  forceTheme,
 }: {
   size?: BrandSize;
   to?: string;
   className?: string;
+  /**
+   * Bypass the site's dark/light toggle and pin the logo to a specific
+   * variant. Used on always-dark surfaces like the AuthLayout side panel
+   * (which stays dark even when the site is in light mode) so the logo's
+   * contrast doesn't depend on the visitor's theme choice.
+   *
+   *   forceTheme="dark"  → always render the white-ink logo
+   *   forceTheme="light" → always render the dark-ink logo
+   *   undefined          → default: follow the theme via `dark:` classes
+   */
+  forceTheme?: "light" | "dark";
 }) {
   const wrapClass = ["inline-flex items-center", className].join(" ");
   const imgClass = [HEIGHTS[size], "w-auto object-contain"].join(" ");
-  const art = (
-    <>
-      {/* Light theme — dark ink logo. Hidden in dark mode. */}
-      <img src="/logo-dark.png" alt={ALT} className={[imgClass, "dark:hidden"].join(" ")} />
-      {/* Dark theme — white ink logo. Only rendered visible in dark mode. */}
-      <img src="/logo-white.png" alt="" aria-hidden="true" className={[imgClass, "hidden dark:inline-block"].join(" ")} />
-    </>
-  );
+
+  let art: React.ReactNode;
+  if (forceTheme === "dark") {
+    art = <img src="/logo-white.png" alt={ALT} className={imgClass} />;
+  } else if (forceTheme === "light") {
+    art = <img src="/logo-dark.png" alt={ALT} className={imgClass} />;
+  } else {
+    art = (
+      <>
+        {/* Light theme — dark ink logo. Hidden in dark mode. */}
+        <img src="/logo-dark.png" alt={ALT} className={[imgClass, "dark:hidden"].join(" ")} />
+        {/* Dark theme — white ink logo. Only rendered visible in dark mode. */}
+        <img src="/logo-white.png" alt="" aria-hidden="true" className={[imgClass, "hidden dark:inline-block"].join(" ")} />
+      </>
+    );
+  }
+
   if (!to) return <span className={wrapClass}>{art}</span>;
   return (
     <Link to={to} className={wrapClass}>
