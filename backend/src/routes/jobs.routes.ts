@@ -230,6 +230,7 @@ router.patch(
       employerId: req.user!.sub,
       applicationId: id,
       status,
+      actorEmail: req.user!.email,
     });
     res.json({ application: app });
   }),

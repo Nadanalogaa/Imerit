@@ -325,6 +325,122 @@ export function jobPostedEmail(args: {
 }
 
 /**
+ * Fires when a candidate finishes their profile and it lands in the
+ * moderation queue. The candidate gets the "we're reviewing" reassurance
+ * so they know their submission worked; admin gets the "new pending
+ * profile" notification via the generic activity cc.
+ */
+export function profileSubmittedEmail(args: {
+  name: string;
+  role: "candidate" | "employer";
+}): { subject: string; html: string } {
+  const rolePath = args.role === "candidate" ? "/candidate/dashboard" : "/employer/dashboard";
+  return {
+    subject: "Your profile is under review",
+    html: shell({
+      title: "Profile submitted",
+      preheader: "Our team will review your profile shortly",
+      body: `
+        <h1 style="margin:0 0 12px;font-size:22px;font-weight:600;">Profile submitted for review</h1>
+        <p style="margin:0 0 16px;font-size:14px;line-height:1.6;color:${TEXT_MUTED};">Hi ${escapeHtml(args.name)}, thanks for completing your profile.</p>
+        <p style="margin:0 0 16px;font-size:14px;line-height:1.6;color:${TEXT_MUTED};">Our team is reviewing it — usually within 24 hours. Once approved, ${args.role === "candidate" ? "employers can find you in searches and reach out with opportunities" : "your account gets a verified badge and full platform access"}.</p>
+        <p style="margin:24px 0;">${primaryButton("View my dashboard", `${env.PUBLIC_APP_URL}${rolePath}`)}</p>
+        <p style="margin:16px 0 0;font-size:12px;color:${TEXT_MUTED};">We'll email you the moment the review is complete.</p>
+      `,
+    }),
+  };
+}
+
+/**
+ * Application state moved along the pipeline: VIEWED, SHORTLISTED,
+ * INTERVIEW, REJECTED, HIRED, or WITHDRAWN. Candidate gets a specific
+ * message per state so they know what's going on without having to log
+ * in and hunt.
+ */
+type AppStatus = "APPLIED" | "VIEWED" | "SHORTLISTED" | "INTERVIEW" | "REJECTED" | "HIRED" | "WITHDRAWN";
+export function applicationStatusEmail(args: {
+  candidateName: string;
+  jobTitle: string;
+  employerName: string;
+  status: AppStatus;
+}): { subject: string; html: string } {
+  const copy: Record<AppStatus, { subj: string; head: string; body: string; tone?: string }> = {
+    APPLIED: {
+      subj: `Application received: ${args.jobTitle}`,
+      head: "Application received",
+      body: `Your application for <strong>${escapeHtml(args.jobTitle)}</strong> at <strong>${escapeHtml(args.employerName)}</strong> was received.`,
+    },
+    VIEWED: {
+      subj: `${args.employerName} viewed your application`,
+      head: "Your application was viewed",
+      body: `Good news — <strong>${escapeHtml(args.employerName)}</strong> just opened your application for <strong>${escapeHtml(args.jobTitle)}</strong>. Keep an eye on your inbox for next steps.`,
+    },
+    SHORTLISTED: {
+      subj: `You've been shortlisted for ${args.jobTitle}`,
+      head: "You've been shortlisted",
+      body: `<strong>${escapeHtml(args.employerName)}</strong> shortlisted you for <strong>${escapeHtml(args.jobTitle)}</strong>. They'll reach out about next steps soon.`,
+    },
+    INTERVIEW: {
+      subj: `Interview stage: ${args.jobTitle}`,
+      head: "Moved to interview",
+      body: `<strong>${escapeHtml(args.employerName)}</strong> moved you to the interview stage for <strong>${escapeHtml(args.jobTitle)}</strong>. Expect a message from them soon with scheduling details.`,
+    },
+    HIRED: {
+      subj: `Congratulations — you got the role: ${args.jobTitle}`,
+      head: "You've been hired 🎉",
+      body: `Congratulations! <strong>${escapeHtml(args.employerName)}</strong> hired you for <strong>${escapeHtml(args.jobTitle)}</strong>. They'll be in touch with onboarding details.`,
+    },
+    REJECTED: {
+      subj: `Update on your ${args.jobTitle} application`,
+      head: "Update on your application",
+      body: `<strong>${escapeHtml(args.employerName)}</strong> has decided not to move forward with your application for <strong>${escapeHtml(args.jobTitle)}</strong> this time. Don't be discouraged — keep applying, better fits are out there.`,
+    },
+    WITHDRAWN: {
+      subj: `Application withdrawn: ${args.jobTitle}`,
+      head: "Application withdrawn",
+      body: `Your application for <strong>${escapeHtml(args.jobTitle)}</strong> at <strong>${escapeHtml(args.employerName)}</strong> has been withdrawn.`,
+    },
+  };
+  const c = copy[args.status];
+  return {
+    subject: c.subj,
+    html: shell({
+      title: c.head,
+      preheader: c.body.replace(/<[^>]+>/g, "").slice(0, 120),
+      body: `
+        <h1 style="margin:0 0 12px;font-size:22px;font-weight:600;">${c.head}</h1>
+        <p style="margin:0 0 16px;font-size:14px;line-height:1.6;color:${TEXT_MUTED};">Hi ${escapeHtml(args.candidateName)},</p>
+        <p style="margin:0 0 16px;font-size:14px;line-height:1.6;color:${TEXT_MUTED};">${c.body}</p>
+        <p style="margin:24px 0;">${primaryButton("View my applications", `${env.PUBLIC_APP_URL}/candidate/applications`)}</p>
+      `,
+    }),
+  };
+}
+
+/** Staff account is deactivated / reactivated by super-admin. */
+export function staffAccountStateEmail(args: {
+  name: string;
+  deactivated: boolean;
+}): { subject: string; html: string } {
+  const reactivated = !args.deactivated;
+  return {
+    subject: reactivated ? "Your staff account has been reactivated" : "Your staff account has been deactivated",
+    html: shell({
+      title: reactivated ? "Account reactivated" : "Account deactivated",
+      preheader: reactivated ? "You can sign in again now." : "You can no longer sign in.",
+      body: `
+        <h1 style="margin:0 0 12px;font-size:22px;font-weight:600;">${reactivated ? "Account reactivated" : "Account deactivated"}</h1>
+        <p style="margin:0 0 16px;font-size:14px;line-height:1.6;color:${TEXT_MUTED};">Hi ${escapeHtml(args.name)},</p>
+        <p style="margin:0 0 16px;font-size:14px;line-height:1.6;color:${TEXT_MUTED};">${reactivated
+          ? "Your staff account has been reactivated by a super-admin. You can sign in again immediately."
+          : "Your staff account has been deactivated by a super-admin. You will not be able to sign in until it's reactivated. If you think this is a mistake, contact your super-admin."}</p>
+        ${reactivated ? `<p style="margin:24px 0;">${primaryButton("Sign in", `${env.PUBLIC_APP_URL}/staff/login`)}</p>` : ""}
+      `,
+    }),
+  };
+}
+
+/**
  * Generic "activity" email cc'd to admin. Used for every meaningful
  * platform event so the ops inbox is a running log. Body is a small
  * key-value table of the fields we passed in.

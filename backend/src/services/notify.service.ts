@@ -4,10 +4,13 @@ import {
   adminActivityEmail,
   applicationCandidateEmail,
   applicationEmployerEmail,
+  applicationStatusEmail,
   credentialsEmail,
   jobPostedEmail,
   moderationEmail,
   otpEmail,
+  profileSubmittedEmail,
+  staffAccountStateEmail,
   welcomeEmail,
 } from "../lib/email-templates.js";
 
@@ -150,7 +153,26 @@ export async function notifyEmployerCreatedByStaff(args: {
   );
 }
 
-// ---------- Profile moderation ----------
+// ---------- Profile lifecycle ----------
+
+/**
+ * Fires when a candidate (or employer) submits a completed profile
+ * that lands in the moderation queue. Reassures the user their
+ * submission worked, and pings ops that the queue just grew.
+ */
+export async function notifyProfileSubmitted(args: {
+  name: string;
+  email: string;
+  role: "candidate" | "employer";
+}): Promise<void> {
+  const t = profileSubmittedEmail({ name: args.name, role: args.role });
+  await sendEmail({ to: args.email, subject: t.subject, html: t.html });
+  await notifyAdmins(
+    `${args.role === "candidate" ? "Candidate" : "Employer"} profile submitted`,
+    `${args.name} (${args.email}) submitted their profile for review.`,
+    { Name: args.name, Email: args.email, Role: args.role },
+  );
+}
 
 export async function notifyProfileModerated(args: {
   name: string;
@@ -201,6 +223,59 @@ export async function notifyJobPosted(args: {
       "Posted by": args.postedByStaffEmail ?? "employer (self)",
       "Job ID": args.jobId,
     },
+  );
+}
+
+/**
+ * Fires when the employer moves an application through the pipeline
+ * (VIEWED / SHORTLISTED / INTERVIEW / HIRED / REJECTED / WITHDRAWN).
+ * Candidate gets a status-specific email; admin gets the activity cc.
+ * APPLIED is skipped here — that's handled by notifyApplication() at
+ * apply time.
+ */
+export async function notifyApplicationStatusChanged(args: {
+  candidateName: string;
+  candidateEmail: string;
+  employerName: string;
+  employerEmail: string;
+  jobTitle: string;
+  jobId: string;
+  status: "VIEWED" | "SHORTLISTED" | "INTERVIEW" | "HIRED" | "REJECTED" | "WITHDRAWN";
+  actorEmail?: string;
+}): Promise<void> {
+  const t = applicationStatusEmail({
+    candidateName: args.candidateName,
+    jobTitle: args.jobTitle,
+    employerName: args.employerName,
+    status: args.status,
+  });
+  await sendEmail({ to: args.candidateEmail, subject: t.subject, html: t.html });
+  await notifyAdmins(
+    `Application ${args.status.toLowerCase()}`,
+    `${args.candidateName} → ${args.jobTitle} @ ${args.employerName}: ${args.status}`,
+    {
+      Candidate: `${args.candidateName} (${args.candidateEmail})`,
+      Employer: `${args.employerName} (${args.employerEmail})`,
+      Job: args.jobTitle,
+      "New status": args.status,
+      "Changed by": args.actorEmail ?? "system",
+    },
+  );
+}
+
+/** Staff account deactivated (or reactivated) by super-admin. */
+export async function notifyStaffAccountStateChanged(args: {
+  name: string;
+  email: string;
+  deactivated: boolean;
+  actorEmail?: string;
+}): Promise<void> {
+  const t = staffAccountStateEmail({ name: args.name, deactivated: args.deactivated });
+  await sendEmail({ to: args.email, subject: t.subject, html: t.html });
+  await notifyAdmins(
+    `Staff ${args.deactivated ? "deactivated" : "reactivated"}`,
+    `${args.name} (${args.email}) — ${args.deactivated ? "deactivated" : "reactivated"}${args.actorEmail ? ` by ${args.actorEmail}` : ""}.`,
+    { Name: args.name, Email: args.email, "New state": args.deactivated ? "deactivated" : "active", "Changed by": args.actorEmail ?? "system" },
   );
 }
 

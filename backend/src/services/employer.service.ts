@@ -8,8 +8,13 @@ import {
 import { prisma } from "../lib/prisma.js";
 
 /**
- * Employer-facing candidate search. Surfaces only candidates whose profile
- * is finished (selectedTemplateId is set) and isn't moderation-REJECTED.
+ * Employer-facing candidate search. Surfaces only APPROVED profiles —
+ * candidates whose completed profile has been reviewed and cleared by
+ * admin. PENDING and REJECTED profiles stay hidden from employers so
+ * they only see vetted talent. Combined with the moderation queue at
+ * /admin/candidates?status=PENDING and the automatic email notifications
+ * on approve/reject, this is the "curated marketplace" pattern.
+ *
  * The list payload is intentionally lean — name/role/field/location/skills
  * is enough for the cards on EmployerCandidates. Full profile detail is
  * fetched separately via /profiles/:userId (which is still subscription-
@@ -50,7 +55,7 @@ export async function searchCandidatesForEmployer(args: CandidateSearchFilters) 
 
   const where: Prisma.CandidateProfileWhereInput = {
     selectedTemplateId: { not: null },
-    NOT: { moderationStatus: ModerationStatus.REJECTED },
+    moderationStatus: ModerationStatus.APPROVED,
     ...(args.field ? { field: args.field } : {}),
     ...(args.type ? { type: args.type } : {}),
     ...(and.length ? { AND: and } : {}),

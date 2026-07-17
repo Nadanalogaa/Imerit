@@ -7,6 +7,7 @@ import { logger } from "../lib/logger.js";
 import {
   notifyEmployerCreatedByStaff,
   notifyPasswordReset,
+  notifyStaffAccountStateChanged,
   notifyStaffCreated,
 } from "./notify.service.js";
 
@@ -180,13 +181,24 @@ interface DeactivateArgs {
   deactivated: boolean;
 }
 
-export async function setStaffDeactivated(args: DeactivateArgs) {
+export async function setStaffDeactivated(args: DeactivateArgs & { actorEmail?: string }) {
   const target = await requireStaffUser(args.staffId);
+  if (target.deactivated === args.deactivated) {
+    // No-op — don't spam the staff user with a "you're active" email
+    // when nothing changed.
+    return { user: await prisma.user.findUnique({ where: { id: target.id }, select: staffSelect }) };
+  }
   const updated = await prisma.user.update({
     where: { id: target.id },
     data: { deactivated: args.deactivated },
     select: staffSelect,
   });
+  void notifyStaffAccountStateChanged({
+    name: updated.name,
+    email: updated.email,
+    deactivated: args.deactivated,
+    actorEmail: args.actorEmail,
+  }).catch((err) => logger.warn({ err }, "notifyStaffAccountStateChanged failed"));
   return { user: updated };
 }
 

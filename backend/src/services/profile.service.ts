@@ -1,6 +1,8 @@
 import { Prisma, type CandidateProfile, type Education, type Experience, type ExperienceProject } from "@prisma/client";
 import { prisma } from "../lib/prisma.js";
 import { HttpError } from "../middleware/error.js";
+import { logger } from "../lib/logger.js";
+import { notifyProfileSubmitted } from "./notify.service.js";
 
 /**
  * Get the caller's profile, lazily creating an empty shell on first hit so
@@ -50,13 +52,34 @@ export async function patchProfile(
   userId: string,
   data: Prisma.CandidateProfileUpdateInput,
 ): Promise<ProfileWithRelations> {
-  // Ensure the row exists so a fresh user can PATCH without a 404.
-  await getOrCreateProfile(userId);
-  return prisma.candidateProfile.update({
+  // Ensure the row exists so a fresh user can PATCH without a 404. We
+  // also grab the current selectedTemplateId so we can detect the
+  // FIRST time a candidate finishes their profile (null → not-null)
+  // and fire the "profile submitted for review" notification.
+  const existing = await getOrCreateProfile(userId);
+  const wasIncomplete = existing.selectedTemplateId === null;
+
+  const updated = await prisma.candidateProfile.update({
     where: { userId },
     data,
     include: { education: true, experiences: { include: { projects: { orderBy: { createdAt: "asc" } } }, orderBy: { fromDate: "desc" } } },
   });
+
+  // Detect the first-time submit: profile had no template before, and
+  // this patch just set one. Every subsequent edit is a no-op for the
+  // notification (we don't want to spam on every save).
+  if (wasIncomplete && updated.selectedTemplateId !== null) {
+    const user = await prisma.user.findUnique({ where: { id: userId } });
+    if (user) {
+      void notifyProfileSubmitted({
+        name: user.name,
+        email: user.email,
+        role: "candidate",
+      }).catch((err) => logger.warn({ err, userId }, "notifyProfileSubmitted failed"));
+    }
+  }
+
+  return updated;
 }
 
 /**

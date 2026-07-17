@@ -111,6 +111,11 @@ export interface CandidateProfile {
   // template
   selectedTemplateId?: TemplateId;
 
+  // moderation — set by admin after profile is submitted for review.
+  // Undefined means the profile isn't in the DB yet (fresh signup).
+  moderationStatus?: "PENDING" | "APPROVED" | "REJECTED";
+  moderationNotes?: string | null;
+
   // meta
   updatedAt: string;
 }
@@ -247,6 +252,8 @@ export function fromApiProfile(api: ApiCandidateProfile): CandidateProfile {
     selectedTemplateId: api.selectedTemplateId
       ? (api.selectedTemplateId.toLowerCase() as TemplateId)
       : undefined,
+    moderationStatus: api.moderationStatus,
+    moderationNotes: api.moderationNotes ?? null,
     updatedAt: api.updatedAt,
   };
 }

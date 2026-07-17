@@ -2,7 +2,7 @@ import { ApplicationStatus, type Prisma } from "@prisma/client";
 import { prisma } from "../lib/prisma.js";
 import { HttpError } from "../middleware/error.js";
 import { logger } from "../lib/logger.js";
-import { notifyApplication } from "./notify.service.js";
+import { notifyApplication, notifyApplicationStatusChanged } from "./notify.service.js";
 
 /**
  * Submit an application for a job. Uniqueness is enforced by the
@@ -100,6 +100,7 @@ export async function updateApplicationStatus(args: {
   employerId: string;
   applicationId: string;
   status: ApplicationStatus;
+  actorEmail?: string;
 }) {
   const app = await prisma.application.findUnique({
     where: { id: args.applicationId },
@@ -109,8 +110,36 @@ export async function updateApplicationStatus(args: {
   if (app.job.employerId !== args.employerId) {
     throw new HttpError(403, "You can only update applications for your own jobs", "FORBIDDEN");
   }
-  return prisma.application.update({
+  const prevStatus = app.status;
+  const updated = await prisma.application.update({
     where: { id: args.applicationId },
     data: { status: args.status },
   });
+
+  // Notify the candidate + admin cc on every status change EXCEPT
+  // no-op transitions (status not actually changing). Also skip
+  // APPLIED — that state is set at apply time by notifyApplication.
+  if (
+    updated.status !== prevStatus &&
+    updated.status !== ApplicationStatus.APPLIED
+  ) {
+    const [candidate, employer] = await Promise.all([
+      prisma.user.findUnique({ where: { id: app.candidateId } }),
+      prisma.user.findUnique({ where: { id: app.job.employerId } }),
+    ]);
+    if (candidate && employer) {
+      void notifyApplicationStatusChanged({
+        candidateName: candidate.name,
+        candidateEmail: candidate.email,
+        employerName: employer.name,
+        employerEmail: employer.email,
+        jobTitle: app.job.title,
+        jobId: app.job.id,
+        status: updated.status as "VIEWED" | "SHORTLISTED" | "INTERVIEW" | "HIRED" | "REJECTED" | "WITHDRAWN",
+        actorEmail: args.actorEmail,
+      }).catch((err) => logger.warn({ err, applicationId: app.id }, "notifyApplicationStatusChanged failed"));
+    }
+  }
+
+  return updated;
 }

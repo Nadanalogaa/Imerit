@@ -109,6 +109,7 @@ router.patch(
     const { user } = await setStaffDeactivated({
       actorId: req.user!.sub,
       actorRole: req.user!.role,
+      actorEmail: req.user!.email,
       staffId: paramId(req.params.id),
       deactivated: body.deactivated,
     });

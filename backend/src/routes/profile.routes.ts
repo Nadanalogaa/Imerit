@@ -116,8 +116,16 @@ router.get(
     const userId = Array.isArray(rawId) ? rawId[0] : rawId;
     if (!userId) throw new HttpError(400, "userId is required", "USER_ID_REQUIRED");
     const profile = await getProfileByUserId(userId);
+    const isOwner = req.user!.sub === userId;
+    const isAdminLike = req.user!.role === UserRole.ADMIN || req.user!.role === UserRole.SUPER_ADMIN;
+    // Non-owner, non-admin viewers (employers) can only see APPROVED
+    // profiles. Matches the visibility rule on /employer/candidates so
+    // pending or rejected profiles can't be probed by URL.
+    if (!isOwner && !isAdminLike && profile.moderationStatus !== "APPROVED") {
+      throw new HttpError(404, "Profile not found", "PROFILE_NOT_FOUND");
+    }
     // Owner sees private fields; everyone else gets the public projection.
-    const includePrivate = req.user!.sub === userId || req.user!.role === UserRole.ADMIN || req.user!.role === UserRole.SUPER_ADMIN;
+    const includePrivate = isOwner || isAdminLike;
     res.json({ profile: publicProfile(profile, includePrivate) });
   }),
 );

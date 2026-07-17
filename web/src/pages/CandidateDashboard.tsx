@@ -17,6 +17,8 @@ import {
  Navigation,
  Target,
  Bookmark,
+ AlertTriangle,
+ ShieldCheck,
 } from "lucide-react";
 import { useAuth } from "../store/auth";
 import { useProfile, profileCompletion } from "../store/profile";
@@ -117,6 +119,11 @@ export function CandidateDashboard() {
  <FileCheck2 size={14} className="text-emerald-500" />
  {templateMeta?.label ?? "Custom"} template
  </span>
+ <span className="text-zinc-300 dark:text-zinc-700">·</span>
+ {/* Moderation status pill — tells the candidate whether their
+     profile is visible to employers, still under review, or needs
+     work. Only rendered when we have a status from the API. */}
+ <ModerationPill status={profile.moderationStatus} notes={profile.moderationNotes} />
  <span className="text-zinc-300 dark:text-zinc-700">·</span>
  <span className="text-zinc-500 dark:text-zinc-400">
  Updated {new Date(profile.updatedAt).toLocaleDateString()}
@@ -534,5 +541,53 @@ function ActionCard({ icon, gradient, title, desc, soon, to, variants }: ActionC
  <h3 className="mt-4 text-base font-semibold tracking-tight">{title}</h3>
  <p className="mt-1 text-xs text-zinc-600 dark:text-zinc-400">{desc}</p>
  </motion.button>
+ );
+}
+
+/**
+ * Small colored pill showing the candidate's moderation state so they
+ * understand whether they're visible to employers, still waiting on
+ * review, or need to update. Falls back gracefully if the status isn't
+ * known yet (e.g. offline mode or a fresh signup that hasn't hit the API).
+ */
+function ModerationPill({
+ status,
+ notes,
+}: {
+ status?: "PENDING" | "APPROVED" | "REJECTED";
+ notes?: string | null;
+}) {
+ if (!status) return null;
+ if (status === "APPROVED") {
+ return (
+ <span
+ className="inline-flex items-center gap-1.5 rounded-full bg-emerald-100 px-2 py-0.5 text-[11px] font-semibold text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300"
+ title="Employers can find you in searches."
+ >
+ <ShieldCheck size={12} />
+ Approved · visible to employers
+ </span>
+ );
+ }
+ if (status === "REJECTED") {
+ return (
+ <span
+ className="inline-flex items-center gap-1.5 rounded-full bg-rose-100 px-2 py-0.5 text-[11px] font-semibold text-rose-700 dark:bg-rose-500/15 dark:text-rose-300"
+ title={notes ?? "Please review the feedback and resubmit."}
+ >
+ <AlertTriangle size={12} />
+ Needs update — see email
+ </span>
+ );
+ }
+ // PENDING (default)
+ return (
+ <span
+ className="inline-flex items-center gap-1.5 rounded-full bg-amber-100 px-2 py-0.5 text-[11px] font-semibold text-amber-700 dark:bg-amber-500/15 dark:text-amber-300"
+ title="Our team is reviewing your profile. You'll be visible to employers once approved."
+ >
+ <Clock size={12} />
+ Under review
+ </span>
  );
 }
