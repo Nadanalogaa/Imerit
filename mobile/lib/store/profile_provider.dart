@@ -260,6 +260,8 @@ class CandidateProfile {
     this.education = const [],
     this.links = const [],
     this.selectedTemplateId,
+    this.moderationStatus,
+    this.moderationNotes,
     required this.updatedAt,
   });
 
@@ -294,6 +296,12 @@ class CandidateProfile {
   // Free-form list keyed on `[[profile-links]]` in web.
   final List<ProfileLink> links;
   final String? selectedTemplateId;
+  /// Server-set moderation state: PENDING (default when profile is
+  /// first submitted), APPROVED (visible to employers), REJECTED
+  /// (needs update — see moderationNotes). Nullable while the API
+  /// hasn't populated it yet (fresh signup, offline cache).
+  final String? moderationStatus;
+  final String? moderationNotes;
   final String updatedAt;
 
   CandidateProfile copyWith({

@@ -8,6 +8,7 @@ import '../store/theme_provider.dart';
 import '../utils/distance.dart';
 import '../utils/matcher.dart';
 import '../widgets/brand_logo.dart';
+import '../widgets/moderation_pill.dart';
 import '../widgets/notification_bell.dart';
 import '../widgets/theme_toggle.dart';
 
@@ -464,6 +465,21 @@ class _HeroCard extends StatelessWidget {
                   ),
                 ],
               ),
+              // Moderation status pill — tells the candidate whether their
+              // profile is visible to employers, still under review, or
+              // needs updating. Only shown once they've submitted a
+              // profile (selectedTemplateId set); pre-submission the
+              // "start your profile" nudge is enough signal.
+              if (hasResume && profile.moderationStatus != null) ...[
+                const SizedBox(height: 10),
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: ModerationPill(
+                    status: profile.moderationStatus,
+                    notes: profile.moderationNotes,
+                  ),
+                ),
+              ],
             ],
           ),
         ],
