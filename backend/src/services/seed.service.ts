@@ -3,43 +3,54 @@ import { prisma } from "../lib/prisma.js";
 import { logger } from "../lib/logger.js";
 
 /**
- * Bootstrap exactly ONE super-admin from the environment. Every other admin
- * is created from inside the app by that super-admin (POST /super-admin/admins),
- * so privileged account management lives in audit-logged HTTP requests rather
- * than the deploy config — which is the correct boundary.
+ * Bootstrap one or more super-admins from the environment. Every other
+ * admin is created from inside the app by a super-admin (POST
+ * /super-admin/admins), so privileged account management lives in
+ * audit-logged HTTP requests rather than the deploy config — which is
+ * the correct boundary. The seed exists only to guarantee at least one
+ * super-admin can log in on a fresh database.
  *
  * Env vars:
- *   SUPER_ADMIN_EMAIL — email for the bootstrap SUPER_ADMIN role
- *   SUPER_ADMIN_NAME  — display name (defaults to "Super Admin")
+ *   SUPER_ADMIN_EMAIL — comma-separated list of emails to seed as
+ *                       SUPER_ADMIN. Blank/unset means no seeding.
+ *                       Example: "founder@x.com,ops@x.com"
+ *   SUPER_ADMIN_NAME  — display name applied to every seeded row
+ *                       (defaults to "Super Admin").
  *
- * Unset / blank means no seeding; safe to ship to environments that already
- * have a super-admin in the DB. Idempotent: if the email already exists, we
- * leave the row alone (and warn loudly if its current role doesn't match).
+ * Idempotent: if any email already exists, that row is left alone
+ * (and we warn loudly if its role doesn't match).
  */
 export async function ensureAdminUsers(): Promise<void> {
-  const superAdminEmail = (process.env.SUPER_ADMIN_EMAIL ?? "").trim().toLowerCase();
-  if (!superAdminEmail) return;
+  const raw = (process.env.SUPER_ADMIN_EMAIL ?? "").trim();
+  if (!raw) return;
+
+  const emails = raw
+    .split(",")
+    .map((s) => s.trim().toLowerCase())
+    .filter(Boolean);
+  if (emails.length === 0) return;
 
   const name = (process.env.SUPER_ADMIN_NAME ?? "").trim() || "Super Admin";
 
-  const existing = await prisma.user.findUnique({ where: { email: superAdminEmail } });
-  if (existing) {
-    if (existing.role !== UserRole.SUPER_ADMIN) {
-      logger.warn(
-        { email: superAdminEmail, currentRole: existing.role },
-        "Seeded SUPER_ADMIN_EMAIL already exists with a different role — leaving as-is. Promote manually if intended.",
-      );
+  for (const email of emails) {
+    const existing = await prisma.user.findUnique({ where: { email } });
+    if (existing) {
+      if (existing.role !== UserRole.SUPER_ADMIN) {
+        logger.warn(
+          { email, currentRole: existing.role },
+          "Seeded SUPER_ADMIN_EMAIL already exists with a different role — leaving as-is. Promote manually if intended.",
+        );
+      }
+      continue;
     }
-    return;
+    await prisma.user.create({
+      data: {
+        role: UserRole.SUPER_ADMIN,
+        email,
+        name,
+        emailVerified: true,
+      },
+    });
+    logger.info({ email }, "Seeded super-admin user");
   }
-
-  await prisma.user.create({
-    data: {
-      role: UserRole.SUPER_ADMIN,
-      email: superAdminEmail,
-      name,
-      emailVerified: true,
-    },
-  });
-  logger.info({ email: superAdminEmail }, "Seeded super-admin user");
 }

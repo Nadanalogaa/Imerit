@@ -3,6 +3,12 @@ import { AuditAction, Prisma, UserRole } from "@prisma/client";
 
 import { prisma } from "../lib/prisma.js";
 import { HttpError } from "../middleware/error.js";
+import { logger } from "../lib/logger.js";
+import {
+  notifyEmployerCreatedByStaff,
+  notifyPasswordReset,
+  notifyStaffCreated,
+} from "./notify.service.js";
 
 /**
  * Staff module — server-side companion to the localStorage-first flow we
@@ -93,6 +99,23 @@ export async function createStaff(args: CreateStaffArgs) {
   });
 }
 
+/**
+ * Convenience wrapper: creates the staff row AND fires the credentials
+ * email + admin cc. Route handlers call this so they don't need to
+ * remember the notify step. Keeps the raw `createStaff` above as a
+ * unit-testable primitive with no side effects.
+ */
+export async function createStaffAndNotify(args: CreateStaffArgs & { actorEmail?: string }) {
+  const result = await createStaff(args);
+  void notifyStaffCreated({
+    name: result.user.name,
+    email: result.user.email,
+    password: result.password,
+    createdByEmail: args.actorEmail,
+  }).catch((err) => logger.warn({ err }, "notifyStaffCreated failed"));
+  return result;
+}
+
 export async function listStaff() {
   return prisma.user.findMany({
     where: { role: UserRole.STAFF, deletedAt: null },
@@ -110,8 +133,9 @@ interface ResetPasswordArgs {
 }
 
 /** Regenerate + hash a fresh password. Returns the new plain-text so the
- *  caller can pop the CredentialShareModal. */
-export async function resetStaffPassword(args: ResetPasswordArgs) {
+ *  caller can pop the CredentialShareModal. Also emails the staff user
+ *  the new credentials and cc's the admin activity inbox. */
+export async function resetStaffPassword(args: ResetPasswordArgs & { actorEmail?: string }) {
   const target = await requireStaffUser(args.staffId);
   const password = generatePassword();
   const passwordHash = await bcrypt.hash(password, BCRYPT_ROUNDS);
@@ -120,6 +144,13 @@ export async function resetStaffPassword(args: ResetPasswordArgs) {
     data: { passwordHash, sharedPassword: password },
     select: staffSelect,
   });
+  void notifyPasswordReset({
+    name: updated.name,
+    email: updated.email,
+    password,
+    role: "staff",
+    resetByEmail: args.actorEmail,
+  }).catch((err) => logger.warn({ err }, "notifyPasswordReset (staff) failed"));
   return { user: updated, password };
 }
 
@@ -186,7 +217,7 @@ interface CreateEmployerByStaffArgs {
  * name was provided — the accompanying EmployerProfile so the employer
  * doesn't have to fill in the company field on first login.
  */
-export async function createEmployerByStaff(args: CreateEmployerByStaffArgs) {
+export async function createEmployerByStaff(args: CreateEmployerByStaffArgs & { staffEmail?: string }) {
   const email = args.email.toLowerCase().trim();
   const password = generatePassword();
   const passwordHash = await bcrypt.hash(password, BCRYPT_ROUNDS);
@@ -196,7 +227,7 @@ export async function createEmployerByStaff(args: CreateEmployerByStaffArgs) {
     throw new HttpError(409, "A user with that email already exists", "EMAIL_TAKEN");
   }
 
-  return prisma.$transaction(async (tx) => {
+  const result = await prisma.$transaction(async (tx) => {
     const user = await tx.user.create({
       data: {
         email,
@@ -232,6 +263,18 @@ export async function createEmployerByStaff(args: CreateEmployerByStaffArgs) {
     });
     return { user, password };
   });
+
+  // Email the new employer their credentials + cc admin activity inbox.
+  // Best-effort — a mail failure must not roll back the account creation.
+  void notifyEmployerCreatedByStaff({
+    name: result.user.name,
+    email: result.user.email,
+    password: result.password,
+    company: args.company ?? null,
+    staffEmail: args.staffEmail ?? "unknown-staff",
+  }).catch((err) => logger.warn({ err }, "notifyEmployerCreatedByStaff failed"));
+
+  return result;
 }
 
 interface UpdateEmployerArgs {
@@ -271,7 +314,7 @@ interface ResetEmployerPasswordArgs {
   employerId: string;
 }
 
-export async function resetEmployerPasswordByStaff(args: ResetEmployerPasswordArgs) {
+export async function resetEmployerPasswordByStaff(args: ResetEmployerPasswordArgs & { staffEmail?: string }) {
   const target = await requireEmployerOwnedByStaff(args.staffId, args.employerId);
   const password = generatePassword();
   const passwordHash = await bcrypt.hash(password, BCRYPT_ROUNDS);
@@ -280,6 +323,13 @@ export async function resetEmployerPasswordByStaff(args: ResetEmployerPasswordAr
     data: { passwordHash, sharedPassword: password },
     select: employerSelect,
   });
+  void notifyPasswordReset({
+    name: updated.name,
+    email: updated.email,
+    password,
+    role: "employer",
+    resetByEmail: args.staffEmail,
+  }).catch((err) => logger.warn({ err }, "notifyPasswordReset (employer) failed"));
   return { user: updated, password };
 }
 

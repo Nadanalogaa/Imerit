@@ -46,6 +46,7 @@ import { StaffEmployers } from "./pages/StaffEmployers";
 import { StaffEmployerForm } from "./pages/StaffEmployerForm";
 import { StaffPostJob } from "./pages/StaffPostJob";
 import { StaffJobs } from "./pages/StaffJobs";
+import { ForgotPassword } from "./pages/ForgotPassword";
 import { RequireAuth, RedirectIfAuthed } from "./components/RequireAuth";
 import { ToastHost } from "./components/ToastHost";
 
@@ -293,6 +294,9 @@ export default function App() {
             </RedirectIfAuthed>
           }
         />
+        {/* Shared password-reset flow — lane=staff|employer picks the copy
+            and the "back to sign in" destination. */}
+        <Route path="/forgot-password" element={<ForgotPassword />} />
         <Route path="/staff/dashboard" element={<RequireAuth role="staff"><StaffDashboard /></RequireAuth>} />
         <Route path="/staff/employers" element={<RequireAuth role="staff"><StaffEmployers /></RequireAuth>} />
         <Route path="/staff/employers/new" element={<RequireAuth role="staff"><StaffEmployerForm /></RequireAuth>} />

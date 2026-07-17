@@ -6,8 +6,8 @@ import { requireAuth, requireRole } from "../middleware/auth.js";
 import { validate } from "../middleware/validate.js";
 import { staffCreateJobSchema } from "../schemas/jobs.schemas.js";
 import {
-  createStaff,
   createEmployerByStaff,
+  createStaffAndNotify,
   listEmployersForStaff,
   listStaff,
   resetEmployerPasswordByStaff,
@@ -50,9 +50,10 @@ router.post(
     if (typeof body.email !== "string" || typeof body.name !== "string") {
       throw new HttpError(400, "email and name are required", "MISSING_FIELDS");
     }
-    const { user, password } = await createStaff({
+    const { user, password } = await createStaffAndNotify({
       actorId: req.user!.sub,
       actorRole: req.user!.role,
+      actorEmail: req.user!.email,
       email: body.email,
       name: body.name,
       mobile: typeof body.mobile === "string" ? body.mobile : undefined,
@@ -70,6 +71,7 @@ router.patch(
     const { user, password } = await resetStaffPassword({
       actorId: req.user!.sub,
       actorRole: req.user!.role,
+      actorEmail: req.user!.email,
       staffId: paramId(req.params.id),
       ip: req.ip,
       userAgent: req.headers["user-agent"],
@@ -153,6 +155,7 @@ router.post(
     }
     const { user, password } = await createEmployerByStaff({
       staffId: req.user!.sub,
+      staffEmail: req.user!.email,
       name: body.name,
       email: body.email,
       mobile: typeof body.mobile === "string" ? body.mobile : undefined,
@@ -188,6 +191,7 @@ router.patch(
   asyncHandler(async (req, res) => {
     const { user, password } = await resetEmployerPasswordByStaff({
       staffId: req.user!.sub,
+      staffEmail: req.user!.email,
       employerId: paramId(req.params.id),
     });
     res.json({ user, password });

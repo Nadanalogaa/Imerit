@@ -160,6 +160,14 @@ export function EmployerLogin() {
        </button>
      </div>
      {error && <p className="mt-2 text-xs text-rose-500">{error}</p>}
+     <div className="mt-2 text-right">
+       <Link
+         to="/forgot-password?lane=employer"
+         className="text-xs font-medium text-sky-600 hover:underline dark:text-sky-400"
+       >
+         Forgot password?
+       </Link>
+     </div>
    </div>
  )}
 

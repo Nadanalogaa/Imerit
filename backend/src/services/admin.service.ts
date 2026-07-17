@@ -1,6 +1,8 @@
 import { Prisma, ModerationStatus, UserRole, AuditAction } from "@prisma/client";
 import { prisma } from "../lib/prisma.js";
 import { HttpError } from "../middleware/error.js";
+import { logger } from "../lib/logger.js";
+import { notifyProfileModerated } from "./notify.service.js";
 
 /**
  * Snapshot of the system for the admin dashboard. One round-trip, cheap
@@ -233,5 +235,21 @@ export async function moderateProfile(args: {
     });
     return next;
   });
+
+  // Notify the candidate + cc admin activity inbox. Best-effort — the
+  // moderation itself already committed, mail is a side channel.
+  const candidate = await prisma.user.findUnique({ where: { id: args.userId } });
+  if (candidate && !candidate.deletedAt) {
+    const moderator = await prisma.user.findUnique({ where: { id: args.adminId }, select: { email: true } });
+    void notifyProfileModerated({
+      name: candidate.name,
+      email: candidate.email,
+      status: args.status,
+      notes: args.notes ?? null,
+      role: "candidate",
+      moderatorEmail: moderator?.email,
+    }).catch((err) => logger.warn({ err }, "notifyProfileModerated failed"));
+  }
+
   return updated;
 }

@@ -1,6 +1,8 @@
 import { ApplicationStatus, type Prisma } from "@prisma/client";
 import { prisma } from "../lib/prisma.js";
 import { HttpError } from "../middleware/error.js";
+import { logger } from "../lib/logger.js";
+import { notifyApplication } from "./notify.service.js";
 
 /**
  * Submit an application for a job. Uniqueness is enforced by the
@@ -22,8 +24,9 @@ export async function applyForJob(args: {
 
   const profile = await prisma.candidateProfile.findUnique({ where: { userId: args.candidateId } });
 
+  let application;
   try {
-    return await prisma.application.create({
+    application = await prisma.application.create({
       data: {
         jobId: args.jobId,
         candidateId: args.candidateId,
@@ -38,6 +41,26 @@ export async function applyForJob(args: {
     }
     throw err;
   }
+
+  // Fire the three-way notification (candidate confirmation, employer
+  // alert, admin cc). Best-effort — the application has already been
+  // committed, we won't fail the request on a mail hiccup.
+  const [candidate, employer] = await Promise.all([
+    prisma.user.findUnique({ where: { id: args.candidateId } }),
+    prisma.user.findUnique({ where: { id: job.employerId } }),
+  ]);
+  if (candidate && employer) {
+    void notifyApplication({
+      candidateName: candidate.name,
+      candidateEmail: candidate.email,
+      employerName: employer.name,
+      employerEmail: employer.email,
+      jobTitle: job.title,
+      jobId: job.id,
+    }).catch((err) => logger.warn({ err, jobId: job.id }, "notifyApplication failed"));
+  }
+
+  return application;
 }
 
 /** Candidate's own applications — includes the job snapshot for the list UI. */

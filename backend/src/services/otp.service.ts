@@ -1,10 +1,11 @@
 import { randomInt } from "node:crypto";
 import bcrypt from "bcryptjs";
-import { type OtpPurpose, type Prisma } from "@prisma/client";
+import { OtpPurpose, type Prisma } from "@prisma/client";
 import { prisma } from "../lib/prisma.js";
 import { env } from "../config/env.js";
 import { logger } from "../lib/logger.js";
 import { HttpError } from "../middleware/error.js";
+import { notifyOtp } from "./notify.service.js";
 
 /**
  * OTP design — kept intentionally simple but defensible.
@@ -117,17 +118,25 @@ export async function verifyOtp(args: {
 }
 
 /**
- * Pluggable dispatch — swap this for MSG91 / SES later. The signature stays
- * the same so route code never needs to change.
+ * OTP dispatch — routes the plaintext code out via the notify layer,
+ * which formats a branded HTML email and hands it to nodemailer. When
+ * SMTP isn't configured yet (dev / mis-configured prod) the mailer
+ * falls back to logging so the OTP is still visible in server logs.
+ *
+ * The purpose maps to different subject-line + body copy so users can
+ * tell "your login code" from "reset your password" in their inbox.
  */
 async function dispatch(email: string, code: string, purpose: OtpPurpose): Promise<void> {
-  if (!env.OTP_PROVIDER) {
-    // Dev / staging — show the code so we can test without a real mailbox.
-    logger.warn({ email, purpose, code }, "OTP (dev — would be emailed in prod)");
-    return;
+  if (env.ENABLE_DEV_OTP) {
+    // Belt-and-braces: even with real SMTP wired, if the dev flag is on
+    // we log the code too so demos aren't blocked by mailbox delays.
+    logger.warn({ email, purpose, code }, "OTP (dev echo — flag ENABLE_DEV_OTP=true)");
   }
-  // TODO Phase X: branch on env.OTP_PROVIDER ("ses" | "msg91") and call.
-  logger.warn({ email, provider: env.OTP_PROVIDER }, "OTP provider not yet implemented");
+  const purposeSlug =
+    purpose === OtpPurpose.REGISTER ? "register" :
+    purpose === OtpPurpose.PASSWORD_RESET ? "reset" :
+    "login";
+  await notifyOtp({ to: email, code, purpose: purposeSlug, expiresInMin: env.OTP_TTL_MIN });
 }
 
 /** Optional convenience for tests / admin tools. */

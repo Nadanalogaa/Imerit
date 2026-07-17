@@ -13,6 +13,7 @@ import { clearAuthCookies, setAuthCookies } from "../utils/cookies.js";
 import { issueOtp, verifyOtp } from "../services/otp.service.js";
 import { createUser, findByEmail, markEmailVerified, touchLastSeen } from "../services/user.service.js";
 import { recordAudit } from "../services/audit.service.js";
+import { notifyRegistered } from "../services/notify.service.js";
 import { loginSchema, otpVerifySchema, registerSchema } from "../schemas/auth.schemas.js";
 
 const router = Router();
@@ -125,6 +126,16 @@ router.post(
 
     await recordAudit({ req, actorId: updated.id, actorRole: updated.role, action: AuditAction.USER_LOGIN });
 
+    // Post-verify emails — only on REGISTER (welcome + admin cc). Login
+    // verifications don't fire welcome; that would be noisy every session.
+    // Best-effort — never let a mail failure block the login response.
+    if (purpose === OtpPurpose.REGISTER && (updated.role === UserRole.CANDIDATE || updated.role === UserRole.EMPLOYER)) {
+      const roleSlug = updated.role === UserRole.CANDIDATE ? "candidate" : "employer";
+      void notifyRegistered({ name: updated.name, email: updated.email, role: roleSlug }).catch((err) => {
+        logger.warn({ err, userId: updated.id }, "welcome email failed");
+      });
+    }
+
     res.json({
       user: publicUser(updated),
       message: purpose === OtpPurpose.REGISTER ? "Account verified" : "Logged in",
@@ -196,6 +207,126 @@ const passwordLoginHandler = asyncHandler(async (req, res) => {
 // keeps working (frontend uses `/auth/password/login` now).
 router.post("/auth/password/login", passwordLoginLimiter, passwordLoginHandler);
 router.post("/auth/staff/login", passwordLoginLimiter, passwordLoginHandler);
+
+/* -------------------- Forgot / reset / change password -------------------- */
+
+/**
+ * POST /auth/password/forgot — start a password-reset flow.
+ * Only STAFF and staff-provisioned EMPLOYER accounts have passwords, so
+ * only those roles receive a reset OTP. Every other role uses OTP login
+ * directly (there's no password to reset). We deliberately return the
+ * same response whether the email exists or not — enumeration would
+ * leak which addresses are on the platform.
+ */
+router.post(
+  "/auth/password/forgot",
+  otpLimiter,
+  asyncHandler(async (req, res) => {
+    const body = req.body as { email?: unknown };
+    const email = typeof body.email === "string" ? body.email.toLowerCase().trim() : "";
+    if (!email) throw new HttpError(400, "Email is required", "MISSING_EMAIL");
+
+    const user = await prisma.user.findUnique({ where: { email } });
+    const eligible = !!user && !user.deletedAt && !user.deactivated && (
+      user.role === UserRole.STAFF ||
+      (user.role === UserRole.EMPLOYER && !!user.sharedPassword)
+    );
+    if (eligible) {
+      await issueOtp({
+        email,
+        purpose: OtpPurpose.PASSWORD_RESET,
+        userId: user!.id,
+        ip: req.ip,
+        userAgent: req.headers["user-agent"],
+      });
+    }
+    // Same response for eligible / ineligible / missing — no enumeration.
+    res.json({
+      message: "If an eligible account exists for that email, a reset code has been sent.",
+    });
+  }),
+);
+
+/**
+ * POST /auth/password/reset — finish the reset flow.
+ * Consumes a PASSWORD_RESET OTP and sets a new bcrypt hash. Also
+ * clears the old `sharedPassword` field on staff/employer rows so the
+ * previous shared cred can no longer be revealed by super-admin or
+ * staff — the user chose their own now, no one else should hold it.
+ */
+router.post(
+  "/auth/password/reset",
+  verifyLimiter,
+  asyncHandler(async (req, res) => {
+    const body = req.body as { email?: unknown; code?: unknown; newPassword?: unknown };
+    const email = typeof body.email === "string" ? body.email.toLowerCase().trim() : "";
+    const code = typeof body.code === "string" ? body.code.trim() : "";
+    const newPassword = typeof body.newPassword === "string" ? body.newPassword : "";
+    if (!email || !code || !newPassword) {
+      throw new HttpError(400, "email, code, and newPassword are required", "MISSING_FIELDS");
+    }
+    if (newPassword.length < 8) {
+      throw new HttpError(400, "Password must be at least 8 characters", "PASSWORD_TOO_SHORT");
+    }
+
+    await verifyOtp({ email, code, purpose: OtpPurpose.PASSWORD_RESET });
+
+    const user = await prisma.user.findUnique({ where: { email } });
+    if (!user || user.deletedAt) throw new HttpError(404, "User not found", "USER_NOT_FOUND");
+
+    const passwordHash = await bcrypt.hash(newPassword, 10);
+    await prisma.user.update({
+      where: { id: user.id },
+      // Null out sharedPassword — the user has chosen their own, so the
+      // shared cred an admin/staff might have seen is now obsolete and
+      // shouldn't be revealed in the reveal-and-copy UI anymore.
+      data: { passwordHash, sharedPassword: null },
+    });
+    await recordAudit({ req, actorId: user.id, actorRole: user.role, action: AuditAction.USER_LOGIN, targetType: "user", targetId: user.id });
+
+    res.json({ message: "Password has been reset. You can now sign in with your new password." });
+  }),
+);
+
+/**
+ * POST /auth/password/change — signed-in user changes their own password.
+ * Requires the current password (or the shared password) to prove
+ * possession. Same null-sharedPassword step as reset.
+ */
+router.post(
+  "/auth/password/change",
+  requireAuth,
+  asyncHandler(async (req, res) => {
+    const body = req.body as { oldPassword?: unknown; newPassword?: unknown };
+    const oldPassword = typeof body.oldPassword === "string" ? body.oldPassword : "";
+    const newPassword = typeof body.newPassword === "string" ? body.newPassword : "";
+    if (!oldPassword || !newPassword) {
+      throw new HttpError(400, "oldPassword and newPassword are required", "MISSING_FIELDS");
+    }
+    if (newPassword.length < 8) {
+      throw new HttpError(400, "Password must be at least 8 characters", "PASSWORD_TOO_SHORT");
+    }
+    if (newPassword === oldPassword) {
+      throw new HttpError(400, "New password must be different from the old one", "PASSWORD_UNCHANGED");
+    }
+
+    const user = await prisma.user.findUnique({ where: { id: req.user!.sub } });
+    if (!user || user.deletedAt) throw new HttpError(404, "User not found", "USER_NOT_FOUND");
+    if (!user.passwordHash) {
+      throw new HttpError(400, "This account doesn't use password sign-in", "NO_PASSWORD");
+    }
+    const ok = await bcrypt.compare(oldPassword, user.passwordHash);
+    if (!ok) throw new HttpError(401, "Current password is incorrect", "OLD_PASSWORD_INVALID");
+
+    const passwordHash = await bcrypt.hash(newPassword, 10);
+    await prisma.user.update({
+      where: { id: user.id },
+      data: { passwordHash, sharedPassword: null },
+    });
+
+    res.json({ message: "Password changed." });
+  }),
+);
 
 /* ------------------------------- Refresh ------------------------------- */
 

@@ -85,4 +85,37 @@ export const authApi = {
       method: "POST",
       json: { email, password },
     }),
+
+  /**
+   * Kick off password reset — sends a PASSWORD_RESET OTP to the email.
+   * Response is intentionally the same whether the email exists or not
+   * (prevents account enumeration).
+   */
+  forgotPassword: (email: string) =>
+    api<{ message: string }>("/auth/password/forgot", {
+      method: "POST",
+      json: { email },
+    }),
+
+  /**
+   * Consume the reset OTP + set a new password. Also clears any
+   * `sharedPassword` from the row so admins/staff can no longer reveal
+   * the user's previous shared credential.
+   */
+  resetPassword: (email: string, code: string, newPassword: string) =>
+    api<{ message: string }>("/auth/password/reset", {
+      method: "POST",
+      json: { email, code, newPassword },
+    }),
+
+  /**
+   * Signed-in user changes their own password. Requires the current
+   * password to prove possession. Same null-sharedPassword step as
+   * reset.
+   */
+  changePassword: (oldPassword: string, newPassword: string) =>
+    api<{ message: string }>("/auth/password/change", {
+      method: "POST",
+      json: { oldPassword, newPassword },
+    }),
 };

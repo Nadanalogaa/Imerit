@@ -9,6 +9,8 @@ import {
 } from "@prisma/client";
 import { prisma } from "../lib/prisma.js";
 import { HttpError } from "../middleware/error.js";
+import { logger } from "../lib/logger.js";
+import { notifyJobPosted } from "./notify.service.js";
 
 /**
  * Filter shape used by GET /jobs. Every property is optional — only the
@@ -115,7 +117,7 @@ interface CreateJobArgs {
  * REJECTED via the moderation endpoint and the public list will hide it.
  */
 export async function createJob(args: CreateJobArgs & { postedByStaffId?: string }): Promise<Job> {
-  return prisma.job.create({
+  const job = await prisma.job.create({
     data: {
       employerId: args.employerId,
       employerName: args.employerName,
@@ -129,6 +131,26 @@ export async function createJob(args: CreateJobArgs & { postedByStaffId?: string
       moderationStatus: ModerationStatus.APPROVED,
     },
   });
+
+  // Notify the employer their job is live + cc admin activity inbox.
+  // Best-effort; job is already committed by the time this fires.
+  const employer = await prisma.user.findUnique({ where: { id: args.employerId } });
+  let staffEmail: string | undefined;
+  if (args.postedByStaffId) {
+    const staff = await prisma.user.findUnique({ where: { id: args.postedByStaffId }, select: { email: true } });
+    staffEmail = staff?.email;
+  }
+  if (employer) {
+    void notifyJobPosted({
+      employerName: employer.name,
+      employerEmail: employer.email,
+      jobTitle: job.title,
+      jobId: job.id,
+      postedByStaffEmail: staffEmail,
+    }).catch((err) => logger.warn({ err, jobId: job.id }, "notifyJobPosted failed"));
+  }
+
+  return job;
 }
 
 interface UpdateJobArgs {

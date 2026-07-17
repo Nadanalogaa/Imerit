@@ -41,6 +41,35 @@ const EnvSchema = z.object({
     .string()
     .default("false")
     .transform((s) => s === "true"),
+
+  /**
+   * SMTP relay — nodemailer talks to whatever provider you plug in
+   * (Zoho Mail, Brevo, M365, SES with SMTP interface, etc.). Leave
+   * SMTP_HOST blank in dev and the mailer will log-only so you can
+   * develop offline. In prod, all four fields are required.
+   */
+  SMTP_HOST: z.string().optional().default(""),
+  SMTP_PORT: z.coerce.number().int().positive().default(587),
+  SMTP_USER: z.string().optional().default(""),
+  SMTP_PASS: z.string().optional().default(""),
+  SMTP_FROM: z.string().optional().default(""),
+
+  /**
+   * Every "we did X" notification (new signup, new job, new application,
+   * moderation action, etc.) also gets cc'd here so ops can watch
+   * platform activity in one inbox. Comma-separated list allowed —
+   * add multiple to cc a whole team.
+   */
+  ADMIN_NOTIFICATIONS_EMAIL: z
+    .string()
+    .default("")
+    .transform((s) => s.split(",").map((o) => o.trim()).filter(Boolean)),
+
+  /**
+   * Public origin — used to build absolute URLs in outbound emails
+   * (login links, "View job" CTAs). Defaults to prod.
+   */
+  PUBLIC_APP_URL: z.string().default("https://itamilrecruit.net"),
 });
 
 const parsed = EnvSchema.safeParse(process.env);
