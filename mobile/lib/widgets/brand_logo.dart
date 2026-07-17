@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
 
-/// Single source of truth for the app wordmark. The image itself is the full
-/// lockup — orange icon + "Tamil Recruit" + tagline — so callers just pick a
-/// height and get a properly-scaled banner. Renders on top of an optional
-/// white-ish background so the JPEG's edges never fight a dark surface.
+/// Single source of truth for the app wordmark. Ships in two ink
+/// colours — dark for light surfaces, white for dark surfaces —
+/// which we swap based on the caller's theme.
+///
+/// The PNGs were trimmed of their transparent padding at build time
+/// (see web/public/logo-*.png sources), so the sizes here map
+/// directly to visible glyph height.
 ///
 /// Sizes roughly:
 ///  - `small`  ~ 28 px (AppBar / footer)
@@ -14,14 +17,25 @@ class BrandLogo extends StatelessWidget {
     super.key,
     this.size = BrandLogoSize.medium,
     this.plateColor,
+    this.forceTheme,
   });
 
   final BrandLogoSize size;
 
-  /// If provided, wraps the logo in a rounded rectangle plate of this
-  /// colour — useful on dark backgrounds where the logo needs a contrast
-  /// backing. Pass null for surfaces that are already light.
+  /// Optional rounded plate behind the logo — legacy hack for the
+  /// old JPEG logo that had white edges. Kept as an escape hatch;
+  /// most callers can drop it now that the PNGs have transparent
+  /// backgrounds.
   final Color? plateColor;
+
+  /// Bypass the surrounding theme and pin the logo to one variant.
+  /// Used on always-dark surfaces (auth pages) so the logo doesn't
+  /// flip based on the app-wide theme toggle.
+  ///
+  ///   forceTheme = Brightness.dark  → always white-ink logo
+  ///   forceTheme = Brightness.light → always dark-ink logo
+  ///   null                          → picks based on Theme.of(context)
+  final Brightness? forceTheme;
 
   double get _height => switch (size) {
         BrandLogoSize.small => 28,
@@ -35,14 +49,18 @@ class BrandLogo extends StatelessWidget {
         BrandLogoSize.large => 8,
       };
 
+  String _assetFor(Brightness b) => b == Brightness.dark
+      ? 'assets/logo/logo-white.png'
+      : 'assets/logo/logo-dark.png';
+
   @override
   Widget build(BuildContext context) {
+    final effective = forceTheme ?? Theme.of(context).brightness;
     final image = Image.asset(
-      'assets/logo/logo-orange.jpeg',
+      _assetFor(effective),
       height: _height,
       fit: BoxFit.contain,
-      // Semantics = accessible name for VoiceOver / TalkBack.
-      semanticLabel: 'Tamil Recruit — Job Portal for Skilled Talent',
+      semanticLabel: 'i-Tamil Recruit — Job Portal for Skilled Talent',
     );
     if (plateColor == null) return image;
     return Container(
