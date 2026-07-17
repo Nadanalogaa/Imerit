@@ -4,6 +4,7 @@ import { AuthLayout } from "../components/AuthLayout";
 import { useAuth } from "../store/auth";
 import { generateOtp, getActiveOtp, verifyOtp as verifyOtpLocal } from "../lib/otp";
 import { apiEnabled, ApiError } from "../lib/api";
+import { InlineSetPasswordStep } from "./CandidateOtp";
 
 export function EmployerOtp() {
  const [params] = useSearchParams();
@@ -15,6 +16,7 @@ export function EmployerOtp() {
  const markVerified = useAuth((s) => s.markVerified);
  const loginByEmail = useAuth((s) => s.loginByEmail);
 
+ const [step, setStep] = useState<"verify" | "password">("verify");
  const [digits, setDigits] = useState<string[]>(["", "", "", "", "", ""]);
  const [error, setError] = useState<string | null>(null);
  const [demoCode, setDemoCode] = useState<string | null>(null);
@@ -79,13 +81,15 @@ export function EmployerOtp() {
  if (mode === "login") loginByEmail(email);
  else markVerified(email);
  }
- // Offer the "set a password" step to first-timers — same pattern as
- // the candidate flow so the two lanes stay consistent.
+ // Inline step 2 for first-timers — same "one page, done" flow
+ // as CandidateOtp. Users with an existing password go straight
+ // to the dashboard.
  const me = useAuth.getState().currentUser;
- const dest = me && me.hasPassword === false
-   ? "/set-password?next=/employer/dashboard"
-   : "/employer/dashboard";
- navigate(dest, { replace: true });
+ if (apiEnabled && me && me.hasPassword === false) {
+   setStep("password");
+ } else {
+   navigate("/employer/dashboard", { replace: true });
+ }
  } catch (err) {
  if (err instanceof ApiError) {
  const map: Record<string, string> = {
@@ -133,10 +137,15 @@ export function EmployerOtp() {
 
  return (
  <AuthLayout
- title={mode === "login" ? "Sign in with code" : "Verify your email"}
- subtitle={`We sent a 6-digit code to ${email}`}
+ title={step === "password" ? "One quick step" : mode === "login" ? "Sign in with code" : "Verify your email"}
+ subtitle={step === "password"
+   ? "Set a password so you can sign in faster next time — or skip."
+   : `We sent a 6-digit code to ${email}`}
  bgImage="/images/background-02.jpg"
+ tone="sky"
  >
+ {step === "verify" ? (
+ <>
  {demoCode && (
  <div className="mb-5 flex items-center justify-between rounded-2xl border border-amber-300/60 bg-amber-50 px-4 py-3 text-xs text-amber-800 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-300">
  <span><strong>Demo only:</strong> {apiEnabled ? "Real email isn't wired yet — code from server below." : "No email is actually sent."}</span>
@@ -185,6 +194,13 @@ export function EmployerOtp() {
  </button>
  </div>
  </form>
+ </>
+ ) : (
+ <InlineSetPasswordStep
+ onDone={() => navigate("/employer/dashboard", { replace: true })}
+ brandClass="from-sky-500 to-sky-700 shadow-sky-500/30"
+ />
+ )}
  </AuthLayout>
  );
 }
