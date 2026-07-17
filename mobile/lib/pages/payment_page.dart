@@ -65,7 +65,11 @@ class _PaymentPageState extends ConsumerState<PaymentPage> {
             ),
           );
       if (widget.applyJob != null) {
-        ref.read(applicationsProvider.notifier).apply(user.id, widget.applyJob!);
+        // Fire and forget — this is post-payment "auto-apply to the
+        // job that triggered the subscribe flow"; if it fails the
+        // user can still hit Apply on the job page.
+        // ignore: unawaited_futures
+        ref.read(applicationsProvider.notifier).applyAsync(user.id, widget.applyJob!);
       }
       setState(() {
         _processing = false;

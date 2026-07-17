@@ -18,7 +18,7 @@ class JobDetailPage extends ConsumerStatefulWidget {
 }
 
 class _JobDetailPageState extends ConsumerState<JobDetailPage> {
-  void _onApply(Job job) {
+  Future<void> _onApply(Job job) async {
     final user = ref.read(authProvider)!;
     if (ref.read(applicationsProvider.notifier).hasApplied(user.id, job.id)) return;
     final active = ref
@@ -31,9 +31,19 @@ class _JobDetailPageState extends ConsumerState<JobDetailPage> {
       );
       return;
     }
-    ref.read(applicationsProvider.notifier).apply(user.id, job.id);
-    setState(() {});
-    _showAppliedDialog(job);
+    // Server-backed apply — persists to the DB, triggers the 3-way
+    // notification emails (candidate confirmation + employer alert +
+    // admin cc). Falls back to localStorage in offline mode.
+    try {
+      await ref.read(applicationsProvider.notifier).applyAsync(user.id, job.id);
+      if (!mounted) return;
+      setState(() {});
+      _showAppliedDialog(job);
+    } catch (err) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Could not apply: $err')),
+      );
+    }
   }
 
   void _showAppliedDialog(Job job) {

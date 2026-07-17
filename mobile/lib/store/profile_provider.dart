@@ -1,6 +1,8 @@
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../api/api_client.dart';
+import '../api/profile_api.dart';
 import '../storage/storage.dart';
 
 enum CandidateType { fresher, experienced }
@@ -472,6 +474,98 @@ class ProfileNotifier extends Notifier<Map<String, CandidateProfile>> {
     state = newMap;
     _persist(newMap);
   }
+
+  // ============================================================
+  // API integration — hydrate + save the signed-in user's profile
+  // ============================================================
+
+  /// Map a backend profile row → local CandidateProfile.
+  CandidateProfile _fromApi(String userId, Map<String, dynamic> api) {
+    final field = api['field'] as String?;
+    final type = api['type'] as String?;
+    return CandidateProfile(
+      userId: userId,
+      photoDataUrl: api['photoUrl'] as String?,
+      alternateMobile: api['alternateMobile'] as String?,
+      preferredLocation: api['preferredLocation'] as String?,
+      currentDistrictId: api['currentDistrictId'] as String?,
+      currentTalukId: api['currentTalukId'] as String?,
+      currentLat: (api['currentLat'] as num?)?.toDouble(),
+      currentLng: (api['currentLng'] as num?)?.toDouble(),
+      currentPincode: api['currentPincode'] as String?,
+      currentStreet: api['currentStreet'] as String?,
+      preferredDistrictIds: ((api['preferredDistricts'] as List?) ?? const []).cast<String>(),
+      shortTermAmbition: api['shortTermAmbition'] as String?,
+      longTermAmbition: api['longTermAmbition'] as String?,
+      type: type == 'FRESHER' ? CandidateType.fresher : type == 'EXPERIENCED' ? CandidateType.experienced : null,
+      internOrJob: (api['internOrJob'] as String?)?.toLowerCase(),
+      field: field == 'IT' ? FieldKind.it : field == 'NON_IT' ? FieldKind.nonIt : null,
+      itSpecialization: api['itSpecialization'] as String?,
+      itLanguages: (api['itLanguages'] as List?)?.cast<String>(),
+      nonItDepartments: (api['nonItDepartments'] as List?)?.cast<String>(),
+      yearsOfExperience: api['yearsOfExperience'] as int?,
+      topSkills: (api['topSkills'] as List?)?.cast<String>(),
+      selectedTemplateId: (api['selectedTemplateId'] as String?)?.toLowerCase(),
+      moderationStatus: api['moderationStatus'] as String?,
+      moderationNotes: api['moderationNotes'] as String?,
+      updatedAt: api['updatedAt'] as String? ?? DateTime.now().toIso8601String(),
+    );
+  }
+
+  /// Pull /profiles/me from the server + hydrate local state so the
+  /// candidate dashboard shows the moderation pill + up-to-date fields.
+  /// Silent no-op offline. Call this on CandidateDashboardPage mount.
+  Future<void> fetchMine() async {
+    if (!_apiOn) return;
+    try {
+      final res = await _api.getMine();
+      final userId = (res['user'] as Map)['id'] as String;
+      final profile = _fromApi(userId, res['profile'] as Map<String, dynamic>);
+      final next = {...state, userId: profile};
+      state = next;
+      _persist(next);
+    } catch (_) {
+      // Silent fallback — keep the local cache visible.
+    }
+  }
+
+  /// PATCH /profiles/me with a subset of fields. `patch` uses local
+  /// field names; this helper maps to the backend's expected wire
+  /// shape. Server merges + returns the full profile.
+  Future<void> saveAsync(String userId, Map<String, dynamic> localPatch) async {
+    if (!_apiOn) return;
+    // Translate local field names → backend field names + enum casing.
+    final api = <String, dynamic>{};
+    localPatch.forEach((k, v) {
+      switch (k) {
+        case 'photoDataUrl': api['photoUrl'] = v; break;
+        case 'field':
+          if (v == FieldKind.it) api['field'] = 'IT';
+          else if (v == FieldKind.nonIt) api['field'] = 'NON_IT';
+          break;
+        case 'type':
+          if (v == CandidateType.fresher) api['type'] = 'FRESHER';
+          else if (v == CandidateType.experienced) api['type'] = 'EXPERIENCED';
+          break;
+        case 'internOrJob': api['internOrJob'] = (v as String?)?.toUpperCase(); break;
+        case 'preferredDistrictIds': api['preferredDistricts'] = v; break;
+        case 'selectedTemplateId': api['selectedTemplateId'] = (v as String?)?.toUpperCase(); break;
+        default: api[k] = v;
+      }
+    });
+    try {
+      final row = await _api.patchMine(api);
+      final profile = _fromApi(userId, row);
+      final next = {...state, userId: profile};
+      state = next;
+      _persist(next);
+    } catch (_) {
+      // Keep local cache; next fetchMine() reconciles.
+    }
+  }
+
+  bool get _apiOn => apiEnabled;
+  ProfileApi get _api => ProfileApi.instance;
 }
 
 final profileProvider =

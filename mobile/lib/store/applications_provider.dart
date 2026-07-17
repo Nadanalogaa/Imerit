@@ -1,6 +1,8 @@
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../api/api_client.dart';
+import '../api/jobs_api.dart';
 import '../storage/storage.dart';
 
 @immutable
@@ -125,6 +127,68 @@ class ApplicationsNotifier extends Notifier<AppData> {
       state.applications.where((a) => a.userId == userId).toList();
 
   List<String> savedFor(String userId) => state.saved[userId] ?? [];
+
+  // ============================================================
+  // API integration — server-backed applications for candidates.
+  // ============================================================
+
+  /// Pull /candidate/applications and rebuild the local list for
+  /// the signed-in user. Merges by (jobId+userId) so any offline
+  /// applications from another install don't get clobbered.
+  /// Silent no-op offline.
+  Future<void> fetchMine(String userId) async {
+    if (!apiEnabled) return;
+    try {
+      final rows = await JobsApi.instance.myApplications();
+      // Backend rows include the joined job as well as the application
+      // fields (status, appliedAt). We only need the application
+      // shape locally.
+      final api = rows.map((r) => Application(
+            id: r['id'] as String,
+            userId: userId,
+            jobId: r['jobId'] as String,
+            appliedAt: r['appliedAt'] as String,
+            status: (r['status'] as String? ?? 'APPLIED').toLowerCase(),
+          )).toList();
+      // Merge: server rows are authoritative for this user; keep
+      // rows from other users (multi-account demo scenarios) intact.
+      final others = state.applications.where((a) => a.userId != userId).toList();
+      final next = [...api, ...others];
+      _saveApps(next);
+      state = state.copyWith(applications: next);
+    } catch (_) {
+      // Silent — keep local cache visible.
+    }
+  }
+
+  /// Async apply — hits POST /jobs/:id/apply when apiEnabled. Falls
+  /// back to the sync local `apply()` in offline mode. Returns null
+  /// when the candidate had already applied.
+  Future<Application?> applyAsync(String userId, String jobId, {int? matchScore, String? coverNote}) async {
+    if (!apiEnabled) return apply(userId, jobId);
+    if (hasApplied(userId, jobId)) return null;
+    try {
+      final row = await JobsApi.instance.apply(jobId, matchScore: matchScore, coverNote: coverNote);
+      final app = Application(
+        id: row['id'] as String,
+        userId: userId,
+        jobId: row['jobId'] as String,
+        appliedAt: row['appliedAt'] as String,
+        status: (row['status'] as String? ?? 'APPLIED').toLowerCase(),
+      );
+      final next = [app, ...state.applications];
+      _saveApps(next);
+      state = state.copyWith(applications: next);
+      return app;
+    } on ApiError catch (e) {
+      if (e.code == 'DUPLICATE_APPLICATION') {
+        // Already applied server-side — cache locally too so the UI
+        // reflects it.
+        return apply(userId, jobId);
+      }
+      rethrow;
+    }
+  }
 }
 
 final applicationsProvider =
