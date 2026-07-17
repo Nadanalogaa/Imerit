@@ -93,13 +93,18 @@ export async function sendEmail(args: SendArgs): Promise<void> {
     return;
   }
 
+  // Per-call replyTo wins; otherwise fall back to the platform-wide
+  // EMAIL_REPLY_TO env (typically hello@itamilrecruit.net) so replies
+  // to our noreply@ sender still land in a monitored inbox.
+  const replyTo = args.replyTo ?? env.EMAIL_REPLY_TO ?? undefined;
+
   try {
     const info = await transport.sendMail({
       from,
       to,
       cc,
       bcc,
-      replyTo: args.replyTo,
+      replyTo: replyTo || undefined,
       subject: args.subject,
       html: args.html,
       // Nodemailer will auto-derive text from html if we don't pass one,

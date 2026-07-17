@@ -45,3 +45,7 @@ mobile/ios/.symlinks/
 # SSH keys — never commit private keys
 pemkey/
 *.pem
+
+# Local-only credentials / notes — never commit
+credentials/
+*.pages

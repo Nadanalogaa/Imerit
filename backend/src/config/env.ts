@@ -55,6 +55,18 @@ const EnvSchema = z.object({
   SMTP_FROM: z.string().optional().default(""),
 
   /**
+   * Default Reply-To header on every outbound email. Lets us present a
+   * clean noreply@ or automated-looking `From:` while user replies still
+   * land in a real, monitored inbox (support / hello / team address).
+   *
+   * Example: SMTP_FROM="i-Tamil Recruit <noreply@itamilrecruit.net>"
+   *          EMAIL_REPLY_TO=hello@itamilrecruit.net
+   *
+   * Leave blank to inherit From as the reply target (default SMTP behavior).
+   */
+  EMAIL_REPLY_TO: z.string().optional().default(""),
+
+  /**
    * Every "we did X" notification (new signup, new job, new application,
    * moderation action, etc.) also gets cc'd here so ops can watch
    * platform activity in one inbox. Comma-separated list allowed —
