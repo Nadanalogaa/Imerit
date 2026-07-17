@@ -2,9 +2,45 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>web</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+
+    <!--
+      Favicon / touch-icon set.
+      Order matters: browsers pick the first `link rel=icon` they understand.
+      Modern browsers use the PNGs by size; older browsers + Windows fall
+      back to favicon.ico (multi-size embedded).
+    -->
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png" />
+    <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png" />
+    <link rel="icon" type="image/png" sizes="96x96" href="/favicon-96x96.png" />
+    <link rel="icon" type="image/x-icon" href="/favicon.ico" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
+
+    <!-- Android Chrome + PWA install prompt. Manifest points at the 192/512 PNGs. -->
+    <link rel="manifest" href="/site.webmanifest" />
+
+    <!-- Address-bar tint on mobile; a distinct value per color scheme so
+         the tint matches whether the OS is in light or dark mode. -->
+    <meta name="theme-color" content="#f97316" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#0a0a0a" media="(prefers-color-scheme: dark)" />
+
+    <!-- iOS home-screen title + status bar style. -->
+    <meta name="apple-mobile-web-app-title" content="i-Tamil" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+
+    <!-- SEO / social. Open Graph gets picked up by WhatsApp, Slack, LinkedIn, etc. -->
+    <title>i-Tamil Recruit — Job Portal for Skilled Talent</title>
+    <meta name="description" content="Tamil Nadu's modern recruitment platform. Connecting students and professionals across every field with the right opportunities, near home." />
+    <meta property="og:title" content="i-Tamil Recruit — Job Portal for Skilled Talent" />
+    <meta property="og:description" content="Tamil Nadu's modern recruitment platform. Connecting students and professionals across every field with the right opportunities, near home." />
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://itamilrecruit.net" />
+    <meta property="og:image" content="https://itamilrecruit.net/android-chrome-512x512.png" />
+    <meta name="twitter:card" content="summary" />
+    <meta name="twitter:title" content="i-Tamil Recruit — Job Portal for Skilled Talent" />
+    <meta name="twitter:description" content="Tamil Nadu's modern recruitment platform. Jobs near home, across every field." />
+    <meta name="twitter:image" content="https://itamilrecruit.net/android-chrome-512x512.png" />
   </head>
   <body>
     <div id="root"></div>
