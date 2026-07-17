@@ -340,6 +340,24 @@ class Job {
   }
 
   Job copyWith({
+    String? title,
+    String? description,
+    String? location,
+    String? districtId,
+    String? talukId,
+    double? lat,
+    double? lng,
+    String? pincode,
+    String? street,
+    JobField? field,
+    JobType? type,
+    JobExperience? experience,
+    int? yearsMin,
+    int? yearsMax,
+    String? salaryRange,
+    List<String>? skills,
+    List<JobBenefit>? benefits,
+    String? contactEmail,
     String? postedAt,
     String? expiresAt,
   }) =>
@@ -347,24 +365,24 @@ class Job {
         id: id,
         employerId: employerId,
         employerName: employerName,
-        title: title,
-        description: description,
-        location: location,
-        districtId: districtId,
-        talukId: talukId,
-        lat: lat,
-        lng: lng,
-        pincode: pincode,
-        street: street,
-        field: field,
-        type: type,
-        experience: experience,
-        yearsMin: yearsMin,
-        yearsMax: yearsMax,
-        salaryRange: salaryRange,
-        skills: skills,
-        benefits: benefits,
-        contactEmail: contactEmail,
+        title: title ?? this.title,
+        description: description ?? this.description,
+        location: location ?? this.location,
+        districtId: districtId ?? this.districtId,
+        talukId: talukId ?? this.talukId,
+        lat: lat ?? this.lat,
+        lng: lng ?? this.lng,
+        pincode: pincode ?? this.pincode,
+        street: street ?? this.street,
+        field: field ?? this.field,
+        type: type ?? this.type,
+        experience: experience ?? this.experience,
+        yearsMin: yearsMin ?? this.yearsMin,
+        yearsMax: yearsMax ?? this.yearsMax,
+        salaryRange: salaryRange ?? this.salaryRange,
+        skills: skills ?? this.skills,
+        benefits: benefits ?? this.benefits,
+        contactEmail: contactEmail ?? this.contactEmail,
         postedAt: postedAt ?? this.postedAt,
         expiresAt: expiresAt ?? this.expiresAt,
       );
@@ -851,6 +869,112 @@ class JobsNotifier extends Notifier<List<Job>> {
   void deleteJob(String id) {
     final next = state.where((j) => j.id != id).toList();
     _persist(next);
+  }
+
+  /// Async repost — POST /employer/jobs/:id/repost. Backend rotates
+  /// postedAt + extends expiresAt by 45 days, preserves applications
+  /// + saves. Merges the fresh row into local state.
+  Future<Job?> repostAsync(String id) async {
+    if (!apiEnabled) return repost(id);
+    try {
+      final row = await JobsApi.instance.employerRepost(id);
+      final job = _fromApi(row);
+      final next = state.map((j) => j.id == id ? job : j).toList();
+      _persist(next);
+      return job;
+    } catch (_) {
+      // Fall back to local-only repost so the UI still moves.
+      return repost(id);
+    }
+  }
+
+  /// Async delete — DELETE /employer/jobs/:id then drop locally.
+  Future<void> deleteJobAsync(String id) async {
+    if (apiEnabled) {
+      try { await JobsApi.instance.employerDelete(id); } catch (_) { /* still drop locally */ }
+    }
+    deleteJob(id);
+  }
+
+  /// Async edit — PATCH /employer/jobs/:id. `patch` uses the shared
+  /// _toApiInput serialisation. Merges the fresh row into local state.
+  Future<Job?> updateJobAsync(String id, {
+    String? title,
+    String? description,
+    String? location,
+    String? districtId,
+    String? talukId,
+    double? lat,
+    double? lng,
+    String? pincode,
+    String? street,
+    JobField? field,
+    JobType? type,
+    JobExperience? experience,
+    int? yearsMin,
+    int? yearsMax,
+    String? salaryRange,
+    List<String>? skills,
+    List<JobBenefit>? benefits,
+    String? contactEmail,
+  }) async {
+    if (!apiEnabled) {
+      // Local-only edit — apply on top of the existing row.
+      final existing = byId(id);
+      if (existing == null) return null;
+      final updated = existing.copyWith(
+        title: title ?? existing.title,
+        description: description ?? existing.description,
+        location: location ?? existing.location,
+        districtId: districtId ?? existing.districtId,
+        talukId: talukId ?? existing.talukId,
+        lat: lat ?? existing.lat,
+        lng: lng ?? existing.lng,
+        pincode: pincode ?? existing.pincode,
+        street: street ?? existing.street,
+        field: field ?? existing.field,
+        type: type ?? existing.type,
+        experience: experience ?? existing.experience,
+        yearsMin: yearsMin ?? existing.yearsMin,
+        yearsMax: yearsMax ?? existing.yearsMax,
+        salaryRange: salaryRange ?? existing.salaryRange,
+        skills: skills ?? existing.skills,
+        benefits: benefits ?? existing.benefits,
+        contactEmail: contactEmail ?? existing.contactEmail,
+      );
+      _persist(state.map((j) => j.id == id ? updated : j).toList());
+      return updated;
+    }
+    // Partial API patch — only send fields the caller actually supplied.
+    final patch = <String, dynamic>{};
+    if (title != null) patch['title'] = title;
+    if (description != null) patch['description'] = description;
+    if (location != null) patch['location'] = location;
+    if (districtId != null) patch['districtId'] = districtId;
+    if (talukId != null) patch['talukId'] = talukId;
+    if (lat != null) patch['lat'] = lat;
+    if (lng != null) patch['lng'] = lng;
+    if (pincode != null) patch['pincode'] = pincode;
+    if (street != null) patch['street'] = street;
+    if (field != null) patch['field'] = field == JobField.it ? 'IT' : 'NON_IT';
+    if (type != null) patch['type'] = _typeKey(type).toUpperCase();
+    if (experience != null) patch['experience'] =
+        experience == JobExperience.fresher ? 'FRESHER'
+        : experience == JobExperience.experienced ? 'EXPERIENCED' : 'ANY';
+    if (yearsMin != null) patch['yearsMin'] = yearsMin;
+    if (yearsMax != null) patch['yearsMax'] = yearsMax;
+    if (salaryRange != null) patch['salaryRange'] = salaryRange;
+    if (skills != null) patch['skills'] = skills;
+    if (benefits != null) patch['benefits'] = benefits.map(benefitKey).toList();
+    if (contactEmail != null) patch['contactEmail'] = contactEmail;
+    try {
+      final row = await JobsApi.instance.employerUpdate(id, patch);
+      final job = _fromApi(row);
+      _persist(state.map((j) => j.id == id ? job : j).toList());
+      return job;
+    } catch (_) {
+      return null;
+    }
   }
 
   void _persist(List<Job> next) {

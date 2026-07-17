@@ -167,7 +167,10 @@ class _JobRow extends ConsumerWidget {
 
   Future<void> _repost(BuildContext context, WidgetRef ref) async {
     HapticFeedback.mediumImpact();
-    final updated = ref.read(jobsProvider.notifier).repost(job.id);
+    // Server-backed repost — hits POST /employer/jobs/:id/repost so
+    // the extended expiry is authoritative and applications/saves
+    // are preserved backend-side.
+    final updated = await ref.read(jobsProvider.notifier).repostAsync(job.id);
     if (updated == null || !context.mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
