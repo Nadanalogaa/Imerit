@@ -172,24 +172,20 @@ const passwordLoginHandler = asyncHandler(async (req, res) => {
   }
 
   const user = await prisma.user.findUnique({ where: { email } });
-  // Same error message for missing account / wrong password / role
-  // ineligible so we don't leak which of the three is the case.
+  // Same error message for missing account / wrong password so we
+  // don't leak which of the two is the case.
   const denyMsg = "Incorrect email or password";
   if (!user || user.deletedAt) {
-    throw new HttpError(401, denyMsg, "AUTH_INVALID");
-  }
-  const eligible =
-    user.role === UserRole.STAFF ||
-    (user.role === UserRole.EMPLOYER && !!user.sharedPassword);
-  if (!eligible) {
     throw new HttpError(401, denyMsg, "AUTH_INVALID");
   }
   if (user.deactivated) {
     throw new HttpError(403, "This account is deactivated. Ask a super-admin to reactivate it.", "ACCOUNT_DEACTIVATED");
   }
+  // Any user with a passwordHash can sign in via password — staff,
+  // staff-provisioned employers, and any candidate/employer who opted
+  // in after their first OTP sign-in. Users who haven't set one still
+  // sign in via OTP.
   if (!user.passwordHash) {
-    // Employer with sharedPassword but no hash: possible if the row was
-    // seeded before the staff-provisioning flow, so treat it as auth-fail.
     throw new HttpError(401, denyMsg, "AUTH_INVALID");
   }
   const ok = await bcrypt.compare(password, user.passwordHash);
@@ -227,10 +223,12 @@ router.post(
     if (!email) throw new HttpError(400, "Email is required", "MISSING_EMAIL");
 
     const user = await prisma.user.findUnique({ where: { email } });
-    const eligible = !!user && !user.deletedAt && !user.deactivated && (
-      user.role === UserRole.STAFF ||
-      (user.role === UserRole.EMPLOYER && !!user.sharedPassword)
-    );
+    // Anyone with a password on file can reset it — covers staff,
+    // staff-provisioned employers, and any candidate/employer who has
+    // opted into a password after signing up via OTP. Users without a
+    // passwordHash still authenticate via OTP directly, so a reset
+    // flow would be a no-op for them.
+    const eligible = !!user && !user.deletedAt && !user.deactivated && !!user.passwordHash;
     if (eligible) {
       await issueOtp({
         email,
@@ -285,6 +283,43 @@ router.post(
     await recordAudit({ req, actorId: user.id, actorRole: user.role, action: AuditAction.USER_LOGIN, targetType: "user", targetId: user.id });
 
     res.json({ message: "Password has been reset. You can now sign in with your new password." });
+  }),
+);
+
+/**
+ * POST /auth/password/set-initial — signed-in user sets a password for
+ * the first time. Refuses if they already have one (that path is
+ * /auth/password/change which enforces the old-password check).
+ *
+ * Used right after OTP verification so users who prefer password
+ * sign-in can opt in without hunting for a settings page.
+ */
+router.post(
+  "/auth/password/set-initial",
+  requireAuth,
+  asyncHandler(async (req, res) => {
+    const body = req.body as { newPassword?: unknown };
+    const newPassword = typeof body.newPassword === "string" ? body.newPassword : "";
+    if (!newPassword) throw new HttpError(400, "newPassword is required", "MISSING_PASSWORD");
+    if (newPassword.length < 8) {
+      throw new HttpError(400, "Password must be at least 8 characters", "PASSWORD_TOO_SHORT");
+    }
+
+    const user = await prisma.user.findUnique({ where: { id: req.user!.sub } });
+    if (!user || user.deletedAt) throw new HttpError(404, "User not found", "USER_NOT_FOUND");
+    if (user.passwordHash) {
+      // Existing password — force them through the change flow so we
+      // check possession. This is the guardrail that keeps the endpoint
+      // from being a password-overwrite backdoor.
+      throw new HttpError(409, "Password already set — use /auth/password/change instead", "PASSWORD_EXISTS");
+    }
+
+    const passwordHash = await bcrypt.hash(newPassword, 10);
+    await prisma.user.update({
+      where: { id: user.id },
+      data: { passwordHash },
+    });
+    res.json({ message: "Password set. You can now sign in with it." });
   }),
 );
 
@@ -383,10 +418,15 @@ router.get(
   }),
 );
 
-/** Strip server-only fields before returning a User to the client. */
+/**
+ * Strip server-only fields before returning a User to the client, and
+ * derive `hasPassword` (a boolean flag the frontend uses to decide
+ * whether to show the "set password" prompt or the "change password"
+ * form).
+ */
 function publicUser<T extends { passwordHash?: string | null; deletedAt?: Date | null }>(u: T) {
-  const { passwordHash: _ph, deletedAt: _dd, ...rest } = u;
-  return rest;
+  const { passwordHash, deletedAt: _dd, ...rest } = u;
+  return { ...rest, hasPassword: !!passwordHash };
 }
 
 export default router;

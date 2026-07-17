@@ -26,9 +26,16 @@ import { ApiError } from "../lib/api";
 export function ForgotPassword() {
   const navigate = useNavigate();
   const [params] = useSearchParams();
-  const lane: "staff" | "employer" = params.get("lane") === "employer" ? "employer" : "staff";
-  const loginPath = lane === "staff" ? "/staff/login" : "/employer/login";
-  const laneLabel = lane === "staff" ? "staff" : "employer";
+  const laneParam = params.get("lane");
+  const lane: "staff" | "employer" | "candidate" =
+    laneParam === "employer" ? "employer" :
+    laneParam === "candidate" ? "candidate" :
+    "staff";
+  const loginPath =
+    lane === "staff" ? "/staff/login" :
+    lane === "employer" ? "/employer/login" :
+    "/candidate/login";
+  const laneLabel = lane; // "staff" | "employer" | "candidate"
 
   const [step, setStep] = useState<"request" | "reset">("request");
   const [email, setEmail] = useState("");

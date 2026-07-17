@@ -84,7 +84,15 @@ export function CandidateOtp() {
  if (mode === "login") loginByEmail(email);
  else markVerified(email);
  }
- navigate("/candidate/dashboard", { replace: true });
+ // If this user doesn't have a password yet, offer to set one before
+ // landing on the dashboard. Skippable — /set-password lands them on
+ // the dashboard whether they set or skip. Users who already have a
+ // password go straight to the dashboard.
+ const me = useAuth.getState().currentUser;
+ const dest = me && me.hasPassword === false
+   ? "/set-password?next=/candidate/dashboard"
+   : "/candidate/dashboard";
+ navigate(dest, { replace: true });
  } catch (err) {
  if (err instanceof ApiError) {
  const map: Record<string, string> = {

@@ -24,6 +24,9 @@ export interface ApiUser {
   createdAt: string;
   updatedAt: string;
   lastSeenAt: string | null;
+  /** Server-derived from `!!passwordHash`. Lets the UI decide whether
+   *  to prompt for "set a password" (false) vs "change password" (true). */
+  hasPassword: boolean;
 }
 
 export interface RegisterInput {
@@ -117,5 +120,17 @@ export const authApi = {
     api<{ message: string }>("/auth/password/change", {
       method: "POST",
       json: { oldPassword, newPassword },
+    }),
+
+  /**
+   * Signed-in user sets a password for the FIRST time (no
+   * old-password check). Backend refuses with code=PASSWORD_EXISTS if
+   * the user already has one — the /change flow is the right path
+   * for those.
+   */
+  setInitialPassword: (newPassword: string) =>
+    api<{ message: string }>("/auth/password/set-initial", {
+      method: "POST",
+      json: { newPassword },
     }),
 };

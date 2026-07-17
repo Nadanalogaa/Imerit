@@ -66,6 +66,12 @@ export interface User {
 
   /** Soft-deactivate flag — set from super-admin's staff manager. */
   deactivated?: boolean;
+
+  /** Server-derived from `!!passwordHash`. Drives the "set a password"
+   *  prompt after OTP verify + the "set" vs "change" mode on the
+   *  settings page. Defaults to false when the API hasn't populated it
+   *  yet (fresh signup, offline cache). */
+  hasPassword?: boolean;
 }
 
 /** Map backend's uppercase enum back to the lowercase shape the UI uses. */
@@ -85,6 +91,7 @@ function fromApiUser(u: ApiUser): User {
     mobile: u.mobile ?? undefined,
     emailVerified: u.emailVerified,
     createdAt: u.createdAt,
+    hasPassword: u.hasPassword,
   };
 }
 

@@ -79,7 +79,13 @@ export function EmployerOtp() {
  if (mode === "login") loginByEmail(email);
  else markVerified(email);
  }
- navigate("/employer/dashboard", { replace: true });
+ // Offer the "set a password" step to first-timers — same pattern as
+ // the candidate flow so the two lanes stay consistent.
+ const me = useAuth.getState().currentUser;
+ const dest = me && me.hasPassword === false
+   ? "/set-password?next=/employer/dashboard"
+   : "/employer/dashboard";
+ navigate(dest, { replace: true });
  } catch (err) {
  if (err instanceof ApiError) {
  const map: Record<string, string> = {

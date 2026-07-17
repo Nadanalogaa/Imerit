@@ -47,6 +47,8 @@ import { StaffEmployerForm } from "./pages/StaffEmployerForm";
 import { StaffPostJob } from "./pages/StaffPostJob";
 import { StaffJobs } from "./pages/StaffJobs";
 import { ForgotPassword } from "./pages/ForgotPassword";
+import { SetPassword } from "./pages/SetPassword";
+import { AccountSettings } from "./pages/AccountSettings";
 import { RequireAuth, RedirectIfAuthed } from "./components/RequireAuth";
 import { ToastHost } from "./components/ToastHost";
 
@@ -297,6 +299,11 @@ export default function App() {
         {/* Shared password-reset flow — lane=staff|employer picks the copy
             and the "back to sign in" destination. */}
         <Route path="/forgot-password" element={<ForgotPassword />} />
+        {/* First-time set (right after OTP verify) + settings-page target
+            for users who skipped and want to set one later. Any signed-in
+            role can hit it — the backend refuses if a password already exists. */}
+        <Route path="/set-password" element={<RequireAuth><SetPassword /></RequireAuth>} />
+        <Route path="/settings/account" element={<RequireAuth><AccountSettings /></RequireAuth>} />
         <Route path="/staff/dashboard" element={<RequireAuth role="staff"><StaffDashboard /></RequireAuth>} />
         <Route path="/staff/employers" element={<RequireAuth role="staff"><StaffEmployers /></RequireAuth>} />
         <Route path="/staff/employers/new" element={<RequireAuth role="staff"><StaffEmployerForm /></RequireAuth>} />

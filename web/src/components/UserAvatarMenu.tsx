@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { AnimatePresence, motion } from "framer-motion";
 import { LogOut, LayoutDashboard, Settings, User as UserIcon, ChevronDown } from "lucide-react";
-import { useAuth, type User } from "../store/auth";
+import { HOME_PATH, useAuth, type User } from "../store/auth";
 
 const initials = (name: string) =>
  name
@@ -73,7 +73,7 @@ export function UserAvatarMenu({ user }: { user: User }) {
  label="Dashboard"
  onClick={() => {
  setOpen(false);
- navigate("/candidate/dashboard");
+ navigate(HOME_PATH[user.role]);
  }}
  />
  <MenuItem
@@ -84,9 +84,11 @@ export function UserAvatarMenu({ user }: { user: User }) {
  />
  <MenuItem
  icon={<Settings size={16} />}
- label="Settings"
- soon
- onClick={() => setOpen(false)}
+ label="Account settings"
+ onClick={() => {
+ setOpen(false);
+ navigate("/settings/account");
+ }}
  />
  </div>
 
