@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import '../api/api_client.dart';
 import '../store/auth_provider.dart';
 import '../store/theme_provider.dart';
 import '../widgets/auth_scaffold.dart';
@@ -30,7 +31,7 @@ class _StaffLoginPageState extends ConsumerState<StaffLoginPage> {
     super.dispose();
   }
 
-  void _submit() {
+  Future<void> _submit() async {
     final email = _email.text.trim();
     final pwd = _password.text;
     setState(() => _error = null);
@@ -43,17 +44,22 @@ class _StaffLoginPageState extends ConsumerState<StaffLoginPage> {
       return;
     }
     setState(() => _submitting = true);
-    final user = ref.read(authProvider.notifier).passwordLogin(email, pwd);
-    setState(() => _submitting = false);
-    if (user == null) {
-      setState(() => _error = "No matching staff account — check the credentials your super-admin shared.");
-      return;
+    try {
+      final user = await ref.read(authProvider.notifier).passwordLogin(email, pwd);
+      if (user.role != Role.staff) {
+        setState(() => _error = "That account isn't a staff account. Use the correct login for your role.");
+        return;
+      }
+      if (mounted) context.go('/staff/dashboard');
+    } on ApiError catch (e) {
+      setState(() => _error = e.code == 'ACCOUNT_DEACTIVATED'
+          ? 'This staff account is deactivated. Ask a super-admin to reactivate it.'
+          : 'Incorrect email or password.');
+    } catch (_) {
+      setState(() => _error = 'Sign in failed — try again in a moment.');
+    } finally {
+      if (mounted) setState(() => _submitting = false);
     }
-    if (user.role != Role.staff) {
-      setState(() => _error = "That account isn't a staff account. Use the correct login for your role.");
-      return;
-    }
-    context.go('/staff/dashboard');
   }
 
   @override

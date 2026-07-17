@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import '../api/api_client.dart';
 import '../store/auth_provider.dart';
 import '../widgets/itr_text_field.dart';
 import '../widgets/staff/credential_share_sheet.dart';
@@ -73,18 +74,22 @@ class _StaffEmployerFormPageState extends ConsumerState<StaffEmployerFormPage> {
     }
 
     if (_editing && _target != null) {
-      ref.read(authProvider.notifier).updateEmployer(
-            _target!.id,
-            name: _name.text.trim(),
-            mobile: _mobile.text.trim().isEmpty ? null : _mobile.text.trim(),
-            company: _company.text.trim().isEmpty ? null : _company.text.trim(),
-          );
-      if (mounted) context.go('/staff/employers');
+      try {
+        await ref.read(authProvider.notifier).updateEmployer(
+              _target!.id,
+              name: _name.text.trim(),
+              mobile: _mobile.text.trim().isEmpty ? null : _mobile.text.trim(),
+              company: _company.text.trim().isEmpty ? null : _company.text.trim(),
+            );
+        if (mounted) context.go('/staff/employers');
+      } catch (e) {
+        setState(() => _error = 'Could not update employer.');
+      }
       return;
     }
 
     try {
-      final result = ref.read(authProvider.notifier).createEmployerByStaff(
+      final result = await ref.read(authProvider.notifier).createEmployerByStaff(
             staffId: me.id,
             name: _name.text.trim(),
             email: _email.text.trim(),
@@ -101,12 +106,12 @@ class _StaffEmployerFormPageState extends ConsumerState<StaffEmployerFormPage> {
         password: result.password,
       );
       if (mounted) context.go('/staff/employers');
-    } on StateError catch (e) {
-      if (e.message == 'EMAIL_TAKEN') {
-        setState(() => _error = 'An account already exists for that email. Use edit instead.');
-      } else {
-        setState(() => _error = 'Could not create employer.');
-      }
+    } on ApiError catch (e) {
+      setState(() => _error = e.code == 'EMAIL_TAKEN'
+          ? 'An account already exists for that email. Use edit instead.'
+          : (e.message.isNotEmpty ? e.message : 'Could not create employer.'));
+    } catch (e) {
+      setState(() => _error = 'Could not create employer.');
     }
   }
 
@@ -128,16 +133,22 @@ class _StaffEmployerFormPageState extends ConsumerState<StaffEmployerFormPage> {
       ),
     );
     if (ok != true) return;
-    final password = ref.read(authProvider.notifier).resetEmployerPassword(_target!.id);
-    HapticFeedback.mediumImpact();
-    if (!mounted) return;
-    await CredentialShareSheet.show(
-      context,
-      title: 'Password reset',
-      subtitle: 'New credentials for ${_target!.name}',
-      email: _target!.email,
-      password: password,
-    );
+    try {
+      final password = await ref.read(authProvider.notifier).resetEmployerPassword(_target!.id);
+      HapticFeedback.mediumImpact();
+      if (!mounted) return;
+      await CredentialShareSheet.show(
+        context,
+        title: 'Password reset',
+        subtitle: 'New credentials for ${_target!.name}',
+        email: _target!.email,
+        password: password,
+      );
+    } catch (_) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Could not reset password.')),
+      );
+    }
   }
 
   @override

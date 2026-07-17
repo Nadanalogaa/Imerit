@@ -185,16 +185,22 @@ class _StaffEmployersPageState extends ConsumerState<StaffEmployersPage> {
                             ),
                           );
                           if (ok != true || !context.mounted) return;
-                          final password = ref.read(authProvider.notifier).resetEmployerPassword(u.id);
-                          setState(() => _tick++);
-                          if (!context.mounted) return;
-                          await CredentialShareSheet.show(
-                            context,
-                            title: 'Password reset',
-                            subtitle: 'New credentials for ${u.name}',
-                            email: u.email,
-                            password: password,
-                          );
+                          try {
+                            final password = await ref.read(authProvider.notifier).resetEmployerPassword(u.id);
+                            setState(() => _tick++);
+                            if (!context.mounted) return;
+                            await CredentialShareSheet.show(
+                              context,
+                              title: 'Password reset',
+                              subtitle: 'New credentials for ${u.name}',
+                              email: u.email,
+                              password: password,
+                            );
+                          } catch (_) {
+                            if (context.mounted) ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(content: Text('Could not reset password.')),
+                            );
+                          }
                         },
                         onEdit: () => context.go('/staff/employers/${u.id}'),
                         onPostJob: () => context.go('/staff/jobs/new?employerId=${u.id}'),

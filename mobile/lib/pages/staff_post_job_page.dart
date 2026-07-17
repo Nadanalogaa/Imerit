@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import '../api/api_client.dart';
 import '../store/auth_provider.dart';
 import '../store/jobs_provider.dart';
 import '../store/locations_provider.dart';
@@ -573,7 +574,7 @@ class _EmployerPickerPageState extends ConsumerState<_EmployerPickerPage> {
       return;
     }
     try {
-      final result = ref.read(authProvider.notifier).createEmployerByStaff(
+      final result = await ref.read(authProvider.notifier).createEmployerByStaff(
             staffId: widget.myStaffId,
             name: _newName.text.trim(),
             email: _newEmail.text.trim(),
@@ -585,12 +586,12 @@ class _EmployerPickerPageState extends ConsumerState<_EmployerPickerPage> {
         freshEmployer: result.user,
         freshPassword: result.password,
       ));
-    } on StateError catch (e) {
-      if (e.message == 'EMAIL_TAKEN') {
-        setState(() => _createError = 'That email is already taken. Search for it above instead.');
-      } else {
-        setState(() => _createError = 'Could not create employer.');
-      }
+    } on ApiError catch (e) {
+      setState(() => _createError = e.code == 'EMAIL_TAKEN'
+          ? 'That email is already taken. Search for it above instead.'
+          : (e.message.isNotEmpty ? e.message : 'Could not create employer.'));
+    } catch (_) {
+      setState(() => _createError = 'Could not create employer.');
     }
   }
 

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import '../api/api_client.dart';
 import '../store/auth_provider.dart';
 import '../store/theme_provider.dart';
 import '../utils/otp.dart';
@@ -36,7 +37,7 @@ class _EmployerLoginPageState extends ConsumerState<EmployerLoginPage> {
     super.dispose();
   }
 
-  void _submit() {
+  Future<void> _submit() async {
     final email = _email.text.trim();
     setState(() => _err = null);
     if (!RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$').hasMatch(email)) {
@@ -48,19 +49,22 @@ class _EmployerLoginPageState extends ConsumerState<EmployerLoginPage> {
         setState(() => _err = 'Password looks incomplete');
         return;
       }
-      final user = ref
-          .read(authProvider.notifier)
-          .passwordLogin(email, _password.text);
-      if (user == null) {
-        setState(() => _err =
-            "That email + password combo didn't match. If your recruiter didn't share a password, use email OTP instead.");
-        return;
+      try {
+        final user = await ref
+            .read(authProvider.notifier)
+            .passwordLogin(email, _password.text);
+        if (user.role != Role.employer) {
+          setState(() => _err = "That account isn't an employer.");
+          return;
+        }
+        if (mounted) context.go('/employer/dashboard');
+      } on ApiError catch (e) {
+        setState(() => _err = e.code == 'ACCOUNT_DEACTIVATED'
+            ? 'This employer account is deactivated. Contact your recruiter.'
+            : "That email + password combo didn't match. If your recruiter didn't share a password, use email OTP instead.");
+      } catch (_) {
+        setState(() => _err = 'Sign in failed — try again.');
       }
-      if (user.role != Role.employer) {
-        setState(() => _err = "That account isn't an employer.");
-        return;
-      }
-      context.go('/employer/dashboard');
       return;
     }
     // OTP mode

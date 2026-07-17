@@ -3,6 +3,9 @@ import 'dart:math' as math;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter/foundation.dart';
 import '../storage/storage.dart';
+import '../api/api_client.dart';
+import '../api/auth_api.dart';
+import '../api/staff_api.dart';
 
 /// Application roles. `staff` (2026-07) is an internal ops lane that mints
 /// employer accounts + posts jobs on their behalf. Kept siloed from
@@ -146,9 +149,53 @@ Role _roleFromString(String s) {
   }
 }
 
+/// Fold an ApiUser (raw wire shape) into the mobile User model.
+User _fromApiUser(ApiUser a) => User(
+      id: a.id,
+      role: _roleFromString(a.role.toLowerCase()),
+      name: a.name,
+      email: a.email,
+      mobile: a.mobile,
+      emailVerified: a.emailVerified,
+      createdAt: a.createdAt,
+      hasPassword: a.hasPassword,
+    );
+
+/// Fold an ApiStaff row into the mobile User model. Preserves the
+/// server-side sharedPassword + deactivated flags so the staff master
+/// UI can reveal-and-copy.
+User _fromApiStaff(ApiStaff s) => User(
+      id: s.id,
+      role: Role.staff,
+      name: s.name,
+      email: s.email,
+      mobile: s.mobile,
+      emailVerified: true,
+      createdAt: s.createdAt,
+      sharedPassword: s.sharedPassword,
+      deactivated: s.deactivated,
+    );
+
+/// Fold an ApiEmployerRowForStaff into the mobile User model.
+User _fromApiEmployerRow(ApiEmployerRowForStaff e) => User(
+      id: e.id,
+      role: Role.employer,
+      name: e.name,
+      email: e.email,
+      mobile: e.mobile,
+      company: e.company,
+      emailVerified: true,
+      createdAt: e.createdAt,
+      sharedPassword: e.sharedPassword,
+      createdByStaffId: e.createdByStaffId,
+      deactivated: e.deactivated,
+    );
+
 /// 10-character generated password — one upper, one lower, one digit
 /// guaranteed, plus 7 random from all classes. Confusable characters
 /// (I/O/1/0) are omitted so it types cleanly over the phone.
+/// Only used in offline (apiEnabled=false) mode; the server generates
+/// passwords when we're online.
 String _generatePassword() {
   const upper = 'ABCDEFGHJKLMNPQRSTUVWXYZ';
   const lower = 'abcdefghijkmnpqrstuvwxyz';
@@ -256,19 +303,69 @@ class AuthNotifier extends Notifier<User?> {
     return user;
   }
 
-  void logout() {
+  Future<void> logout() async {
+    if (apiEnabled) {
+      try { await AuthApi.instance.logout(); } catch (_) { /* clear locally regardless */ }
+    }
     Storage.instance.remove(StorageKeys.currentUser);
     state = null;
   }
 
+  /// Hydrate the current-user cache from the server on app boot when
+  /// there's a valid auth cookie in the jar. Silently no-ops for
+  /// offline mode or when the cookie is missing/expired.
+  Future<void> hydrateFromServer() async {
+    if (!apiEnabled) return;
+    try {
+      final api = await AuthApi.instance.me();
+      _setCurrent(_fromApiUser(api));
+    } on ApiError catch (e) {
+      if (e.status == 401) {
+        // No live session — drop any stale local user so RequireAuth
+        // guards bounce cleanly to the login page.
+        Storage.instance.remove(StorageKeys.currentUser);
+        state = null;
+      }
+      // Any other error → leave the cached user in place so offline
+      // usage keeps working.
+    } catch (_) {
+      // Network hiccup — same story, don't clobber the cache.
+    }
+  }
+
+  /// Merge a user row into the local `users` cache. Used by every
+  /// staff/employer mutation that returns the fresh row from the
+  /// server so allUsers() reads stay hot.
+  void _upsertLocal(User u) {
+    final users = _loadUsers();
+    final idx = users.indexWhere((x) => x.id == u.id);
+    if (idx == -1) {
+      _saveUsers([u, ...users]);
+    } else {
+      _saveUsers(users.map((x) => x.id == u.id ? u : x).toList());
+    }
+  }
+
   // ---------------- Staff + Employer Master (2026-07) ----------------
 
-  /// Password-based sign-in. Used by staff (their primary auth path) and
-  /// by employers whose accounts were provisioned by staff (fallback when
-  /// they can't receive an OTP because email isn't wired yet).
-  /// Returns the matched user or null. Marks the user verified on
-  /// success so downstream role guards don't trip.
-  User? passwordLogin(String email, String password) {
+  /// Password-based sign-in. Used by staff, staff-provisioned employers,
+  /// AND any user (candidate/employer) who's opted into a password via
+  /// /set-password after their first OTP session.
+  ///
+  /// Hits POST /auth/password/login when apiEnabled. Falls back to a
+  /// localStorage lookup in offline mode so dev + demo builds still
+  /// work without the backend.
+  ///
+  /// Throws ApiError on bad creds / deactivated account. Returns the
+  /// signed-in user on success (also updates `state`).
+  Future<User> passwordLogin(String email, String password) async {
+    if (apiEnabled) {
+      final res = await AuthApi.instance.passwordLogin(email, password);
+      final u = _fromApiUser(res.user);
+      _setCurrent(u);
+      _upsertLocal(u);
+      return u;
+    }
     final norm = email.toLowerCase();
     final users = _loadUsers();
     final matches = users.where(
@@ -277,30 +374,39 @@ class AuthNotifier extends Notifier<User?> {
           u.sharedPassword != null &&
           u.sharedPassword == password,
     );
-    if (matches.isEmpty) return null;
+    if (matches.isEmpty) {
+      throw ApiError(status: 401, code: 'AUTH_INVALID', message: 'Incorrect email or password');
+    }
     final match = matches.first;
-    if (match.deactivated) return null;
+    if (match.deactivated) {
+      throw ApiError(status: 403, code: 'ACCOUNT_DEACTIVATED', message: 'Account is deactivated');
+    }
     final verified = match.copyWith(emailVerified: true);
     _saveUsers(users.map((u) => u.id == match.id ? verified : u).toList());
     _setCurrent(verified);
     return verified;
   }
 
-  /// Super-admin creates a staff account. Password is generated + returned
-  /// so the caller can pop the credential-share sheet.
-  ({User user, String password}) createStaff({
+  /// Super-admin creates a staff account. Server hashes for auth and
+  /// stores plaintext for the reveal/copy UX super-admin needs when
+  /// handing creds off.
+  Future<({User user, String password})> createStaff({
     required String name,
     required String email,
     String? mobile,
-  }) {
+  }) async {
+    if (apiEnabled) {
+      final res = await SuperAdminStaffApi.instance.create(name: name, email: email, mobile: mobile);
+      final u = _fromApiStaff(res.user).copyWith(sharedPassword: res.password);
+      _upsertLocal(u);
+      return (user: u, password: res.password);
+    }
     final users = _loadUsers();
     final existing = users
         .where((u) => u.email.toLowerCase() == email.toLowerCase())
         .toList();
     final password = _generatePassword();
     if (existing.isNotEmpty) {
-      // Idempotent — re-issue a fresh password for the existing row and
-      // promote it to `staff` so a mistyped invite doesn't create a dupe.
       final promoted = User(
         id: existing.first.id,
         role: Role.staff,
@@ -330,19 +436,26 @@ class AuthNotifier extends Notifier<User?> {
     return (user: user, password: password);
   }
 
-  /// Staff creates an employer in the Employer Master. Duplicate email is
-  /// a hard error — the caller should show a proper message so staff can
-  /// pick the existing row instead of silently clobbering it.
-  ({User user, String password}) createEmployerByStaff({
+  /// Staff creates an employer. Server hashes the password AND stores
+  /// plaintext so staff can reveal it later from the Employer Master.
+  /// EmployerProfile with the company name is created in the same
+  /// transaction backend-side.
+  Future<({User user, String password})> createEmployerByStaff({
     required String staffId,
     required String name,
     required String email,
     String? mobile,
     String? company,
-  }) {
+  }) async {
+    if (apiEnabled) {
+      final res = await StaffApi.instance.createEmployer(name: name, email: email, mobile: mobile, company: company);
+      final u = _fromApiEmployerRow(res.user).copyWith(sharedPassword: res.password);
+      _upsertLocal(u);
+      return (user: u, password: res.password);
+    }
     final users = _loadUsers();
     if (users.any((u) => u.email.toLowerCase() == email.toLowerCase())) {
-      throw StateError('EMAIL_TAKEN');
+      throw ApiError(status: 409, code: 'EMAIL_TAKEN', message: 'An account already exists for that email');
     }
     final password = _generatePassword();
     final user = User(
@@ -361,19 +474,28 @@ class AuthNotifier extends Notifier<User?> {
     return (user: user, password: password);
   }
 
-  /// Overwrite any shared-password user's credential (staff OR employer)
-  /// with a freshly-generated one. Returns the new plaintext so the
-  /// caller can hand it off via CredentialShareSheet. Also keeps the
-  /// current session in sync if the target is the signed-in user.
-  ///
-  /// The role check is intentionally loose — an id belonging to a user
-  /// without a `sharedPassword` still gets one on reset, which is the
-  /// right behaviour if a self-registered employer ever needs to be
-  /// given a shared credential.
-  String resetSharedPassword(String userId) {
+  /// Regenerate a fresh random password for a staff or employer
+  /// account. Returns the plaintext so the caller can pop the share
+  /// sheet. Server picks the right endpoint based on the target's
+  /// role (checked via the local cache).
+  Future<String> resetSharedPassword(String userId) async {
+    if (apiEnabled) {
+      // Look at the local cache to guess role. Fall back to the staff
+      // endpoint if unknown — matches web behaviour.
+      final users = _loadUsers();
+      final target = users.where((u) => u.id == userId).toList();
+      if (target.isNotEmpty && target.first.role == Role.employer) {
+        final res = await StaffApi.instance.resetEmployerPassword(userId);
+        _upsertLocal(_fromApiEmployerRow(res.user).copyWith(sharedPassword: res.password));
+        return res.password;
+      }
+      final res = await SuperAdminStaffApi.instance.resetPassword(userId);
+      _upsertLocal(_fromApiStaff(res.user).copyWith(sharedPassword: res.password));
+      return res.password;
+    }
     final users = _loadUsers();
     final target = users.where((u) => u.id == userId).toList();
-    if (target.isEmpty) throw StateError('NOT_FOUND');
+    if (target.isEmpty) throw ApiError(status: 404, code: 'NOT_FOUND', message: 'Account not found');
     final password = _generatePassword();
     final next = target.first.copyWith(sharedPassword: password);
     _saveUsers(users.map((u) => u.id == userId ? next : u).toList());
@@ -381,33 +503,38 @@ class AuthNotifier extends Notifier<User?> {
     return password;
   }
 
-  /// @deprecated Prefer [resetSharedPassword]. Kept as a thin alias so
-  /// the staff-facing employer flows don't need to churn.
-  String resetEmployerPassword(String employerId) => resetSharedPassword(employerId);
+  /// Alias — staff-facing flows still call resetEmployerPassword.
+  Future<String> resetEmployerPassword(String employerId) => resetSharedPassword(employerId);
 
-  /// Set an explicit password on any user — used by the super-admin's
-  /// "Change password" flow so they can pick a memorable string instead
-  /// of accepting the generated one. Same session-sync behaviour as
-  /// [resetSharedPassword].
-  ///
-  /// The caller is responsible for validating (length, complexity) — the
-  /// store just persists whatever it's given.
-  void setSharedPassword(String userId, String password) {
+  /// Super-admin sets an explicit staff password (bypasses random
+  /// gen). Server-side only supported for staff.
+  Future<void> setSharedPassword(String userId, String password) async {
+    if (apiEnabled) {
+      final u = await SuperAdminStaffApi.instance.setPassword(userId, password);
+      _upsertLocal(_fromApiStaff(u).copyWith(sharedPassword: password));
+      return;
+    }
     final users = _loadUsers();
     final target = users.where((u) => u.id == userId).toList();
-    if (target.isEmpty) throw StateError('NOT_FOUND');
+    if (target.isEmpty) throw ApiError(status: 404, code: 'NOT_FOUND', message: 'Account not found');
     final next = target.first.copyWith(sharedPassword: password);
     _saveUsers(users.map((u) => u.id == userId ? next : u).toList());
     if (state?.id == userId) _setCurrent(next);
   }
 
-  /// Patch limited fields on an existing employer (staff-owned edit).
-  void updateEmployer(
+  /// Patch limited fields on an employer staff has provisioned.
+  Future<void> updateEmployer(
     String employerId, {
     String? name,
     String? mobile,
     String? company,
-  }) {
+  }) async {
+    if (apiEnabled) {
+      final u = await StaffApi.instance.updateEmployer(employerId, name: name, mobile: mobile, company: company);
+      _upsertLocal(_fromApiEmployerRow(u));
+      if (state?.id == employerId) _setCurrent(_fromApiEmployerRow(u));
+      return;
+    }
     final users = _loadUsers();
     final target = users.where((u) => u.id == employerId).toList();
     if (target.isEmpty) return;
@@ -423,16 +550,45 @@ class AuthNotifier extends Notifier<User?> {
   /// Toggle the `deactivated` flag. Deactivating the currently-signed-in
   /// user drops their session immediately so their next screen bounces
   /// to the appropriate login.
-  void setDeactivated(String id, bool deactivated) {
-    final users = _loadUsers();
-    final updated = users
-        .map((u) => u.id == id ? u.copyWith(deactivated: deactivated) : u)
-        .toList();
-    _saveUsers(updated);
+  Future<void> setDeactivated(String id, bool deactivated) async {
+    if (apiEnabled) {
+      final u = await SuperAdminStaffApi.instance.setDeactivated(id, deactivated);
+      _upsertLocal(_fromApiStaff(u));
+    } else {
+      final users = _loadUsers();
+      final updated = users
+          .map((u) => u.id == id ? u.copyWith(deactivated: deactivated) : u)
+          .toList();
+      _saveUsers(updated);
+    }
     if (deactivated && state?.id == id) {
       Storage.instance.remove(StorageKeys.currentUser);
       state = null;
     }
+  }
+
+  /// Load fresh staff list from the server, merge into local cache
+  /// so the SuperAdminStaffPage list stays in sync cross-device.
+  Future<List<User>> fetchAllStaff() async {
+    if (!apiEnabled) {
+      return _loadUsers().where((u) => u.role == Role.staff).toList();
+    }
+    final rows = await SuperAdminStaffApi.instance.list();
+    final users = rows.map(_fromApiStaff).toList();
+    for (final u in users) { _upsertLocal(u); }
+    return users;
+  }
+
+  /// Load employer master from the server for staff — every employer
+  /// on the platform + provisionedByMe flag.
+  Future<List<User>> fetchEmployersForStaff() async {
+    if (!apiEnabled) {
+      return _loadUsers().where((u) => u.role == Role.employer).toList();
+    }
+    final rows = await StaffApi.instance.listEmployers();
+    final users = rows.map(_fromApiEmployerRow).toList();
+    for (final u in users) { _upsertLocal(u); }
+    return users;
   }
 }
 

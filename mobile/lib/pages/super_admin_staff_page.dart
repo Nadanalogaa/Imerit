@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import '../api/api_client.dart';
 import '../store/auth_provider.dart';
 import '../widgets/itr_text_field.dart';
 import '../widgets/staff/credential_share_sheet.dart';
@@ -217,27 +218,35 @@ class _SuperAdminStaffPageState extends ConsumerState<SuperAdminStaffPage> {
       setState(() => _error = 'Enter a valid email');
       return;
     }
-    final result = ref.read(authProvider.notifier).createStaff(
-          name: _name.text.trim(),
-          email: _email.text.trim(),
-          mobile: _mobile.text.trim().isEmpty ? null : _mobile.text.trim(),
-        );
-    HapticFeedback.mediumImpact();
-    _name.clear();
-    _email.clear();
-    _mobile.clear();
-    setState(() {
-      _showForm = false;
-      _tick++;
-    });
-    if (!mounted) return;
-    await CredentialShareSheet.show(
-      context,
-      title: 'Staff invited',
-      subtitle: '${result.user.name} can now sign in at /staff/login',
-      email: result.user.email,
-      password: result.password,
-    );
+    try {
+      final result = await ref.read(authProvider.notifier).createStaff(
+            name: _name.text.trim(),
+            email: _email.text.trim(),
+            mobile: _mobile.text.trim().isEmpty ? null : _mobile.text.trim(),
+          );
+      HapticFeedback.mediumImpact();
+      _name.clear();
+      _email.clear();
+      _mobile.clear();
+      setState(() {
+        _showForm = false;
+        _tick++;
+      });
+      if (!mounted) return;
+      await CredentialShareSheet.show(
+        context,
+        title: 'Staff invited',
+        subtitle: '${result.user.name} can now sign in at /staff/login',
+        email: result.user.email,
+        password: result.password,
+      );
+    } on ApiError catch (e) {
+      setState(() => _error = e.code == 'EMAIL_TAKEN'
+          ? 'An account already exists for that email.'
+          : (e.message.isNotEmpty ? e.message : 'Could not create staff account.'));
+    } catch (_) {
+      setState(() => _error = 'Could not create staff account.');
+    }
   }
 
   @override
@@ -427,21 +436,33 @@ class _SuperAdminStaffPageState extends ConsumerState<SuperAdminStaffPage> {
                         onChange: () async {
                           final newPwd = await _promptChangePassword(u);
                           if (newPwd == null || !context.mounted) return;
-                          ref.read(authProvider.notifier).setSharedPassword(u.id, newPwd);
-                          HapticFeedback.mediumImpact();
-                          setState(() => _tick++);
-                          if (!context.mounted) return;
-                          await CredentialShareSheet.show(
-                            context,
-                            title: 'Password updated',
-                            subtitle: 'New credentials for ${u.name}',
-                            email: u.email,
-                            password: newPwd,
-                          );
+                          try {
+                            await ref.read(authProvider.notifier).setSharedPassword(u.id, newPwd);
+                            HapticFeedback.mediumImpact();
+                            setState(() => _tick++);
+                            if (!context.mounted) return;
+                            await CredentialShareSheet.show(
+                              context,
+                              title: 'Password updated',
+                              subtitle: 'New credentials for ${u.name}',
+                              email: u.email,
+                              password: newPwd,
+                            );
+                          } catch (_) {
+                            if (context.mounted) ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(content: Text('Could not set password.')),
+                            );
+                          }
                         },
-                        onToggle: (v) {
-                          ref.read(authProvider.notifier).setDeactivated(u.id, v);
-                          setState(() => _tick++);
+                        onToggle: (v) async {
+                          try {
+                            await ref.read(authProvider.notifier).setDeactivated(u.id, v);
+                            setState(() => _tick++);
+                          } catch (_) {
+                            if (context.mounted) ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(content: Text('Could not toggle account.')),
+                            );
+                          }
                         },
                         onReset: () async {
                           final ok = await showDialog<bool>(
@@ -460,17 +481,23 @@ class _SuperAdminStaffPageState extends ConsumerState<SuperAdminStaffPage> {
                             ),
                           );
                           if (ok != true || !context.mounted) return;
-                          final password = ref.read(authProvider.notifier).resetSharedPassword(u.id);
-                          HapticFeedback.mediumImpact();
-                          setState(() => _tick++);
-                          if (!context.mounted) return;
-                          await CredentialShareSheet.show(
-                            context,
-                            title: 'Password reset',
-                            subtitle: 'New credentials for ${u.name}',
-                            email: u.email,
-                            password: password,
-                          );
+                          try {
+                            final password = await ref.read(authProvider.notifier).resetSharedPassword(u.id);
+                            HapticFeedback.mediumImpact();
+                            setState(() => _tick++);
+                            if (!context.mounted) return;
+                            await CredentialShareSheet.show(
+                              context,
+                              title: 'Password reset',
+                              subtitle: 'New credentials for ${u.name}',
+                              email: u.email,
+                              password: password,
+                            );
+                          } catch (_) {
+                            if (context.mounted) ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(content: Text('Could not reset password.')),
+                            );
+                          }
                         },
                       ),
                     )),
