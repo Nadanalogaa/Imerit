@@ -2,6 +2,9 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../api/api_client.dart';
+import '../api/jobs_api.dart';
+import '../api/staff_api.dart';
 import '../storage/storage.dart';
 
 enum JobField { it, nonIt }
@@ -610,6 +613,221 @@ class JobsNotifier extends Notifier<List<Job>> {
 
   List<Job> postedBy(String employerId) =>
       state.where((j) => j.employerId == employerId).toList();
+
+  // ============================================================
+  // API integration — additive to the localStorage-first methods
+  // above. Pages that want live server data call these; everything
+  // else keeps working offline as before.
+  // ============================================================
+
+  /// Map an API job (uppercase enums) to the local Job shape.
+  Job _fromApi(Map<String, dynamic> j) {
+    final field = j['field'] as String;
+    final type = j['type'] as String;
+    final experience = j['experience'] as String;
+    return Job(
+      id: j['id'] as String,
+      employerId: j['employerId'] as String,
+      employerName: j['employerName'] as String,
+      title: j['title'] as String,
+      description: j['description'] as String,
+      location: j['location'] as String,
+      districtId: j['districtId'] as String?,
+      talukId: j['talukId'] as String?,
+      lat: (j['lat'] as num?)?.toDouble(),
+      lng: (j['lng'] as num?)?.toDouble(),
+      pincode: j['pincode'] as String?,
+      street: j['street'] as String?,
+      field: field == 'IT' ? JobField.it : JobField.nonIt,
+      type: _typeFrom(type.toLowerCase()),
+      experience: _expFrom(experience.toLowerCase()),
+      yearsMin: j['yearsMin'] as int?,
+      yearsMax: j['yearsMax'] as int?,
+      salaryRange: j['salaryRange'] as String?,
+      skills: ((j['skills'] as List?) ?? const []).cast<String>(),
+      benefits: ((j['benefits'] as List?) ?? const [])
+          .map((e) => benefitFromKey(e as String?))
+          .whereType<JobBenefit>()
+          .toList(),
+      contactEmail: j['contactEmail'] as String?,
+      postedAt: j['postedAt'] as String,
+      expiresAt: j['expiresAt'] as String,
+    );
+  }
+
+  /// Fetch the public jobs feed from the server and REPLACE local
+  /// state with the fresh set. Call this at boot (JobBrowsePage
+  /// mount) so candidates see live listings instead of localStorage
+  /// seeds. Silent no-op offline.
+  Future<void> fetchJobs() async {
+    if (!apiEnabled) return;
+    try {
+      final res = await JobsApi.instance.browse(pageSize: 100);
+      final items = (res['items'] as List).cast<Map<String, dynamic>>();
+      final jobs = items.map(_fromApi).toList();
+      _persist(jobs);
+    } catch (_) {
+      // Silent fallback — keep the local cache visible.
+    }
+  }
+
+  /// Async employer post — hits POST /employer/jobs and merges the
+  /// created row into local state. Falls back to the sync addJob
+  /// path in offline mode.
+  Future<Job> addJobAsync({
+    required String employerId,
+    required String employerName,
+    required String title,
+    required String description,
+    required String location,
+    String? districtId,
+    String? talukId,
+    double? lat,
+    double? lng,
+    String? pincode,
+    String? street,
+    required JobField field,
+    required JobType type,
+    required JobExperience experience,
+    int? yearsMin,
+    int? yearsMax,
+    String? salaryRange,
+    List<String> skills = const [],
+    List<JobBenefit> benefits = const [],
+    String? contactEmail,
+  }) async {
+    if (!apiEnabled) {
+      return addJob(
+        employerId: employerId, employerName: employerName, title: title,
+        description: description, location: location, districtId: districtId,
+        talukId: talukId, lat: lat, lng: lng, pincode: pincode, street: street,
+        field: field, type: type, experience: experience,
+        yearsMin: yearsMin, yearsMax: yearsMax, salaryRange: salaryRange,
+        skills: skills, benefits: benefits, contactEmail: contactEmail,
+      );
+    }
+    final input = _toApiInput(
+      title: title, description: description, location: location,
+      districtId: districtId, talukId: talukId, lat: lat, lng: lng,
+      pincode: pincode, street: street, field: field, type: type,
+      experience: experience, yearsMin: yearsMin, yearsMax: yearsMax,
+      salaryRange: salaryRange, skills: skills, benefits: benefits,
+      contactEmail: contactEmail,
+    );
+    final row = await JobsApi.instance.employerCreate(input);
+    final job = _fromApi(row);
+    _persist([job, ...state]);
+    return job;
+  }
+
+  /// Async staff post — POST /staff/jobs with an explicit employerId
+  /// in the body (the JWT is the staff user's, not the target
+  /// employer's). Backend stamps postedByStaffId automatically.
+  Future<Job> addJobAsStaffAsync({
+    required String employerId,
+    required String employerName,
+    required String title,
+    required String description,
+    required String location,
+    String? districtId,
+    String? talukId,
+    double? lat,
+    double? lng,
+    String? pincode,
+    String? street,
+    required JobField field,
+    required JobType type,
+    required JobExperience experience,
+    int? yearsMin,
+    int? yearsMax,
+    String? salaryRange,
+    List<String> skills = const [],
+    List<JobBenefit> benefits = const [],
+    String? contactEmail,
+  }) async {
+    if (!apiEnabled) {
+      // Offline fallback — write to localStorage so demo/dev still works.
+      return addJob(
+        employerId: employerId, employerName: employerName, title: title,
+        description: description, location: location, districtId: districtId,
+        talukId: talukId, lat: lat, lng: lng, pincode: pincode, street: street,
+        field: field, type: type, experience: experience,
+        yearsMin: yearsMin, yearsMax: yearsMax, salaryRange: salaryRange,
+        skills: skills, benefits: benefits, contactEmail: contactEmail,
+      );
+    }
+    final input = _toApiInput(
+      title: title, description: description, location: location,
+      districtId: districtId, talukId: talukId, lat: lat, lng: lng,
+      pincode: pincode, street: street, field: field, type: type,
+      experience: experience, yearsMin: yearsMin, yearsMax: yearsMax,
+      salaryRange: salaryRange, skills: skills, benefits: benefits,
+      contactEmail: contactEmail,
+    );
+    input['employerId'] = employerId;
+    final row = await StaffApi.instance.createJob(input);
+    final job = _fromApi(row);
+    _persist([job, ...state]);
+    return job;
+  }
+
+  /// Async candidate apply — hits POST /jobs/:id/apply. Returns the
+  /// created application (raw JSON, callers decode as needed).
+  Future<Map<String, dynamic>> applyAsync(String jobId, {int? matchScore, String? coverNote}) async {
+    if (!apiEnabled) {
+      // No local-mode apply here — the applications provider handles
+      // its own localStorage path. This helper exists specifically for
+      // the API path.
+      throw ApiError(status: 0, code: 'API_DISABLED', message: 'API not configured');
+    }
+    return JobsApi.instance.apply(jobId, matchScore: matchScore, coverNote: coverNote);
+  }
+
+  /// Shared helper to build the /employer/jobs + /staff/jobs POST body
+  /// with backend enum casing.
+  Map<String, dynamic> _toApiInput({
+    required String title,
+    required String description,
+    required String location,
+    String? districtId,
+    String? talukId,
+    double? lat,
+    double? lng,
+    String? pincode,
+    String? street,
+    required JobField field,
+    required JobType type,
+    required JobExperience experience,
+    int? yearsMin,
+    int? yearsMax,
+    String? salaryRange,
+    List<String> skills = const [],
+    List<JobBenefit> benefits = const [],
+    String? contactEmail,
+  }) {
+    final typeStr = _typeKey(type).toUpperCase();
+    return {
+      'title': title,
+      'description': description,
+      'location': location,
+      if (districtId != null) 'districtId': districtId,
+      if (talukId != null) 'talukId': talukId,
+      if (lat != null) 'lat': lat,
+      if (lng != null) 'lng': lng,
+      if (pincode != null) 'pincode': pincode,
+      if (street != null) 'street': street,
+      'field': field == JobField.it ? 'IT' : 'NON_IT',
+      'type': typeStr,
+      'experience': experience == JobExperience.fresher ? 'FRESHER'
+          : experience == JobExperience.experienced ? 'EXPERIENCED' : 'ANY',
+      if (yearsMin != null) 'yearsMin': yearsMin,
+      if (yearsMax != null) 'yearsMax': yearsMax,
+      if (salaryRange != null) 'salaryRange': salaryRange,
+      'skills': skills,
+      'benefits': benefits.map(benefitKey).toList(),
+      if (contactEmail != null) 'contactEmail': contactEmail,
+    };
+  }
 
   /// Mirrors the web `repostJob(id)` action: bumps `postedAt` to now and
   /// extends `expiresAt` by the standard 45-day validity window. Returns the

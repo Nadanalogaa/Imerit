@@ -142,28 +142,42 @@ class _StaffPostJobPageState extends ConsumerState<StaffPostJobPage> {
     final taluk = _place.talukId != null ? loc.talukById(_place.talukId!) : null;
     final label = taluk != null ? '${taluk.taluk.name}, ${taluk.district.name}' : '';
 
-    final job = ref.read(jobsProvider.notifier).addJob(
-          employerId: _employer!.id,
-          employerName: _employer!.company ?? _employer!.name,
-          title: _title.text.trim(),
-          description: _description.text.trim(),
-          location: label,
-          districtId: _place.districtId,
-          talukId: _place.talukId,
-          lat: _place.lat,
-          lng: _place.lng,
-          pincode: _place.pincode,
-          street: _place.street,
-          field: _field!,
-          type: _type!,
-          experience: _experience!,
-          yearsMin: _experience == JobExperience.experienced ? int.tryParse(_yearsMin.text) : null,
-          yearsMax: _experience == JobExperience.experienced ? int.tryParse(_yearsMax.text) : null,
-          salaryRange: _salary.text.trim().isEmpty ? null : _salary.text.trim(),
-          skills: _skills,
-          benefits: _benefits,
-          contactEmail: _contactEmail.text.trim().isEmpty ? null : _contactEmail.text.trim(),
+    // Hit POST /staff/jobs when apiEnabled — job lands in the real DB
+    // with postedByStaffId set, employer sees it on their dashboard,
+    // candidates see it in the public feed. Offline mode falls back to
+    // localStorage.
+    late final Job job;
+    try {
+      job = await ref.read(jobsProvider.notifier).addJobAsStaffAsync(
+            employerId: _employer!.id,
+            employerName: _employer!.company ?? _employer!.name,
+            title: _title.text.trim(),
+            description: _description.text.trim(),
+            location: label,
+            districtId: _place.districtId,
+            talukId: _place.talukId,
+            lat: _place.lat,
+            lng: _place.lng,
+            pincode: _place.pincode,
+            street: _place.street,
+            field: _field!,
+            type: _type!,
+            experience: _experience!,
+            yearsMin: _experience == JobExperience.experienced ? int.tryParse(_yearsMin.text) : null,
+            yearsMax: _experience == JobExperience.experienced ? int.tryParse(_yearsMax.text) : null,
+            salaryRange: _salary.text.trim().isEmpty ? null : _salary.text.trim(),
+            skills: _skills,
+            benefits: _benefits,
+            contactEmail: _contactEmail.text.trim().isEmpty ? null : _contactEmail.text.trim(),
+          );
+    } catch (err) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Could not post job: ${err is ApiError ? err.message : err}')),
         );
+      }
+      return;
+    }
     HapticFeedback.mediumImpact();
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(

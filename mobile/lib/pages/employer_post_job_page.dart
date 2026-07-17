@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import '../api/api_client.dart';
 import '../store/auth_provider.dart';
 import '../store/jobs_provider.dart';
 import '../store/locations_provider.dart';
@@ -125,35 +126,45 @@ class _EmployerPostJobPageState extends ConsumerState<EmployerPostJobPage> {
     _pager.animateToPage(_step, duration: const Duration(milliseconds: 260), curve: Curves.easeOutCubic);
   }
 
-  void _submit() {
+  Future<void> _submit() async {
     final loc = ref.read(locationsProvider);
     final taluk = _place.talukId != null ? loc.talukById(_place.talukId!) : null;
     final label = taluk != null ? '${taluk.taluk.name}, ${taluk.district.name}' : '';
     final user = ref.read(authProvider)!;
-    final job = ref.read(jobsProvider.notifier).addJob(
-          employerId: user.id,
-          employerName: user.company ?? user.name,
-          title: _title.text.trim(),
-          description: _description.text.trim(),
-          location: label,
-          districtId: _place.districtId,
-          talukId: _place.talukId,
-          lat: _place.lat,
-          lng: _place.lng,
-          pincode: _place.pincode,
-          street: _place.street,
-          field: _field!,
-          type: _type!,
-          experience: _experience!,
-          yearsMin: _experience == JobExperience.experienced ? _yearsMin : null,
-          yearsMax: _experience == JobExperience.experienced ? _yearsMax : null,
-          salaryRange: _salary?.display(),
-          skills: _skills,
-          benefits: _benefits,
-          contactEmail: _contactEmail.text.trim().isEmpty ? null : _contactEmail.text.trim(),
+    late final Job job;
+    try {
+      job = await ref.read(jobsProvider.notifier).addJobAsync(
+            employerId: user.id,
+            employerName: user.company ?? user.name,
+            title: _title.text.trim(),
+            description: _description.text.trim(),
+            location: label,
+            districtId: _place.districtId,
+            talukId: _place.talukId,
+            lat: _place.lat,
+            lng: _place.lng,
+            pincode: _place.pincode,
+            street: _place.street,
+            field: _field!,
+            type: _type!,
+            experience: _experience!,
+            yearsMin: _experience == JobExperience.experienced ? _yearsMin : null,
+            yearsMax: _experience == JobExperience.experienced ? _yearsMax : null,
+            salaryRange: _salary?.display(),
+            skills: _skills,
+            benefits: _benefits,
+            contactEmail: _contactEmail.text.trim().isEmpty ? null : _contactEmail.text.trim(),
+          );
+    } catch (err) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Could not post job: ${err is ApiError ? err.message : err}')),
         );
+      }
+      return;
+    }
     HapticFeedback.mediumImpact();
-    context.go('/employer/jobs/${job.id}/applicants');
+    if (mounted) context.go('/employer/jobs/${job.id}/applicants');
   }
 
   @override
