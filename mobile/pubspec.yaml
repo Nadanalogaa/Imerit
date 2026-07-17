@@ -43,6 +43,12 @@ dependencies:
   flutter_map: ^8.0.0
   latlong2: ^0.9.1
 
+  # HTTP + cookie jar for API integration. Mobile talks to the same
+  # /api endpoints as the web app. Cookies are httpOnly on the wire,
+  # so we need cookie_jar to persist them across requests.
+  http: ^1.5.0
+  cookie_jar: ^4.0.9
+
 dev_dependencies:
   flutter_test:
     sdk: flutter

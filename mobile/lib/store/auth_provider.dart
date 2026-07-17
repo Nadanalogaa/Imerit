@@ -23,6 +23,7 @@ class User {
     this.sharedPassword,
     this.createdByStaffId,
     this.deactivated = false,
+    this.hasPassword = false,
   });
 
   final String id;
@@ -52,6 +53,12 @@ class User {
   /// dropped the moment the flag flips.
   final bool deactivated;
 
+  /// Server-derived from `!!passwordHash`. Drives the "set a password"
+  /// prompt after OTP verify + the "set" vs "change" mode on the
+  /// account settings page. Defaults to false when the API hasn't
+  /// populated it yet (fresh signup, offline cache).
+  final bool hasPassword;
+
   Map<String, dynamic> toJson() => {
         'id': id,
         'role': _roleToString(role),
@@ -64,6 +71,7 @@ class User {
         if (sharedPassword != null) 'sharedPassword': sharedPassword,
         if (createdByStaffId != null) 'createdByStaffId': createdByStaffId,
         if (deactivated) 'deactivated': deactivated,
+        if (hasPassword) 'hasPassword': hasPassword,
       };
 
   static User fromJson(Map<String, dynamic> j) => User(
@@ -78,6 +86,7 @@ class User {
         sharedPassword: j['sharedPassword'] as String?,
         createdByStaffId: j['createdByStaffId'] as String?,
         deactivated: (j['deactivated'] as bool?) ?? false,
+        hasPassword: (j['hasPassword'] as bool?) ?? false,
       );
 
   User copyWith({
@@ -87,6 +96,7 @@ class User {
     String? company,
     String? sharedPassword,
     bool? deactivated,
+    bool? hasPassword,
   }) =>
       User(
         id: id,
@@ -100,6 +110,7 @@ class User {
         sharedPassword: sharedPassword ?? this.sharedPassword,
         createdByStaffId: createdByStaffId,
         deactivated: deactivated ?? this.deactivated,
+        hasPassword: hasPassword ?? this.hasPassword,
       );
 }
 
