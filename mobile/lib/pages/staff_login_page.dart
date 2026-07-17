@@ -120,6 +120,22 @@ class _StaffLoginPageState extends ConsumerState<StaffLoginPage> {
               shadowColor: const Color(0xFF10B981).withValues(alpha: 0.4),
             ),
           ),
+          const SizedBox(height: 10),
+          // Forgot password → shared /forgot-password wizard with the
+          // staff lane preselected (correct back-link + copy).
+          Center(
+            child: GestureDetector(
+              onTap: () => context.go('/forgot-password?lane=staff'),
+              child: const Text(
+                'Forgot password?',
+                style: TextStyle(
+                  fontSize: 12,
+                  color: Color(0xFF10B981),
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+          ),
           const SizedBox(height: 16),
           Container(
             padding: const EdgeInsets.all(12),

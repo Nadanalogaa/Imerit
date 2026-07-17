@@ -33,6 +33,8 @@ import 'pages/staff_employer_form_page.dart';
 import 'pages/staff_post_job_page.dart';
 import 'pages/staff_jobs_page.dart';
 import 'pages/super_admin_staff_page.dart';
+import 'pages/forgot_password_page.dart';
+import 'pages/account_settings_page.dart';
 import 'storage/storage.dart';
 
 bool _isLoggedInAs(String role) {
@@ -278,6 +280,21 @@ final appRouter = GoRouter(
       path: '/staff/jobs',
       redirect: (_, _) => _isLoggedInAs('staff') ? null : '/staff/login',
       builder: (_, _) => const StaffJobsPage(),
+    ),
+
+    // ------------------------ Password lifecycle ------------------------
+    // Shared across every role. Unauth-friendly (forgot flow uses OTP
+    // over email — no session needed to hit it).
+    GoRoute(
+      path: '/forgot-password',
+      builder: (_, state) {
+        final lane = state.uri.queryParameters['lane'] ?? 'staff';
+        return ForgotPasswordPage(lane: lane);
+      },
+    ),
+    GoRoute(
+      path: '/settings/account',
+      builder: (_, _) => const AccountSettingsPage(),
     ),
   ],
 );

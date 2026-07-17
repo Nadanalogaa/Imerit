@@ -106,6 +106,21 @@ class _EmployerLoginPageState extends ConsumerState<EmployerLoginPage> {
               onToggle: () => setState(() => _showPwd = !_showPwd),
               error: _err,
             ),
+            const SizedBox(height: 8),
+            Align(
+              alignment: Alignment.centerRight,
+              child: GestureDetector(
+                onTap: () => context.go('/forgot-password?lane=employer'),
+                child: const Text(
+                  'Forgot password?',
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                    color: Color(0xFF0EA5E9),
+                  ),
+                ),
+              ),
+            ),
           ],
           const SizedBox(height: 20),
           ElevatedButton(

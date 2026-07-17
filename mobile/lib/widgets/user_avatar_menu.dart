@@ -255,8 +255,11 @@ class _Sheet extends StatelessWidget {
                 _Row(
                   isDark: isDark,
                   icon: Icons.settings_rounded,
-                  label: 'Settings',
-                  soon: true,
+                  label: 'Account settings',
+                  onTap: () {
+                    Navigator.pop(context);
+                    context.go('/settings/account');
+                  },
                 ),
                 Container(
                   margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),

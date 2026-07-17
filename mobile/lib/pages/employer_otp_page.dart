@@ -2,10 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import '../api/api_client.dart';
+import '../api/auth_api.dart';
 import '../store/auth_provider.dart';
 import '../store/theme_provider.dart';
 import '../utils/otp.dart';
 import '../widgets/auth_scaffold.dart';
+import '../widgets/inline_set_password.dart';
 
 class EmployerOtpPage extends ConsumerStatefulWidget {
   const EmployerOtpPage({super.key, required this.email, this.mode = 'register'});
@@ -20,6 +23,7 @@ class _EmployerOtpPageState extends ConsumerState<EmployerOtpPage> {
   final List<FocusNode> _nodes = List.generate(6, (_) => FocusNode());
   String? _error;
   String? _demo;
+  String _step = 'verify'; // 'verify' | 'setPassword'
 
   @override
   void initState() {
@@ -39,23 +43,54 @@ class _EmployerOtpPageState extends ConsumerState<EmployerOtpPage> {
     else if (v.isEmpty && i > 0) _nodes[i - 1].requestFocus();
   }
 
-  void _verify() {
+  Future<void> _verify() async {
     final code = _ctrls.map((c) => c.text).join();
     if (code.length != 6) {
       setState(() => _error = 'Enter all 6 digits');
+      return;
+    }
+    final auth = ref.read(authProvider.notifier);
+    if (apiEnabled) {
+      try {
+        final res = await AuthApi.instance.verifyOtp(
+          email: widget.email,
+          code: code,
+          purpose: widget.mode == 'login' ? ApiOtpPurpose.LOGIN : ApiOtpPurpose.REGISTER,
+        );
+        await auth.hydrateFromServer();
+        if (!res.user.hasPassword) {
+          if (mounted) setState(() => _step = 'setPassword');
+        } else {
+          if (mounted) context.go('/employer/dashboard');
+        }
+      } on ApiError catch (e) {
+        setState(() => _error = _mapOtpError(e.code, e.message));
+      } catch (_) {
+        setState(() => _error = 'Verification failed. Try again.');
+      }
       return;
     }
     if (!OtpService.verify(widget.email, code)) {
       setState(() => _error = 'Invalid or expired code. Try again.');
       return;
     }
-    final auth = ref.read(authProvider.notifier);
     if (widget.mode == 'login') {
       auth.loginByEmail(widget.email);
     } else {
       auth.markVerified(widget.email);
     }
-    context.go('/employer/dashboard');
+    if (mounted) context.go('/employer/dashboard');
+  }
+
+  String _mapOtpError(String code, String fallback) {
+    switch (code) {
+      case 'OTP_NOT_FOUND': return 'No code requested for this email. Tap Resend below.';
+      case 'OTP_EXPIRED':   return 'This code expired. Tap Resend to get a fresh one.';
+      case 'OTP_INVALID':   return 'Incorrect code. Check the digits and try again.';
+      case 'OTP_LOCKED':    return 'Too many wrong attempts. Tap Resend to start over.';
+      case 'RATE_LIMIT':    return 'Too many attempts. Wait a minute, then resend.';
+      default:              return fallback.isNotEmpty ? fallback : 'Verification failed.';
+    }
   }
 
   void _resend() {
@@ -71,6 +106,16 @@ class _EmployerOtpPageState extends ConsumerState<EmployerOtpPage> {
   @override
   Widget build(BuildContext context) {
     final isDark = ref.watch(themeProvider) == ThemeMode.dark;
+    if (_step == 'setPassword') {
+      return AuthScaffold(
+        title: 'One quick step',
+        subtitle: 'Set a password so you can sign in faster next time — or skip.',
+        child: InlineSetPassword(
+          onDone: () => context.go('/employer/dashboard'),
+          brand: const Color(0xFF0EA5E9),
+        ),
+      );
+    }
     return AuthScaffold(
       title: widget.mode == 'login' ? 'Sign in with code' : 'Verify your email',
       subtitle: 'We sent a 6-digit code to ${widget.email}',

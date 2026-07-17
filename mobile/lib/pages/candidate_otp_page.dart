@@ -2,10 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import '../api/api_client.dart';
+import '../api/auth_api.dart';
 import '../store/auth_provider.dart';
 import '../store/theme_provider.dart';
 import '../utils/otp.dart';
 import '../widgets/auth_scaffold.dart';
+import '../widgets/inline_set_password.dart';
 
 class CandidateOtpPage extends ConsumerStatefulWidget {
   const CandidateOtpPage({
@@ -26,6 +29,10 @@ class _CandidateOtpPageState extends ConsumerState<CandidateOtpPage> {
   final List<FocusNode> _nodes = List.generate(6, (_) => FocusNode());
   String? _error;
   String? _demoCode;
+  /// Two-step wizard: 'verify' shows the OTP inputs, 'setPassword'
+  /// shows the inline set-password form after a first-time OTP
+  /// verify for a user with no password yet.
+  String _step = 'verify';
 
   @override
   void initState() {
@@ -52,23 +59,61 @@ class _CandidateOtpPageState extends ConsumerState<CandidateOtpPage> {
     }
   }
 
-  void _verify() {
+  Future<void> _verify() async {
     final code = _ctrls.map((c) => c.text).join();
     if (code.length != 6) {
       setState(() => _error = 'Enter all 6 digits');
       return;
     }
+    final auth = ref.read(authProvider.notifier);
+    if (apiEnabled) {
+      // Real backend verify — hits /auth/otp/verify. On success the
+      // server sets JWT cookies and returns the User (with hasPassword).
+      try {
+        final res = await AuthApi.instance.verifyOtp(
+          email: widget.email,
+          code: code,
+          purpose: widget.mode == 'login' ? ApiOtpPurpose.LOGIN : ApiOtpPurpose.REGISTER,
+        );
+        // Sync currentUser from the fresh /me-shape response so
+        // hasPassword etc. are populated.
+        await auth.hydrateFromServer();
+        // If the user has no password yet, offer to set one inline
+        // before landing on the dashboard.
+        if (!res.user.hasPassword) {
+          if (mounted) setState(() => _step = 'setPassword');
+        } else {
+          if (mounted) context.go('/candidate/dashboard');
+        }
+      } on ApiError catch (e) {
+        setState(() => _error = _mapOtpError(e.code, e.message));
+      } catch (_) {
+        setState(() => _error = 'Verification failed. Try again.');
+      }
+      return;
+    }
+    // Offline fallback — localStorage OTP service.
     if (!OtpService.verify(widget.email, code)) {
       setState(() => _error = 'Invalid or expired code. Try again.');
       return;
     }
-    final auth = ref.read(authProvider.notifier);
     if (widget.mode == 'login') {
       auth.loginByEmail(widget.email);
     } else {
       auth.markVerified(widget.email);
     }
-    context.go('/candidate/dashboard');
+    if (mounted) context.go('/candidate/dashboard');
+  }
+
+  String _mapOtpError(String code, String fallback) {
+    switch (code) {
+      case 'OTP_NOT_FOUND': return 'No code requested for this email. Tap Resend below.';
+      case 'OTP_EXPIRED':   return 'This code expired. Tap Resend to get a fresh one.';
+      case 'OTP_INVALID':   return 'Incorrect code. Check the digits and try again.';
+      case 'OTP_LOCKED':    return 'Too many wrong attempts. Tap Resend to start over.';
+      case 'RATE_LIMIT':    return 'Too many attempts. Wait a minute, then resend.';
+      default:              return fallback.isNotEmpty ? fallback : 'Verification failed.';
+    }
   }
 
   void _resend() {
@@ -86,6 +131,16 @@ class _CandidateOtpPageState extends ConsumerState<CandidateOtpPage> {
   @override
   Widget build(BuildContext context) {
     final isDark = ref.watch(themeProvider) == ThemeMode.dark;
+    if (_step == 'setPassword') {
+      return AuthScaffold(
+        title: 'One quick step',
+        subtitle: 'Set a password so you can sign in faster next time — or skip.',
+        child: InlineSetPassword(
+          onDone: () => context.go('/candidate/dashboard'),
+          brand: const Color(0xFFF97316),
+        ),
+      );
+    }
     return AuthScaffold(
       title: widget.mode == 'login' ? 'Sign in with code' : 'Verify your email',
       subtitle: 'We sent a 6-digit code to ${widget.email}',
