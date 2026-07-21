@@ -500,13 +500,20 @@ model Subscription {
   plan              Plan          @relation(fields: [planId], references: [id])
   startedAt         DateTime      @default(now())
   expiresAt         DateTime
-  // Payment
+  // Payment — Razorpay two-step flow:
+  //   order created  → razorpayOrderId set, paymentStatus=PENDING
+  //   user pays      → razorpayPaymentId set on /verify or webhook,
+  //                    paymentStatus=PAID + paidAt stamped
+  //   admin refunds  → razorpayRefundId set, paymentStatus=REFUNDED
   paymentStatus     PaymentStatus @default(PENDING)
-  paymentRef        String?       // Razorpay order_id / payment_id
+  razorpayOrderId   String?       @unique
+  razorpayPaymentId String?       @unique
+  razorpayRefundId  String?
   amountInPaise     Int
   gstInPaise        Int           @default(0)
   totalInPaise      Int
   invoiceNumber     String?       @unique
+  invoiceUrl        String?       @db.Text // Razorpay-hosted invoice PDF
   paidAt            DateTime?
   refundedAt        DateTime?
   refundRef         String?

@@ -49,6 +49,9 @@ import { StaffJobs } from "./pages/StaffJobs";
 import { ForgotPassword } from "./pages/ForgotPassword";
 import { SetPassword } from "./pages/SetPassword";
 import { AccountSettings } from "./pages/AccountSettings";
+import { LegalTerms } from "./pages/LegalTerms";
+import { LegalRefund } from "./pages/LegalRefund";
+import { LegalPrivacy } from "./pages/LegalPrivacy";
 import { RequireAuth, RedirectIfAuthed } from "./components/RequireAuth";
 import { ToastHost } from "./components/ToastHost";
 
@@ -318,6 +321,11 @@ export default function App() {
         <Route path="/super-admin/candidates/:id" element={<NavigateWithParams to="/admin/candidates/:id" />} />
         <Route path="/super-admin/employers" element={<Navigate to="/admin/employers" replace />} />
         <Route path="/super-admin/subscriptions" element={<Navigate to="/admin/subscriptions" replace />} />
+
+        {/* Legal pages — required for Razorpay KYC + linked from payment CTA. */}
+        <Route path="/legal/terms" element={<LegalTerms />} />
+        <Route path="/legal/refund" element={<LegalRefund />} />
+        <Route path="/legal/privacy" element={<LegalPrivacy />} />
       </Routes>
     </BrowserRouter>
   );

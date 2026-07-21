@@ -280,6 +280,76 @@ export async function notifyStaffAccountStateChanged(args: {
 }
 
 /**
+ * Fires when a Razorpay payment is captured + a subscription is
+ * activated. Sends the user a receipt with the plan + expiry + a
+ * link to the Razorpay-hosted PDF invoice, plus admin cc.
+ */
+export async function notifySubscriptionPaid(args: {
+  userName: string;
+  userEmail: string;
+  planLabel: string;
+  amountInRupees: string;
+  invoiceNumber: string;
+  invoiceUrl: string | null;
+  expiresAt: string;
+}): Promise<void> {
+  const subject = `Payment received — ${args.planLabel}`;
+  const link = args.invoiceUrl
+    ? `<p style="margin:16px 0;"><a href="${args.invoiceUrl}" style="color:#f97316;font-weight:600;">Download tax invoice (PDF)</a></p>`
+    : "";
+  const html = `<h1>Thanks for subscribing</h1>
+    <p>Hi ${args.userName},</p>
+    <p>Your subscription to <strong>${args.planLabel}</strong> is now active.</p>
+    <ul>
+      <li>Amount paid: <strong>₹${args.amountInRupees}</strong> (incl. GST)</li>
+      <li>Invoice number: <strong>${args.invoiceNumber}</strong></li>
+      <li>Valid until: <strong>${new Date(args.expiresAt).toLocaleDateString()}</strong></li>
+    </ul>
+    ${link}
+    <p>Questions? Reply to this email.</p>`;
+  await sendEmail({ to: args.userEmail, subject, html });
+  await notifyAdmins(
+    "Subscription payment received",
+    `${args.userName} (${args.userEmail}) paid ₹${args.amountInRupees} for ${args.planLabel}.`,
+    {
+      User: `${args.userName} <${args.userEmail}>`,
+      Plan: args.planLabel,
+      Amount: `₹${args.amountInRupees} incl. GST`,
+      Invoice: args.invoiceNumber,
+      "Expires at": args.expiresAt,
+    },
+  );
+}
+
+/** Fires when an admin refunds a subscription. */
+export async function notifySubscriptionRefunded(args: {
+  userName: string;
+  userEmail: string;
+  planLabel: string;
+  amountInRupees: string;
+  reason: string;
+}): Promise<void> {
+  const subject = `Refund processed — ${args.planLabel}`;
+  const html = `<h1>Refund processed</h1>
+    <p>Hi ${args.userName},</p>
+    <p>Your subscription to <strong>${args.planLabel}</strong> has been refunded. The amount of <strong>₹${args.amountInRupees}</strong> will land back in the account you paid from — typically 5-7 working days.</p>
+    <p><strong>Reason:</strong> ${args.reason}</p>
+    <p>Access to paid features has been revoked. If you'd like to resubscribe you're welcome to at any time.</p>
+    <p>Questions? Reply to this email.</p>`;
+  await sendEmail({ to: args.userEmail, subject, html });
+  await notifyAdmins(
+    "Subscription refunded",
+    `${args.userName} (${args.userEmail}) refunded ₹${args.amountInRupees} for ${args.planLabel}.`,
+    {
+      User: `${args.userName} <${args.userEmail}>`,
+      Plan: args.planLabel,
+      Amount: `₹${args.amountInRupees}`,
+      Reason: args.reason,
+    },
+  );
+}
+
+/**
  * Fires when a candidate applies to a job. Sends TWO user-facing
  * emails (candidate confirmation, employer alert) plus the admin cc.
  */

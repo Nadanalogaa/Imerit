@@ -1,14 +1,41 @@
+import { useState } from "react";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
-import { ArrowLeft, FileSpreadsheet, FileText, FileType2, IndianRupee, TrendingUp } from "lucide-react";
+import { ArrowLeft, FileSpreadsheet, FileText, FileType2, IndianRupee, TrendingUp, Undo2 } from "lucide-react";
 import { allUsers } from "../store/auth";
 import { useSubscriptions, planById } from "../store/subscriptions";
 import { Navbar } from "../components/Navbar";
 import { exportExcel, exportWord, exportSummaryPdf } from "../lib/export";
+import { subscriptionsApi } from "../lib/api/subscriptions";
+import { ApiError, apiEnabled } from "../lib/api";
 
 export function AdminSubscriptions() {
  const subs = useSubscriptions((s) => s.subscriptions);
  const users = allUsers();
+ // Track which subscription id is being refunded so the row shows
+ // a spinner + we prevent double-clicks. Reset locally on success
+ // (the localStorage subscriptions list is server-mirrored; the row
+ // will re-hydrate on the next visit).
+ const [refundingId, setRefundingId] = useState<string | null>(null);
+ const [refundedIds, setRefundedIds] = useState<Set<string>>(new Set());
+
+ async function issueRefund(subscriptionId: string) {
+  if (!apiEnabled) {
+   alert("Refunds require the API. Not available in offline demo mode.");
+   return;
+  }
+  const reason = window.prompt("Reason for refund? (Shown to the user in their email)");
+  if (reason == null) return; // cancelled
+  setRefundingId(subscriptionId);
+  try {
+   await subscriptionsApi.adminRefund(subscriptionId, reason || "Admin refund");
+   setRefundedIds((s) => new Set(s).add(subscriptionId));
+  } catch (err) {
+   alert(err instanceof ApiError ? err.message : "Refund failed. Try again.");
+  } finally {
+   setRefundingId(null);
+  }
+ }
 
  const enriched = subs
  .map((s) => ({ sub: s, user: users.find((u) => u.id === s.userId), plan: planById(s.planId) }))
@@ -69,6 +96,7 @@ export function AdminSubscriptions() {
  <th className="px-4 py-3">Started</th>
  <th className="px-4 py-3">Expires</th>
  <th className="px-4 py-3">Status</th>
+ <th className="px-4 py-3"></th>
  </tr>
  </thead>
  <tbody>
@@ -86,15 +114,34 @@ export function AdminSubscriptions() {
  <td className="px-4 py-3 text-zinc-600 dark:text-zinc-400">{new Date(sub.startedAt).toLocaleDateString()}</td>
  <td className="px-4 py-3 text-zinc-600 dark:text-zinc-400">{new Date(sub.expiresAt).toLocaleDateString()}</td>
  <td className="px-4 py-3">
- <span className={["rounded-full px-2 py-0.5 text-[10px] font-bold uppercase", active ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300" : "bg-zinc-100 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-400"].join(" ")}>
- {active ? "Active" : "Expired"}
- </span>
+ {refundedIds.has(sub.id) ? (
+  <span className="rounded-full bg-rose-100 px-2 py-0.5 text-[10px] font-bold uppercase text-rose-700 dark:bg-rose-500/15 dark:text-rose-300">
+   Refunded
+  </span>
+ ) : (
+  <span className={["rounded-full px-2 py-0.5 text-[10px] font-bold uppercase", active ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300" : "bg-zinc-100 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-400"].join(" ")}>
+   {active ? "Active" : "Expired"}
+  </span>
+ )}
+ </td>
+ <td className="px-4 py-3 text-right">
+ {active && !refundedIds.has(sub.id) && (
+  <button
+   onClick={() => issueRefund(sub.id)}
+   disabled={refundingId === sub.id}
+   className="inline-flex items-center gap-1.5 rounded-full border border-rose-200 px-2 py-0.5 text-[11px] font-semibold text-rose-700 transition hover:bg-rose-50 disabled:opacity-50 dark:border-rose-500/40 dark:text-rose-300 dark:hover:bg-rose-500/10"
+   title="Issue a refund via Razorpay. User's paid access is revoked immediately."
+  >
+   <Undo2 size={11} />
+   {refundingId === sub.id ? "Refunding…" : "Refund"}
+  </button>
+ )}
  </td>
  </motion.tr>
  );
  })}
  {subs.length === 0 && (
- <tr><td colSpan={7} className="px-6 py-12 text-center text-sm text-zinc-500 dark:text-zinc-400">No transactions yet.</td></tr>
+ <tr><td colSpan={8} className="px-6 py-12 text-center text-sm text-zinc-500 dark:text-zinc-400">No transactions yet.</td></tr>
  )}
  </tbody>
  </table>

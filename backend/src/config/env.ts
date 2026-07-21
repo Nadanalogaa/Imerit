@@ -82,6 +82,20 @@ const EnvSchema = z.object({
    * (login links, "View job" CTAs). Defaults to prod.
    */
   PUBLIC_APP_URL: z.string().default("https://itamilrecruit.net"),
+
+  /**
+   * Razorpay — India's standard payment gateway. Both key + secret
+   * are per-environment (test vs live). WEBHOOK_SECRET is set in
+   * the Razorpay dashboard and used to verify server-to-server
+   * webhook signatures.
+   *
+   * Leave blank in dev and the /subscriptions routes will refuse to
+   * create orders — better than silently letting fake payments
+   * through. Once KYC clears, drop the live values in and restart.
+   */
+  RAZORPAY_KEY_ID: z.string().optional().default(""),
+  RAZORPAY_KEY_SECRET: z.string().optional().default(""),
+  RAZORPAY_WEBHOOK_SECRET: z.string().optional().default(""),
 });
 
 const parsed = EnvSchema.safeParse(process.env);

@@ -68,10 +68,10 @@ export function Footer() {
  </Col>
 
  <Col title="Legal">
- <FooterAnchor href="#">Privacy policy</FooterAnchor>
- <FooterAnchor href="#">Terms of service</FooterAnchor>
- <FooterAnchor href="#">Refund policy</FooterAnchor>
- <FooterAnchor href="#">DPDP compliance</FooterAnchor>
+ <FooterLink to="/legal/privacy">Privacy policy</FooterLink>
+ <FooterLink to="/legal/terms">Terms of service</FooterLink>
+ <FooterLink to="/legal/refund">Refund policy</FooterLink>
+ <FooterLink to="/legal/privacy">DPDP compliance</FooterLink>
  </Col>
  </div>
 
@@ -108,13 +108,6 @@ function FooterLink({ to, children }: { to: string; children: React.ReactNode })
 function FooterHash({ to, children }: { to: string; children: React.ReactNode }) {
  return (
  <a href={to} className={linkClass}>
- {children}
- </a>
- );
-}
-function FooterAnchor({ href, children }: { href: string; children: React.ReactNode }) {
- return (
- <a href={href} className={linkClass}>
  {children}
  </a>
  );
