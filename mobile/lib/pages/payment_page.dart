@@ -1,13 +1,22 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import '../api/api_client.dart';
+import '../api/subscriptions_api.dart';
+import '../lib_razorpay/razorpay_checkout.dart';
 import '../store/auth_provider.dart';
 import '../store/applications_provider.dart';
 import '../store/subscriptions_provider.dart';
 import '../store/theme_provider.dart';
 import '../widgets/theme_toggle.dart';
 
+/// Payment page for candidate + employer plans. Mirrors the web
+/// PaymentScreen: no card form, one big "Pay ₹X" button that opens
+/// Razorpay's native checkout (SDK owns cards / UPI / netbanking /
+/// wallets).
+///
+/// Falls back to the offline "fake" flow when apiEnabled is false so
+/// demo builds without a backend keep working.
 class PaymentPage extends ConsumerStatefulWidget {
   const PaymentPage({
     super.key,
@@ -25,28 +34,94 @@ class PaymentPage extends ConsumerStatefulWidget {
 }
 
 class _PaymentPageState extends ConsumerState<PaymentPage> {
-  final _name = TextEditingController();
-  final _card = TextEditingController();
-  final _expiry = TextEditingController();
-  final _cvv = TextEditingController();
+  RazorpayCheckout? _checkout;
   bool _processing = false;
   bool _success = false;
+  String? _error;
+  String? _invoiceRef;
+
+  @override
+  void initState() {
+    super.initState();
+    if (apiEnabled) {
+      _checkout = RazorpayCheckout(
+        onSuccess: _onPaymentSuccess,
+        onError: _onPaymentError,
+        onDismiss: _onPaymentDismiss,
+      );
+    }
+  }
 
   @override
   void dispose() {
-    _name.dispose();
-    _card.dispose();
-    _expiry.dispose();
-    _cvv.dispose();
+    _checkout?.dispose();
     super.dispose();
   }
 
-  void _pay() {
+  void _onPaymentSuccess(ApiSubscription sub) {
     final plan = planById(widget.planId);
     if (plan == null) return;
-    setState(() => _processing = true);
+    final user = ref.read(authProvider)!;
+    // Mirror into the local subscriptions cache so existing
+    // "am I subscribed?" checks (which still read localStorage) work
+    // until the mobile subscriptions provider lands its own port.
+    ref.read(subscriptionsProvider.notifier).add(
+          Subscription(
+            id: sub.id,
+            userId: user.id,
+            planId: plan.id,
+            type: plan.type,
+            priceInr: plan.priceInr,
+            durationDays: plan.durationDays,
+            startedAt: sub.startedAt,
+            expiresAt: sub.expiresAt,
+            paymentRef: sub.invoiceNumber ?? sub.id,
+          ),
+        );
+    if (widget.applyJob != null) {
+      // Auto-apply to the job that led the user here. Fire-and-forget;
+      // if it fails they can retry from the job page.
+      // ignore: unawaited_futures
+      ref.read(applicationsProvider.notifier).applyAsync(user.id, widget.applyJob!);
+    }
+    if (!mounted) return;
+    setState(() {
+      _processing = false;
+      _success = true;
+      _invoiceRef = sub.invoiceNumber ?? sub.id;
+    });
+    Future.delayed(const Duration(milliseconds: 1900), () {
+      if (!mounted) return;
+      context.go(widget.applyJob != null ? '/candidate/jobs/${widget.applyJob}' : widget.returnTo);
+    });
+  }
 
-    Future.delayed(const Duration(milliseconds: 1500), () {
+  void _onPaymentError(String message) {
+    if (!mounted) return;
+    setState(() {
+      _processing = false;
+      _error = message;
+    });
+  }
+
+  void _onPaymentDismiss() {
+    // User closed the Razorpay modal — treat as "not paid, retry
+    // available" with no error banner (dismissal is intentional).
+    if (!mounted) return;
+    setState(() => _processing = false);
+  }
+
+  Future<void> _pay() async {
+    final plan = planById(widget.planId);
+    if (plan == null) return;
+    setState(() {
+      _processing = true;
+      _error = null;
+    });
+
+    if (!apiEnabled) {
+      // Offline / demo — keep the fake flow so previews work.
+      await Future.delayed(const Duration(milliseconds: 900));
       if (!mounted) return;
       final user = ref.read(authProvider)!;
       final now = DateTime.now();
@@ -61,47 +136,34 @@ class _PaymentPageState extends ConsumerState<PaymentPage> {
               durationDays: plan.durationDays,
               startedAt: now.toIso8601String(),
               expiresAt: exp.toIso8601String(),
-              paymentRef: 'FAKE_${now.millisecondsSinceEpoch.toRadixString(36).toUpperCase()}',
+              paymentRef: 'OFFLINE_${now.millisecondsSinceEpoch.toRadixString(36).toUpperCase()}',
             ),
           );
       if (widget.applyJob != null) {
-        // Fire and forget — this is post-payment "auto-apply to the
-        // job that triggered the subscribe flow"; if it fails the
-        // user can still hit Apply on the job page.
         // ignore: unawaited_futures
         ref.read(applicationsProvider.notifier).applyAsync(user.id, widget.applyJob!);
       }
       setState(() {
         _processing = false;
         _success = true;
+        _invoiceRef = 'OFFLINE-DEMO';
       });
       Future.delayed(const Duration(milliseconds: 1700), () {
         if (!mounted) return;
-        if (widget.applyJob != null) {
-          context.go('/candidate/jobs/${widget.applyJob}');
-        } else {
-          context.go(widget.returnTo);
-        }
+        context.go(widget.applyJob != null ? '/candidate/jobs/${widget.applyJob}' : widget.returnTo);
       });
-    });
-  }
-
-  String _formatCard(String v) {
-    final d = v.replaceAll(RegExp(r'\D'), '');
-    final clipped = d.length > 16 ? d.substring(0, 16) : d;
-    final buf = StringBuffer();
-    for (var i = 0; i < clipped.length; i++) {
-      if (i > 0 && i % 4 == 0) buf.write(' ');
-      buf.write(clipped[i]);
+      return;
     }
-    return buf.toString();
-  }
 
-  String _formatExp(String v) {
-    final d = v.replaceAll(RegExp(r'\D'), '');
-    final clipped = d.length > 4 ? d.substring(0, 4) : d;
-    if (clipped.length > 2) return '${clipped.substring(0, 2)}/${clipped.substring(2)}';
-    return clipped;
+    // Real Razorpay checkout — this hands off to the native modal.
+    final user = ref.read(authProvider)!;
+    await _checkout!.pay(
+      planId: plan.id,
+      planLabel: plan.label,
+      userName: user.name,
+      userEmail: user.email,
+      userMobile: user.mobile,
+    );
   }
 
   @override
@@ -133,7 +195,7 @@ class _PaymentPageState extends ConsumerState<PaymentPage> {
         actions: const [ThemeToggle(), SizedBox(width: 12)],
       ),
       body: _success
-          ? _SuccessView(plan: plan, isDark: isDark, applyJob: widget.applyJob)
+          ? _SuccessView(plan: plan, isDark: isDark, applyJob: widget.applyJob, invoiceRef: _invoiceRef)
           : SingleChildScrollView(
               padding: const EdgeInsets.all(20),
               child: Column(
@@ -163,7 +225,7 @@ class _PaymentPageState extends ConsumerState<PaymentPage> {
                         const SizedBox(height: 6),
                         Text(plan.label, style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700, color: Color(0xFF09090B))),
                         Text(
-                          'Active for ${plan.durationDays} days from today',
+                          'Active for ${plan.durationDays} days from payment',
                           style: const TextStyle(fontSize: 11, color: Color(0xFF52525B)),
                         ),
                         const SizedBox(height: 12),
@@ -176,7 +238,7 @@ class _PaymentPageState extends ConsumerState<PaymentPage> {
                   ),
                   const SizedBox(height: 16),
 
-                  // Card form
+                  // Payment CTA (Razorpay owns the card / UPI / etc. UI)
                   Container(
                     padding: const EdgeInsets.all(18),
                     decoration: BoxDecoration(
@@ -193,94 +255,41 @@ class _PaymentPageState extends ConsumerState<PaymentPage> {
                       children: [
                         Row(
                           children: [
-                            const Icon(Icons.credit_card_rounded, size: 18, color: Color(0xFFEA580C)),
+                            const Icon(Icons.shield_outlined, size: 18, color: Color(0xFFEA580C)),
                             const SizedBox(width: 8),
                             Text(
-                              'Card details',
+                              'Complete payment',
                               style: TextStyle(
                                 fontSize: 14,
                                 fontWeight: FontWeight.w700,
                                 color: isDark ? Colors.white : const Color(0xFF09090B),
                               ),
                             ),
-                            const Spacer(),
-                            Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                              decoration: BoxDecoration(
-                                color: const Color(0xFF10B981).withValues(alpha: 0.15),
-                                borderRadius: BorderRadius.circular(999),
-                              ),
-                              child: const Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Icon(Icons.lock_rounded, size: 9, color: Color(0xFF059669)),
-                                  SizedBox(width: 4),
-                                  Text(
-                                    'DEMO',
-                                    style: TextStyle(fontSize: 9, fontWeight: FontWeight.w800, color: Color(0xFF059669), letterSpacing: 1),
-                                  ),
-                                ],
-                              ),
-                            ),
                           ],
                         ),
-                        const SizedBox(height: 14),
-                        _PayField(label: 'Cardholder name', controller: _name, hint: 'Karthick S.', isDark: isDark),
-                        const SizedBox(height: 12),
-                        _PayField(
-                          label: 'Card number',
-                          controller: _card,
-                          hint: '4242 4242 4242 4242',
-                          isDark: isDark,
-                          mono: true,
-                          keyboardType: TextInputType.number,
-                          onChanged: (v) {
-                            final f = _formatCard(v);
-                            if (f != v) {
-                              _card.value = TextEditingValue(
-                                text: f,
-                                selection: TextSelection.collapsed(offset: f.length),
-                              );
-                            }
-                          },
+                        const SizedBox(height: 10),
+                        Text(
+                          "You'll be handed off to Razorpay's secure checkout. UPI, cards, netbanking, and wallets all supported. GST invoice emailed on success.",
+                          style: TextStyle(
+                            fontSize: 12.5,
+                            color: isDark
+                                ? Colors.white.withValues(alpha: 0.65)
+                                : const Color(0xFF52525B),
+                            height: 1.5,
+                          ),
                         ),
                         const SizedBox(height: 12),
-                        Row(
-                          children: [
-                            Expanded(
-                              child: _PayField(
-                                label: 'Expiry (MM/YY)',
-                                controller: _expiry,
-                                hint: '12/27',
-                                isDark: isDark,
-                                mono: true,
-                                keyboardType: TextInputType.number,
-                                onChanged: (v) {
-                                  final f = _formatExp(v);
-                                  if (f != v) {
-                                    _expiry.value = TextEditingValue(
-                                      text: f,
-                                      selection: TextSelection.collapsed(offset: f.length),
-                                    );
-                                  }
-                                },
-                              ),
-                            ),
-                            const SizedBox(width: 10),
-                            Expanded(
-                              child: _PayField(
-                                label: 'CVV',
-                                controller: _cvv,
-                                hint: '123',
-                                isDark: isDark,
-                                mono: true,
-                                keyboardType: TextInputType.number,
-                                maxLength: 4,
-                              ),
-                            ),
+                        Wrap(
+                          spacing: 6,
+                          runSpacing: 6,
+                          children: const [
+                            _MethodChip(label: 'UPI'),
+                            _MethodChip(label: 'Cards'),
+                            _MethodChip(label: 'Netbanking'),
+                            _MethodChip(label: 'Wallets'),
                           ],
                         ),
-                        const SizedBox(height: 18),
+                        const SizedBox(height: 16),
                         SizedBox(
                           width: double.infinity,
                           child: ElevatedButton(
@@ -308,10 +317,7 @@ class _PaymentPageState extends ConsumerState<PaymentPage> {
                                         ),
                                       ),
                                       SizedBox(width: 10),
-                                      Text(
-                                        'Processing payment...',
-                                        style: TextStyle(fontSize: 13.5, fontWeight: FontWeight.w700),
-                                      ),
+                                      Text('Opening checkout…', style: TextStyle(fontSize: 13.5, fontWeight: FontWeight.w700)),
                                     ],
                                   )
                                 : Row(
@@ -319,15 +325,26 @@ class _PaymentPageState extends ConsumerState<PaymentPage> {
                                     children: [
                                       const Icon(Icons.lock_rounded, size: 14),
                                       const SizedBox(width: 6),
-                                      Text(
-                                        'Pay ₹$total',
-                                        style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700),
-                                      ),
+                                      Text('Pay ₹$total', style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700)),
                                     ],
                                   ),
                           ),
                         ),
-                        const SizedBox(height: 8),
+                        if (_error != null) ...[
+                          const SizedBox(height: 10),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFFECDD3).withValues(alpha: isDark ? 0.15 : 1),
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: Text(
+                              _error!,
+                              style: const TextStyle(fontSize: 12, color: Color(0xFF9F1239)),
+                            ),
+                          ),
+                        ],
+                        const SizedBox(height: 10),
                         Center(
                           child: Row(
                             mainAxisAlignment: MainAxisAlignment.center,
@@ -341,7 +358,7 @@ class _PaymentPageState extends ConsumerState<PaymentPage> {
                               ),
                               const SizedBox(width: 4),
                               Text(
-                                'No real charges — demo payment',
+                                'Payments processed by Razorpay · PCI-DSS compliant',
                                 style: TextStyle(
                                   fontSize: 10.5,
                                   color: isDark
@@ -350,6 +367,18 @@ class _PaymentPageState extends ConsumerState<PaymentPage> {
                                 ),
                               ),
                             ],
+                          ),
+                        ),
+                        const SizedBox(height: 6),
+                        Center(
+                          child: Text(
+                            'By continuing you agree to our Terms and Refund Policy.',
+                            style: TextStyle(
+                              fontSize: 10,
+                              color: isDark
+                                  ? Colors.white.withValues(alpha: 0.45)
+                                  : const Color(0xFF9CA3AF),
+                            ),
                           ),
                         ),
                       ],
@@ -380,102 +409,32 @@ class _PaymentPageState extends ConsumerState<PaymentPage> {
   }
 }
 
-class _PayField extends StatelessWidget {
-  const _PayField({
-    required this.label,
-    required this.controller,
-    required this.hint,
-    required this.isDark,
-    this.mono = false,
-    this.keyboardType,
-    this.maxLength,
-    this.onChanged,
-  });
-
+class _MethodChip extends StatelessWidget {
+  const _MethodChip({required this.label});
   final String label;
-  final TextEditingController controller;
-  final String hint;
-  final bool isDark;
-  final bool mono;
-  final TextInputType? keyboardType;
-  final int? maxLength;
-  final ValueChanged<String>? onChanged;
-
   @override
   Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          label,
-          style: TextStyle(
-            fontSize: 11,
-            fontWeight: FontWeight.w600,
-            color: isDark
-                ? Colors.white.withValues(alpha: 0.8)
-                : const Color(0xFF52525B),
-          ),
-        ),
-        const SizedBox(height: 5),
-        TextField(
-          controller: controller,
-          keyboardType: keyboardType,
-          maxLength: maxLength,
-          inputFormatters: keyboardType == TextInputType.number
-              ? [FilteringTextInputFormatter.digitsOnly]
-              : null,
-          onChanged: onChanged,
-          style: TextStyle(
-            fontSize: 14,
-            color: isDark ? Colors.white : const Color(0xFF09090B),
-            fontFamily: mono ? 'monospace' : null,
-            letterSpacing: mono ? 1.5 : 0,
-          ),
-          decoration: InputDecoration(
-            counterText: '',
-            hintText: hint,
-            hintStyle: TextStyle(
-              color: isDark
-                  ? Colors.white.withValues(alpha: 0.3)
-                  : const Color(0xFFA1A1AA),
-              fontFamily: mono ? 'monospace' : null,
-            ),
-            isDense: true,
-            filled: true,
-            fillColor: isDark ? const Color(0xFF09090B) : const Color(0xFFFAFAFA),
-            contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(
-                color: isDark
-                    ? Colors.white.withValues(alpha: 0.10)
-                    : const Color(0xFFE4E4E7),
-              ),
-            ),
-            enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(
-                color: isDark
-                    ? Colors.white.withValues(alpha: 0.10)
-                    : const Color(0xFFE4E4E7),
-              ),
-            ),
-            focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: const BorderSide(color: Color(0xFFEA580C), width: 1.5),
-            ),
-          ),
-        ),
-      ],
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+      decoration: BoxDecoration(
+        color: const Color(0xFFFAFAFA),
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(color: const Color(0xFFE4E4E7)),
+      ),
+      child: Text(
+        label,
+        style: const TextStyle(fontSize: 10.5, fontWeight: FontWeight.w700, color: Color(0xFF3F3F46)),
+      ),
     );
   }
 }
 
 class _SuccessView extends StatelessWidget {
-  const _SuccessView({required this.plan, required this.isDark, this.applyJob});
+  const _SuccessView({required this.plan, required this.isDark, this.applyJob, this.invoiceRef});
   final Plan plan;
   final bool isDark;
   final String? applyJob;
+  final String? invoiceRef;
 
   @override
   Widget build(BuildContext context) {
@@ -528,6 +487,18 @@ class _SuccessView extends StatelessWidget {
                 textAlign: TextAlign.center,
                 style: const TextStyle(fontSize: 13, color: Color(0xFF3F3F46), height: 1.5),
               ),
+              if (invoiceRef != null) ...[
+                const SizedBox(height: 12),
+                Text(
+                  'Invoice: $invoiceRef',
+                  style: const TextStyle(fontSize: 11, color: Color(0xFF52525B), fontFamily: 'monospace'),
+                ),
+                const SizedBox(height: 4),
+                const Text(
+                  'A copy of your tax invoice has been emailed.',
+                  style: TextStyle(fontSize: 10, color: Color(0xFF71717A)),
+                ),
+              ],
             ],
           ),
         ),
