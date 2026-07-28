@@ -27,6 +27,7 @@ import { useJobs, isExpired } from "../store/jobs";
 import { useLocations } from "../store/locations";
 import { useSavedSearches, useShortlist } from "../store/employerPrefs";
 import { MapListLayout, type MapListItem } from "../components/MapListLayout";
+import { SectionSeparator } from "../components/SectionSeparator";
 import { CandidateFilterPanel } from "../components/employer/CandidateFilterPanel";
 import { SavedSearchStrip } from "../components/employer/SavedSearchStrip";
 import { RecentlyViewedStrip } from "../components/employer/RecentlyViewedStrip";
@@ -178,45 +179,105 @@ export function EmployerCandidates() {
     return out;
   }, [applications]);
 
-  /* ---------------- filter + sort ---------------- */
+  /* ---------------- rank + partition ----------------
+   * "Matches first, then everyone else" pattern.
+   *
+   * Facets split into two flavours:
+   *   - HARD (field, candidateType, years, education) — user is narrowing;
+   *     non-matches are hidden entirely, same as before.
+   *   - SOFT (search text, skills, districts, near-job) — user is expressing
+   *     preferences; matches float to the top and everything else in the
+   *     hard-filtered pool falls below a divider.
+   *
+   * When no soft signals are active, everyone lives in `others` and no
+   * divider appears — behaves like a plain sorted list.
+   */
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
-    let results = items.filter(({ user, profile }) => {
-      if (!matchesFilter(profile, filters, { districts, nearJob })) return false;
-      if (!q) return true;
-      const hay = [
-        user.name,
-        profile.preferredLocation ?? "",
-        profile.itSpecialization ?? "",
-        ...(profile.itLanguages ?? []),
-        ...(profile.nonItDepartments ?? []),
-        ...(profile.topSkills ?? []),
-        ...(profile.experiences ?? []).map((e) => `${e.company} ${e.role}`),
-      ]
-        .join(" ")
-        .toLowerCase();
-      return hay.includes(q);
-    });
 
-    switch (filters.sort) {
-      case "skill_match":
-        results = [...results].sort((a, b) => {
-          const sa = skillMatchScore(a.profile, filters);
-          const sb = skillMatchScore(b.profile, filters);
-          if (sb !== sa) return sb - sa;
+    const hardPass = (profile: CandidateProfile): boolean => {
+      if (filters.field && profile.field !== filters.field) return false;
+      if (filters.candidateType && profile.type !== filters.candidateType) return false;
+      if (filters.yearsMin != null || filters.yearsMax != null) {
+        const y = profile.yearsOfExperience ?? -1;
+        if (filters.yearsMin != null && y < filters.yearsMin) return false;
+        if (filters.yearsMax != null && y > filters.yearsMax) return false;
+      }
+      if (filters.educationLevels.length > 0) {
+        const has = (profile.education ?? []).some((e) => e.enabled && filters.educationLevels.includes(e.level));
+        if (!has) return false;
+      }
+      return true;
+    };
+
+    const softScore = (user: User, profile: CandidateProfile): number => {
+      let score = 0;
+      if (q) {
+        const hay = [
+          user.name,
+          profile.preferredLocation ?? "",
+          profile.itSpecialization ?? "",
+          ...(profile.itLanguages ?? []),
+          ...(profile.nonItDepartments ?? []),
+          ...(profile.topSkills ?? []),
+          ...(profile.experiences ?? []).map((e) => `${e.company} ${e.role}`),
+        ].join(" ").toLowerCase();
+        if (hay.includes(q)) score += 3;
+      }
+      if (filters.skills.length > 0) {
+        score += skillMatchScore(profile, filters) * 5;
+      }
+      if (filters.districtIds.length > 0) {
+        const inPreferred = (profile.preferredDistricts ?? []).some((id) => filters.districtIds.includes(id));
+        const inCurrent = profile.currentDistrictId != null && filters.districtIds.includes(profile.currentDistrictId);
+        if (inPreferred || inCurrent) score += 2;
+      }
+      if (filters.nearJobId && filters.maxDistanceKm != null && nearJob) {
+        // Reuse the strict match predicate — if the candidate would pass the
+        // distance test they get a boost. Everyone else stays at 0 for this
+        // signal and drops below the divider.
+        if (matchesFilter(profile, { ...filters, districtIds: [], skills: [] }, { districts, nearJob })) {
+          score += 2;
+        }
+      }
+      return score;
+    };
+
+    const hasSignal =
+      !!q ||
+      filters.skills.length > 0 ||
+      filters.districtIds.length > 0 ||
+      !!filters.nearJobId;
+
+    const pool = items.filter(({ profile }) => hardPass(profile));
+
+    const scored = pool.map((it) => ({ ...it, score: softScore(it.user, it.profile) }));
+
+    const sortFallback = (a: typeof scored[number], b: typeof scored[number]) => {
+      switch (filters.sort) {
+        case "recent":
           return (b.profile.updatedAt ?? "").localeCompare(a.profile.updatedAt ?? "");
-        });
-        break;
-      case "recent":
-        results = [...results].sort((a, b) => (b.profile.updatedAt ?? "").localeCompare(a.profile.updatedAt ?? ""));
-        break;
-      case "alphabetical":
-        results = [...results].sort((a, b) => a.user.name.toLowerCase().localeCompare(b.user.name.toLowerCase()));
-        break;
+        case "alphabetical":
+          return a.user.name.toLowerCase().localeCompare(b.user.name.toLowerCase());
+        default:
+          return (b.profile.updatedAt ?? "").localeCompare(a.profile.updatedAt ?? "");
+      }
+    };
+
+    if (!hasSignal) {
+      const sorted = [...scored].sort(sortFallback);
+      return { matched: [] as typeof scored, others: sorted, hasSignal: false };
     }
-    return results;
+
+    const matched = scored
+      .filter((x) => x.score > 0)
+      .sort((a, b) => (b.score !== a.score ? b.score - a.score : sortFallback(a, b)));
+    const others = scored.filter((x) => x.score === 0).sort(sortFallback);
+    return { matched, others, hasSignal: true };
   }, [items, filters, districts, nearJob, search]);
+
+  const filteredCount = filtered.matched.length + filtered.others.length;
 
   /* ---------------- save search ---------------- */
 
@@ -263,7 +324,12 @@ export function EmployerCandidates() {
             Search candidates
           </p>
           <h1 className="mt-2 text-2xl font-semibold tracking-tight md:text-3xl">
-            {filtered.length} candidate{filtered.length === 1 ? "" : "s"} match your filters
+            {filteredCount} candidate{filteredCount === 1 ? "" : "s"} in view
+            {filtered.hasSignal && filtered.matched.length > 0 ? (
+              <span className="ml-2 rounded-full bg-emerald-100 px-2.5 py-1 align-middle text-[13px] font-bold text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300">
+                {filtered.matched.length} match
+              </span>
+            ) : null}
           </h1>
           <p className="mt-2 text-sm text-zinc-600 dark:text-zinc-400">
             {filters.sort === "skill_match" && filters.skills.length > 0
@@ -366,35 +432,64 @@ export function EmployerCandidates() {
 
             <ActiveFacetChips filters={filters} onChange={setFilters} />
 
-            {filtered.length === 0 ? (
+            {filteredCount === 0 ? (
               <EmptyState />
             ) : (
               <MapListLayout
                 markerTone="sky"
-                items={filtered.map(({ user, profile }, i): MapListItem => {
-                  const lat = profile.preferredLat ?? profile.currentLat;
-                  const lng = profile.preferredLng ?? profile.currentLng;
-                  const score = filters.skills.length > 0 ? skillMatchScore(profile, filters) : null;
-                  const shortlisted = shortlistIds.includes(user.id);
-                  return {
-                    id: user.id,
-                    lat,
-                    lng,
-                    listElement: (
-                      <CandidateCard
-                        user={user}
-                        profile={profile}
-                        hasSub={hasSub}
-                        delay={Math.min(i, 8) * 0.03}
-                        matchScore={score}
-                        weeklyApps={weeklyApps[user.id] ?? 0}
-                        shortlisted={shortlisted}
-                        onToggleShortlist={() => toggleShortlist(employer.id, user.id)}
-                      />
-                    ),
-                    popupElement: <CandidatePopup user={user} profile={profile} hasSub={hasSub} />,
+                items={(() => {
+                  const rowFor = (
+                    { user, profile }: { user: User; profile: CandidateProfile },
+                    i: number,
+                  ): MapListItem => {
+                    const lat = profile.preferredLat ?? profile.currentLat;
+                    const lng = profile.preferredLng ?? profile.currentLng;
+                    const score = filters.skills.length > 0 ? skillMatchScore(profile, filters) : null;
+                    const shortlisted = shortlistIds.includes(user.id);
+                    return {
+                      id: user.id,
+                      lat,
+                      lng,
+                      listElement: (
+                        <CandidateCard
+                          user={user}
+                          profile={profile}
+                          hasSub={hasSub}
+                          delay={Math.min(i, 8) * 0.03}
+                          matchScore={score}
+                          weeklyApps={weeklyApps[user.id] ?? 0}
+                          shortlisted={shortlisted}
+                          onToggleShortlist={() => toggleShortlist(employer.id, user.id)}
+                        />
+                      ),
+                      popupElement: <CandidatePopup user={user} profile={profile} hasSub={hasSub} />,
+                    };
                   };
-                })}
+
+                  const rows: MapListItem[] = [];
+                  filtered.matched.forEach((it, i) => rows.push(rowFor(it, i)));
+                  if (
+                    filtered.hasSignal &&
+                    filtered.matched.length > 0 &&
+                    filtered.others.length > 0
+                  ) {
+                    rows.push({
+                      id: "__separator_others__",
+                      fullWidth: true,
+                      listElement: (
+                        <SectionSeparator
+                          label="Other candidates"
+                          count={filtered.others.length}
+                          tone="zinc"
+                        />
+                      ),
+                    });
+                  }
+                  filtered.others.forEach((it, i) =>
+                    rows.push(rowFor(it, i + filtered.matched.length)),
+                  );
+                  return rows;
+                })()}
                 emptyState={<EmptyState />}
               />
             )}

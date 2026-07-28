@@ -32,14 +32,30 @@ class _JobBrowsePageState extends ConsumerState<JobBrowsePage> {
     super.dispose();
   }
 
-  List<Job> _filtered(List<Job> jobs) {
-    return jobs.where((j) {
-      if (!_filters.matches(j)) return false;
-      final q = _search.text.trim().toLowerCase();
-      if (q.isEmpty) return true;
+  /// Rank + partition — mirror of web's JobBrowse.
+  ///
+  ///   Filters (`_filters.matches`) still narrow the pool strictly.
+  ///   Within the pool, if the user typed a search term, jobs whose
+  ///   title / company / skills contain it float to the top; everything
+  ///   else drops below the "Other jobs" divider. When no search text is
+  ///   active, the divider stays hidden and everyone lives in `others`.
+  _RankedJobs _ranked(List<Job> jobs) {
+    final pool = jobs.where((j) => _filters.matches(j)).toList();
+    final q = _search.text.trim().toLowerCase();
+    if (q.isEmpty) {
+      return _RankedJobs(matched: const [], others: pool, hasSignal: false);
+    }
+    final matched = <Job>[];
+    final others = <Job>[];
+    for (final j in pool) {
       final hay = '${j.title} ${j.employerName} ${j.description} ${j.skills.join(" ")}'.toLowerCase();
-      return hay.contains(q);
-    }).toList();
+      if (hay.contains(q)) {
+        matched.add(j);
+      } else {
+        others.add(j);
+      }
+    }
+    return _RankedJobs(matched: matched, others: others, hasSignal: true);
   }
 
   Future<void> _openFilters() async {
@@ -66,7 +82,10 @@ class _JobBrowsePageState extends ConsumerState<JobBrowsePage> {
   Widget build(BuildContext context) {
     final isDark = ref.watch(themeProvider) == ThemeMode.dark;
     final jobs = ref.watch(jobsProvider);
-    final filtered = _filtered(jobs);
+    final ranked = _ranked(jobs);
+    final total = ranked.matched.length + ranked.others.length;
+    final all = <Job>[...ranked.matched, ...ranked.others];
+    final showDivider = ranked.hasSignal && ranked.matched.isNotEmpty && ranked.others.isNotEmpty;
 
     return Scaffold(
       backgroundColor: isDark ? const Color(0xFF09090B) : const Color(0xFFFAFAFA),
@@ -97,9 +116,29 @@ class _JobBrowsePageState extends ConsumerState<JobBrowsePage> {
                       style: TextStyle(fontSize: 11, letterSpacing: 2, fontWeight: FontWeight.w800, color: Color(0xFFEA580C)),
                     ),
                     const SizedBox(height: 6),
-                    Text(
-                      '${filtered.length} ${filtered.length == 1 ? "job" : "jobs"} match your filters',
-                      style: TextStyle(fontSize: 13, color: isDark ? Colors.white.withValues(alpha: 0.6) : const Color(0xFF52525B)),
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.baseline,
+                      textBaseline: TextBaseline.alphabetic,
+                      children: [
+                        Text(
+                          '$total ${total == 1 ? "job" : "jobs"} in view',
+                          style: TextStyle(fontSize: 13, color: isDark ? Colors.white.withValues(alpha: 0.6) : const Color(0xFF52525B)),
+                        ),
+                        if (ranked.hasSignal && ranked.matched.isNotEmpty) ...[
+                          const SizedBox(width: 8),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFF10B981).withValues(alpha: 0.15),
+                              borderRadius: BorderRadius.circular(999),
+                            ),
+                            child: Text(
+                              '${ranked.matched.length} match',
+                              style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: Color(0xFF047857)),
+                            ),
+                          ),
+                        ],
+                      ],
                     ),
                     const SizedBox(height: 14),
                     _SearchBar(controller: _search, onChanged: (_) => setState(() {}), isDark: isDark),
@@ -114,18 +153,29 @@ class _JobBrowsePageState extends ConsumerState<JobBrowsePage> {
                 ),
               ),
             ),
-            if (filtered.isEmpty)
+            if (total == 0)
               SliverToBoxAdapter(child: _EmptyState(isDark: isDark))
             else
               SliverPadding(
                 key: _listKey,
                 padding: const EdgeInsets.symmetric(horizontal: 16),
                 sliver: SliverList.builder(
-                  itemCount: filtered.length,
+                  itemCount: total + (showDivider ? 1 : 0),
                   itemBuilder: (context, i) {
-                    final job = filtered[i];
+                    if (showDivider && i == ranked.matched.length) {
+                      return Padding(
+                        padding: const EdgeInsets.only(bottom: 12),
+                        child: _JobSectionSeparator(
+                          label: 'Other jobs',
+                          count: ranked.others.length,
+                          isDark: isDark,
+                        ),
+                      );
+                    }
+                    final index = showDivider && i > ranked.matched.length ? i - 1 : i;
+                    final job = all[index];
                     return _StaggeredEntry(
-                      index: i,
+                      index: index,
                       child: Padding(
                         padding: const EdgeInsets.only(bottom: 12),
                         child: _JobCard(
@@ -141,7 +191,7 @@ class _JobBrowsePageState extends ConsumerState<JobBrowsePage> {
                   },
                 ),
               ),
-            if (filtered.isNotEmpty)
+            if (total > 0)
               SliverToBoxAdapter(
                 child: Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -152,7 +202,7 @@ class _JobBrowsePageState extends ConsumerState<JobBrowsePage> {
                     // already rendered above; this widget is here purely so
                     // candidates can spot jobs on the map at a glance.
                     initialMode: MapListMode.map,
-                    items: filtered
+                    items: all
                         .map((job) => MapListItem(
                               id: job.id,
                               lat: job.lat,
@@ -619,6 +669,76 @@ class _Pill extends StatelessWidget {
         const SizedBox(width: 4),
         Text(text, style: TextStyle(fontSize: 9.5, fontWeight: FontWeight.w700, color: color)),
       ]),
+    );
+  }
+}
+
+/// Split of a filtered job list into "best matches" (search-text hit) and
+/// "other jobs" (rest). When `hasSignal` is false, `matched` is empty and
+/// everyone lives in `others` — the divider stays hidden.
+class _RankedJobs {
+  const _RankedJobs({
+    required this.matched,
+    required this.others,
+    required this.hasSignal,
+  });
+  final List<Job> matched;
+  final List<Job> others;
+  final bool hasSignal;
+}
+
+/// Divider strip rendered between the "matched" and "others" groups in the
+/// SliverList. Private per-file so the styling stays consistent with the
+/// rest of the browse page.
+class _JobSectionSeparator extends StatelessWidget {
+  const _JobSectionSeparator({
+    required this.label,
+    required this.count,
+    required this.isDark,
+  });
+  final String label;
+  final int count;
+  final bool isDark;
+
+  @override
+  Widget build(BuildContext context) {
+    final chipBg = isDark ? Colors.white.withValues(alpha: 0.08) : const Color(0xFFF4F4F5);
+    final chipText = isDark ? Colors.white.withValues(alpha: 0.9) : const Color(0xFF3F3F46);
+    final line = isDark ? Colors.white.withValues(alpha: 0.10) : const Color(0xFFE4E4E7);
+    return Row(
+      children: [
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+          decoration: BoxDecoration(color: chipBg, borderRadius: BorderRadius.circular(999)),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(Icons.horizontal_split, size: 12),
+              const SizedBox(width: 6),
+              Text(
+                label.toUpperCase(),
+                style: TextStyle(
+                  fontSize: 10.5,
+                  fontWeight: FontWeight.w800,
+                  letterSpacing: 1.4,
+                  color: chipText,
+                ),
+              ),
+              const SizedBox(width: 6),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF71717A),
+                  borderRadius: BorderRadius.circular(999),
+                ),
+                child: Text('$count', style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w800, color: Colors.white)),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(width: 10),
+        Expanded(child: Container(height: 1, color: line)),
+      ],
     );
   }
 }

@@ -14,6 +14,12 @@ export interface MapListItem {
  listElement: React.ReactNode;
  /** What to render inside the marker popup. Optional. */
  popupElement?: React.ReactNode;
+ /**
+  * When true, this row spans every grid column and does NOT render the
+  * "show on map" button. Used for group separators / dividers that break
+  * "best matches" from "other results" in the list.
+  */
+ fullWidth?: boolean;
 }
 
 interface Props {
@@ -137,9 +143,14 @@ export function MapListLayout({
  () => items.filter((x) => x.lat != null && x.lng != null),
  [items]
  );
+ // Real content rows (dividers/separators don't count as "results").
+ const contentCount = useMemo(
+ () => items.filter((x) => !x.fullWidth).length,
+ [items]
+ );
 
  // Empty case: still show the toggle, but list panel renders empty state.
- const hasItems = items.length > 0;
+ const hasItems = contentCount > 0;
 
  return (
  <div className="flex flex-col">
@@ -148,11 +159,11 @@ export function MapListLayout({
  <p className="text-xs text-zinc-500 dark:text-zinc-400">
  {hasItems ? (
  <>
- <span className="font-semibold text-zinc-700 dark:text-zinc-300">{items.length}</span>{" "}
- result{items.length === 1 ? "" : "s"}
- {withCoords.length < items.length && (
+ <span className="font-semibold text-zinc-700 dark:text-zinc-300">{contentCount}</span>{" "}
+ result{contentCount === 1 ? "" : "s"}
+ {withCoords.length < contentCount && (
  <span className="ml-2 text-amber-600 dark:text-amber-400">
- · {items.length - withCoords.length} without map location
+ · {contentCount - withCoords.length} without map location
  </span>
  )}
  </>
@@ -214,10 +225,11 @@ export function MapListLayout({
  className={[
  "relative transition rounded-3xl",
  highlight === it.id ? "ring-2 ring-brand-400" : "",
+ it.fullWidth ? "md:col-span-2" : "",
  ].join(" ")}
  >
  {it.listElement}
- {view === "split" && it.lat != null && it.lng != null && (
+ {!it.fullWidth && view === "split" && it.lat != null && it.lng != null && (
  <button
  type="button"
  onClick={(e) => {

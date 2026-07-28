@@ -30,6 +30,7 @@ import { matchScore, jobDistanceKm, BAND_COLORS, type MatchResult } from "../lib
 import { distanceKm, formatDistance } from "../lib/distance";
 import { Navigation, Home, Target } from "lucide-react";
 import { MapListLayout, type MapListItem } from "../components/MapListLayout";
+import { SectionSeparator } from "../components/SectionSeparator";
 import { Checkbox } from "../components/Checkbox";
 import { FilterPanel, type FilterState, type FacetCounts, type PostedBucket } from "../components/FilterPanel";
 
@@ -151,6 +152,16 @@ export function JobBrowse() {
  // eslint-disable-next-line react-hooks/exhaustive-deps
  }, [jobs, filters, search]);
 
+ /* Rank + partition.
+  *
+  * When there's a signal we can rank against (candidate profile, search
+  * text, or a chosen anchor), split into "Best matches" and "Other jobs"
+  * with a divider between. Otherwise everyone lives in the "others" bucket
+  * and the divider stays hidden — behaves like a plain sorted list.
+  *
+  * `bestOnly` still hides non-matches entirely — it's the explicit
+  * user-narrowing toggle and should keep its "strict filter" semantics.
+  */
  const filtered = useMemo(() => {
  const base = jobs.filter((j) => passes(j));
  const withMatch = base.map((j) => {
@@ -166,7 +177,9 @@ export function JobBrowse() {
  const bestFiltered = bestOnly
  ? radiusFiltered.filter((x) => x.result && x.result.score >= 70)
  : radiusFiltered;
- const sorted = [...bestFiltered];
+
+ const sortAll = (arr: typeof bestFiltered) => {
+ const sorted = [...arr];
  if (sortBy === "nearest" && anchorCoords) {
  sorted.sort((a, b) => (a.distance ?? Infinity) - (b.distance ?? Infinity));
  } else if (sortBy === "newest") {
@@ -179,8 +192,34 @@ export function JobBrowse() {
  });
  }
  return sorted;
+ };
+
+ const q = search.trim().toLowerCase();
+ // Partition threshold: a job is a "best match" when the candidate's
+ // profile scores ≥ 40 against it, OR the search hits the title / skills.
+ // Below that (or no signal at all) it falls into the "Other jobs" bucket.
+ const partitionThreshold = 40;
+ const isMatch = (x: typeof bestFiltered[number]) => {
+ if (x.result && x.result.score >= partitionThreshold) return true;
+ if (q) {
+ const hay = `${x.job.title} ${x.job.employerName} ${x.job.skills.join(" ")}`.toLowerCase();
+ if (hay.includes(q)) return true;
+ }
+ return false;
+ };
+
+ const hasSignal = !!profile || !!q;
+ if (!hasSignal || bestOnly) {
+ return { matched: [] as typeof bestFiltered, others: sortAll(bestFiltered), hasSignal: false };
+ }
+
+ const matched = sortAll(bestFiltered.filter(isMatch));
+ const others = sortAll(bestFiltered.filter((x) => !isMatch(x)));
+ return { matched, others, hasSignal: true };
  // eslint-disable-next-line react-hooks/exhaustive-deps
  }, [jobs, filters, search, profile, bestOnly, anchorCoords, radiusKm, sortBy]);
+
+ const filteredCount = filtered.matched.length + filtered.others.length;
 
  /** Total active facet selections — drives the chips bar + drawer badge. */
  const activeCount =
@@ -215,7 +254,12 @@ export function JobBrowse() {
  Openings across Tamil Nadu
  </h1>
  <p className="mt-1 text-[13px] text-zinc-600 dark:text-zinc-400">
- {filtered.length} {filtered.length === 1 ? "job" : "jobs"} match your filters
+ {filteredCount} {filteredCount === 1 ? "job" : "jobs"} in view
+ {filtered.hasSignal && filtered.matched.length > 0 ? (
+ <span className="ml-2 rounded-full bg-emerald-100 px-2 py-0.5 align-middle text-[11.5px] font-bold text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300">
+ {filtered.matched.length} match
+ </span>
+ ) : null}
  </p>
  </div>
  {hasDistinctPreferred && (
@@ -375,7 +419,11 @@ export function JobBrowse() {
  : null
  }
  radiusKm={anchorCoords && radiusKm < 9999 ? radiusKm : null}
- items={filtered.map(({ job, result, distance }, i): MapListItem => ({
+ items={(() => {
+ const rowFor = (
+ { job, result, distance }: { job: Job; result: MatchResult | null; distance: number | null },
+ i: number,
+ ): MapListItem => ({
  id: job.id,
  lat: job.lat,
  lng: job.lng,
@@ -388,7 +436,29 @@ export function JobBrowse() {
  />
  ),
  popupElement: <JobPopup job={job} matchResult={result ?? undefined} distance={distance} />,
- }))}
+ });
+ const rows: MapListItem[] = [];
+ filtered.matched.forEach((x, i) => rows.push(rowFor(x, i)));
+ if (
+ filtered.hasSignal &&
+ filtered.matched.length > 0 &&
+ filtered.others.length > 0
+ ) {
+ rows.push({
+ id: "__separator_others__",
+ fullWidth: true,
+ listElement: (
+ <SectionSeparator
+ label="Other jobs"
+ count={filtered.others.length}
+ tone="zinc"
+ />
+ ),
+ });
+ }
+ filtered.others.forEach((x, i) => rows.push(rowFor(x, i + filtered.matched.length)));
+ return rows;
+ })()}
  emptyState={
  <div className="flex flex-col items-center rounded-3xl border border-dashed border-zinc-300 bg-white px-6 py-16 text-center dark:border-zinc-700 dark:bg-zinc-900">
  <Search size={32} className="text-zinc-400" />
@@ -428,7 +498,7 @@ export function JobBrowse() {
  onClick={() => setFiltersOpen(false)}
  className="inline-flex items-center justify-center rounded-lg bg-gradient-to-r from-brand-500 to-brand-600 px-5 py-2 text-[13px] font-semibold text-white shadow-md shadow-brand-500/30"
  >
- Show {filtered.length} {filtered.length === 1 ? "job" : "jobs"}
+ Show {filteredCount} {filteredCount === 1 ? "job" : "jobs"}
  </button>
  </div>
  </div>

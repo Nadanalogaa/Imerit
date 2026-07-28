@@ -65,51 +65,127 @@ class _EmployerCandidatesPageState extends ConsumerState<EmployerCandidatesPage>
     return out;
   }
 
-  List<(User, CandidateProfile)> _filtered(List<(User, CandidateProfile)> pool) {
+  /// Rank + partition — mirror of web's EmployerCandidates logic.
+  ///
+  ///   HARD facets (field, type, years, education) narrow the pool.
+  ///   SOFT signals (search text, skills, districts, near-job) rank matches
+  ///   to the top. Everyone in the hard-filtered pool that scores 0 on the
+  ///   soft signals sits below a divider as "Other candidates".
+  ///
+  /// When no soft signal is active, the divider stays hidden and everyone
+  /// lives in `others` — behaves like a plain sorted list.
+  _RankedCandidates _ranked(List<(User, CandidateProfile)> pool) {
     final locations = ref.read(locationsProvider);
     final activeJobs = _activeJobsForEmployer();
     final nearJob = _filters.nearJobId != null
         ? activeJobs.where((j) => j.id == _filters.nearJobId).firstOrNull
         : null;
+    final q = _search.text.trim().toLowerCase();
 
-    var results = pool.where((c) {
-      if (!_filters.matches(c.$2, locations: locations, nearJob: nearJob)) return false;
-      final q = _search.text.trim().toLowerCase();
-      if (q.isEmpty) return true;
-      final user = c.$1;
-      final p = c.$2;
-      final hay = [
-        user.name,
-        p.preferredLocation ?? '',
-        p.itSpecialization ?? '',
-        ...(p.itLanguages ?? const []),
-        ...(p.nonItDepartments ?? const []),
-        ...(p.topSkills ?? const []),
-        ...(p.experiences ?? const []).map((e) => '${e.company} ${e.role}'),
-      ].join(' ').toLowerCase();
-      return hay.contains(q);
-    }).toList();
-
-    // Sort per state.sort. Skill-match uses the filter's own scoring; a tie
-    // falls back to updatedAt so results stay stable rather than jittering.
-    switch (_filters.sort) {
-      case CandidateSort.skillMatch:
-        results.sort((a, b) {
-          final sa = _filters.skillMatchScore(a.$2);
-          final sb = _filters.skillMatchScore(b.$2);
-          final cmp = sb.compareTo(sa);
-          if (cmp != 0) return cmp;
-          return b.$2.updatedAt.compareTo(a.$2.updatedAt);
-        });
-        break;
-      case CandidateSort.recent:
-        results.sort((a, b) => b.$2.updatedAt.compareTo(a.$2.updatedAt));
-        break;
-      case CandidateSort.alphabetical:
-        results.sort((a, b) => a.$1.name.toLowerCase().compareTo(b.$1.name.toLowerCase()));
-        break;
+    bool hardPass(CandidateProfile p) {
+      if (_filters.field != null) {
+        if (_filters.field == JobField.it && p.field != FieldKind.it) return false;
+        if (_filters.field == JobField.nonIt && p.field != FieldKind.nonIt) return false;
+      }
+      if (_filters.candidateType != null && p.type != _filters.candidateType) return false;
+      if (_filters.yearsMin != null || _filters.yearsMax != null) {
+        final y = p.yearsOfExperience ?? -1;
+        if (_filters.yearsMin != null && y < _filters.yearsMin!) return false;
+        if (_filters.yearsMax != null && y > _filters.yearsMax!) return false;
+      }
+      if (_filters.educationLevels.isNotEmpty) {
+        final has = p.education.any(
+          (e) => e.enabled && _filters.educationLevels.contains(e.level),
+        );
+        if (!has) return false;
+      }
+      return true;
     }
-    return results;
+
+    double softScore(User user, CandidateProfile p) {
+      double score = 0;
+      if (q.isNotEmpty) {
+        final hay = [
+          user.name,
+          p.preferredLocation ?? '',
+          p.itSpecialization ?? '',
+          ...(p.itLanguages ?? const []),
+          ...(p.nonItDepartments ?? const []),
+          ...(p.topSkills ?? const []),
+          ...(p.experiences ?? const []).map((e) => '${e.company} ${e.role}'),
+        ].join(' ').toLowerCase();
+        if (hay.contains(q)) score += 3;
+      }
+      if (_filters.skills.isNotEmpty) {
+        score += _filters.skillMatchScore(p) * 5;
+      }
+      if (_filters.districtIds.isNotEmpty) {
+        final inPreferred = p.preferredDistrictIds.any(_filters.districtIds.contains);
+        final inCurrent = p.currentDistrictId != null &&
+            _filters.districtIds.contains(p.currentDistrictId);
+        if (inPreferred || inCurrent) score += 2;
+      }
+      if (_filters.nearJobId != null &&
+          _filters.maxDistanceKm != null &&
+          nearJob != null &&
+          nearJob.lat != null &&
+          nearJob.lng != null) {
+        // Reuse the strict distance predicate — a "near" candidate gets a
+        // boost; everyone else falls below the divider on this signal alone.
+        final locationsMatch = _filters.copyWith(
+          districtIds: const [],
+          skills: const [],
+        );
+        if (locationsMatch.matches(p, locations: locations, nearJob: nearJob)) {
+          score += 2;
+        }
+      }
+      return score;
+    }
+
+    int fallback(
+      (User, CandidateProfile) a,
+      (User, CandidateProfile) b,
+    ) {
+      switch (_filters.sort) {
+        case CandidateSort.recent:
+          return b.$2.updatedAt.compareTo(a.$2.updatedAt);
+        case CandidateSort.alphabetical:
+          return a.$1.name.toLowerCase().compareTo(b.$1.name.toLowerCase());
+        case CandidateSort.skillMatch:
+          return b.$2.updatedAt.compareTo(a.$2.updatedAt);
+      }
+    }
+
+    final hasSignal = q.isNotEmpty ||
+        _filters.skills.isNotEmpty ||
+        _filters.districtIds.isNotEmpty ||
+        _filters.nearJobId != null;
+
+    final poolPass = pool.where((c) => hardPass(c.$2)).toList();
+    final scored = poolPass
+        .map((c) => (c.$1, c.$2, softScore(c.$1, c.$2)))
+        .toList();
+
+    if (!hasSignal) {
+      final sorted = poolPass.toList()..sort(fallback);
+      return _RankedCandidates(matched: const [], others: sorted, hasSignal: false);
+    }
+
+    final matched = scored.where((t) => t.$3 > 0).toList()
+      ..sort((a, b) {
+        final s = b.$3.compareTo(a.$3);
+        if (s != 0) return s;
+        return fallback((a.$1, a.$2), (b.$1, b.$2));
+      });
+    final others = scored.where((t) => t.$3 == 0).toList()
+      ..sort((a, b) => fallback((a.$1, a.$2), (b.$1, b.$2)));
+
+    return _RankedCandidates(
+      matched: matched.map((t) => (t.$1, t.$2)).toList(),
+      others: others.map((t) => (t.$1, t.$2)).toList(),
+      hasSignal: true,
+    );
   }
 
   List<Job> _activeJobsForEmployer() {
@@ -235,7 +311,10 @@ class _EmployerCandidatesPageState extends ConsumerState<EmployerCandidatesPage>
     final hasSub = sub != null;
 
     final pool = _pool();
-    final candidates = _filtered(pool);
+    final ranked = _ranked(pool);
+    final total = ranked.matched.length + ranked.others.length;
+    final all = <(User, CandidateProfile)>[...ranked.matched, ...ranked.others];
+    final showDivider = ranked.hasSignal && ranked.matched.isNotEmpty && ranked.others.isNotEmpty;
     final weeklyApps = _weeklyApplicationCount();
     final shortlistIds = ref.watch(shortlistProvider)[employer.id] ?? const <String>[];
 
@@ -267,9 +346,29 @@ class _EmployerCandidatesPageState extends ConsumerState<EmployerCandidatesPage>
                           style: TextStyle(fontSize: 11, letterSpacing: 2, fontWeight: FontWeight.w800, color: Color(0xFF0369A1)),
                         ),
                         const SizedBox(height: 6),
-                        Text(
-                          '${candidates.length} candidate${candidates.length == 1 ? "" : "s"} match',
-                          style: TextStyle(fontSize: 22, fontWeight: FontWeight.w700, letterSpacing: -0.4, color: isDark ? Colors.white : const Color(0xFF09090B)),
+                        Row(
+                          crossAxisAlignment: CrossAxisAlignment.baseline,
+                          textBaseline: TextBaseline.alphabetic,
+                          children: [
+                            Text(
+                              '$total candidate${total == 1 ? "" : "s"} in view',
+                              style: TextStyle(fontSize: 22, fontWeight: FontWeight.w700, letterSpacing: -0.4, color: isDark ? Colors.white : const Color(0xFF09090B)),
+                            ),
+                            if (ranked.hasSignal && ranked.matched.isNotEmpty) ...[
+                              const SizedBox(width: 8),
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFF10B981).withValues(alpha: 0.15),
+                                  borderRadius: BorderRadius.circular(999),
+                                ),
+                                child: Text(
+                                  '${ranked.matched.length} match',
+                                  style: const TextStyle(fontSize: 11.5, fontWeight: FontWeight.w800, color: Color(0xFF047857)),
+                                ),
+                              ),
+                            ],
+                          ],
                         ),
                         const SizedBox(height: 4),
                         Text(
@@ -302,21 +401,34 @@ class _EmployerCandidatesPageState extends ConsumerState<EmployerCandidatesPage>
                     ),
                   ),
                 ),
-                if (candidates.isEmpty)
+                if (total == 0)
                   SliverToBoxAdapter(child: _EmptyState(isDark: isDark))
                 else
                   SliverPadding(
                     key: _listKey,
                     padding: const EdgeInsets.symmetric(horizontal: 16),
+                    // +1 slot for the divider when both groups are non-empty.
                     sliver: SliverList.builder(
-                      itemCount: candidates.length,
+                      itemCount: total + (showDivider ? 1 : 0),
                       itemBuilder: (context, i) {
-                        final (user, profile) = candidates[i];
+                        // Injected separator row between "matched" and "others".
+                        if (showDivider && i == ranked.matched.length) {
+                          return Padding(
+                            padding: const EdgeInsets.only(bottom: 12),
+                            child: _SectionSeparator(
+                              label: 'Other candidates',
+                              count: ranked.others.length,
+                              isDark: isDark,
+                            ),
+                          );
+                        }
+                        final index = showDivider && i > ranked.matched.length ? i - 1 : i;
+                        final (user, profile) = all[index];
                         final shortlisted = shortlistIds.contains(user.id);
                         final matchScore = _filters.skills.isEmpty ? null : _filters.skillMatchScore(profile);
                         final weekApps = weeklyApps[user.id] ?? 0;
                         return _StaggeredEntry(
-                          index: i,
+                          index: index,
                           child: Padding(
                             padding: const EdgeInsets.only(bottom: 12),
                             child: _CandidateCard(
@@ -341,7 +453,7 @@ class _EmployerCandidatesPageState extends ConsumerState<EmployerCandidatesPage>
                       },
                     ),
                   ),
-                if (candidates.isNotEmpty)
+                if (total > 0)
                   SliverToBoxAdapter(
                     child: Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -349,7 +461,7 @@ class _EmployerCandidatesPageState extends ConsumerState<EmployerCandidatesPage>
                         isDark: isDark,
                         markerTone: MarkerTone.sky,
                         initialMode: MapListMode.map,
-                        items: candidates.map((tuple) {
+                        items: all.map((tuple) {
                           final user = tuple.$1;
                           final profile = tuple.$2;
                           double? lat = profile.currentLat;
@@ -1023,6 +1135,77 @@ class _CandidatePopup extends StatelessWidget {
           ],
         ),
       ),
+    );
+  }
+}
+
+/// Result of ranking + partitioning a candidate pool. `matched` are those
+/// that scored > 0 against the active soft signals (search, skills,
+/// districts, near-job); `others` sit below the divider. When `hasSignal`
+/// is false, `matched` is empty and everyone lives in `others`.
+class _RankedCandidates {
+  const _RankedCandidates({
+    required this.matched,
+    required this.others,
+    required this.hasSignal,
+  });
+  final List<(User, CandidateProfile)> matched;
+  final List<(User, CandidateProfile)> others;
+  final bool hasSignal;
+}
+
+/// Full-width divider strip used between the "matched" and "others" groups
+/// in the SliverList. Kept as a private widget so the mobile theming stays
+/// consistent with the rest of the page.
+class _SectionSeparator extends StatelessWidget {
+  const _SectionSeparator({
+    required this.label,
+    required this.count,
+    required this.isDark,
+  });
+  final String label;
+  final int count;
+  final bool isDark;
+
+  @override
+  Widget build(BuildContext context) {
+    final chipBg = isDark ? Colors.white.withValues(alpha: 0.08) : const Color(0xFFF4F4F5);
+    final chipText = isDark ? Colors.white.withValues(alpha: 0.9) : const Color(0xFF3F3F46);
+    final line = isDark ? Colors.white.withValues(alpha: 0.10) : const Color(0xFFE4E4E7);
+    return Row(
+      children: [
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+          decoration: BoxDecoration(color: chipBg, borderRadius: BorderRadius.circular(999)),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(Icons.horizontal_split, size: 12),
+              const SizedBox(width: 6),
+              Text(
+                label.toUpperCase(),
+                style: TextStyle(
+                  fontSize: 10.5,
+                  fontWeight: FontWeight.w800,
+                  letterSpacing: 1.4,
+                  color: chipText,
+                ),
+              ),
+              const SizedBox(width: 6),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF71717A),
+                  borderRadius: BorderRadius.circular(999),
+                ),
+                child: Text('$count', style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w800, color: Colors.white)),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(width: 10),
+        Expanded(child: Container(height: 1, color: line)),
+      ],
     );
   }
 }
