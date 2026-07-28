@@ -11,6 +11,8 @@ import {
  ScrollText,
  Briefcase,
  ShieldCheck,
+ Trash2,
+ UserCog,
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { allUsers } from "../store/auth";
@@ -175,6 +177,55 @@ export function SuperAdminDashboard() {
  accent="from-emerald-500 to-teal-500"
  to="/admin/subscriptions"
  />
+ </motion.div>
+
+ {/* Quick links — super-admin-only power tools */}
+ <motion.div variants={itemV} className="grid gap-3 sm:grid-cols-3">
+ <Link
+ to="/super-admin/users"
+ className="group flex items-center justify-between rounded-2xl border border-zinc-200 bg-white px-5 py-4 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md dark:border-zinc-800 dark:bg-zinc-900"
+ >
+ <div className="flex items-center gap-3">
+ <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-rose-500 to-amber-500 text-white shadow-md">
+ <UserCog size={18} />
+ </div>
+ <div>
+ <p className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">Manage users</p>
+ <p className="text-[11.5px] text-zinc-500 dark:text-zinc-400">Multi-select · delete · role filter</p>
+ </div>
+ </div>
+ <ArrowRight size={16} className="text-zinc-400 transition group-hover:translate-x-0.5 group-hover:text-zinc-700 dark:group-hover:text-zinc-300" />
+ </Link>
+ <Link
+ to="/super-admin/trash"
+ className="group flex items-center justify-between rounded-2xl border border-zinc-200 bg-white px-5 py-4 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md dark:border-zinc-800 dark:bg-zinc-900"
+ >
+ <div className="flex items-center gap-3">
+ <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-zinc-700 to-zinc-900 text-white shadow-md">
+ <Trash2 size={18} />
+ </div>
+ <div>
+ <p className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">Trash</p>
+ <p className="text-[11.5px] text-zinc-500 dark:text-zinc-400">Restore · purge · empty</p>
+ </div>
+ </div>
+ <ArrowRight size={16} className="text-zinc-400 transition group-hover:translate-x-0.5 group-hover:text-zinc-700 dark:group-hover:text-zinc-300" />
+ </Link>
+ <Link
+ to="/super-admin/staff"
+ className="group flex items-center justify-between rounded-2xl border border-zinc-200 bg-white px-5 py-4 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md dark:border-zinc-800 dark:bg-zinc-900"
+ >
+ <div className="flex items-center gap-3">
+ <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-violet-500 to-fuchsia-500 text-white shadow-md">
+ <ShieldCheck size={18} />
+ </div>
+ <div>
+ <p className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">Staff accounts</p>
+ <p className="text-[11.5px] text-zinc-500 dark:text-zinc-400">Provision · deactivate</p>
+ </div>
+ </div>
+ <ArrowRight size={16} className="text-zinc-400 transition group-hover:translate-x-0.5 group-hover:text-zinc-700 dark:group-hover:text-zinc-300" />
+ </Link>
  </motion.div>
 
  {/* Subscription mix */}

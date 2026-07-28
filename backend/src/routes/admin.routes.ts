@@ -8,8 +8,10 @@ import {
   adminActivitySchema,
   adminProfileListSchema,
   adminUserListSchema,
+  bulkIdsSchema,
   createAdminSchema,
   moderateProfileSchema,
+  trashListSchema,
 } from "../schemas/admin.schemas.js";
 import {
   getOverviewStats,
@@ -24,6 +26,16 @@ import {
   listAdmins,
   softDeleteAdmin,
 } from "../services/admin-users.service.js";
+import {
+  bulkPurgeUsers,
+  bulkRestoreUsers,
+  bulkSoftDeleteUsers,
+  emptyTrash,
+  listTrash,
+  purgeUser,
+  restoreUser,
+  softDeleteUser,
+} from "../services/trash.service.js";
 
 const router = Router();
 
@@ -127,6 +139,153 @@ router.delete(
       userAgent: req.headers["user-agent"],
     });
     res.json({ user: result });
+  }),
+);
+
+/* --------------------- SUPER_ADMIN-only: user trash (recycle bin) --------------------- */
+
+// Two-step lifecycle: DELETE moves the user to trash (soft delete, keeps
+// email locked so nobody can re-register with it); PURGE hard-deletes and
+// finally frees the email. Bulk variants take an { ids: string[] } body.
+
+router.get(
+  "/super-admin/trash",
+  ...superAdminGuard,
+  validate({ query: trashListSchema }),
+  asyncHandler(async (req, res) => {
+    const { role } = req.query as unknown as { role?: UserRole };
+    res.json({ items: await listTrash(role) });
+  }),
+);
+
+router.delete(
+  "/super-admin/users/:id",
+  ...superAdminGuard,
+  asyncHandler(async (req, res) => {
+    const rawId = req.params.id;
+    const targetId = Array.isArray(rawId) ? rawId[0] : rawId;
+    if (!targetId) throw new HttpError(400, "id is required", "ID_REQUIRED");
+    const result = await softDeleteUser(
+      {
+        actorId: req.user!.sub,
+        actorRole: req.user!.role,
+        ip: req.ip,
+        userAgent: req.headers["user-agent"],
+      },
+      targetId,
+    );
+    res.json({ user: result });
+  }),
+);
+
+router.post(
+  "/super-admin/users/bulk-delete",
+  ...superAdminGuard,
+  validate({ body: bulkIdsSchema }),
+  asyncHandler(async (req, res) => {
+    const { ids } = req.body as { ids: string[] };
+    const result = await bulkSoftDeleteUsers(
+      {
+        actorId: req.user!.sub,
+        actorRole: req.user!.role,
+        ip: req.ip,
+        userAgent: req.headers["user-agent"],
+      },
+      ids,
+    );
+    res.json(result);
+  }),
+);
+
+router.post(
+  "/super-admin/users/:id/restore",
+  ...superAdminGuard,
+  asyncHandler(async (req, res) => {
+    const rawId = req.params.id;
+    const targetId = Array.isArray(rawId) ? rawId[0] : rawId;
+    if (!targetId) throw new HttpError(400, "id is required", "ID_REQUIRED");
+    const result = await restoreUser(
+      {
+        actorId: req.user!.sub,
+        actorRole: req.user!.role,
+        ip: req.ip,
+        userAgent: req.headers["user-agent"],
+      },
+      targetId,
+    );
+    res.json({ user: result });
+  }),
+);
+
+router.post(
+  "/super-admin/users/bulk-restore",
+  ...superAdminGuard,
+  validate({ body: bulkIdsSchema }),
+  asyncHandler(async (req, res) => {
+    const { ids } = req.body as { ids: string[] };
+    const result = await bulkRestoreUsers(
+      {
+        actorId: req.user!.sub,
+        actorRole: req.user!.role,
+        ip: req.ip,
+        userAgent: req.headers["user-agent"],
+      },
+      ids,
+    );
+    res.json(result);
+  }),
+);
+
+router.delete(
+  "/super-admin/users/:id/permanent",
+  ...superAdminGuard,
+  asyncHandler(async (req, res) => {
+    const rawId = req.params.id;
+    const targetId = Array.isArray(rawId) ? rawId[0] : rawId;
+    if (!targetId) throw new HttpError(400, "id is required", "ID_REQUIRED");
+    const result = await purgeUser(
+      {
+        actorId: req.user!.sub,
+        actorRole: req.user!.role,
+        ip: req.ip,
+        userAgent: req.headers["user-agent"],
+      },
+      targetId,
+    );
+    res.json({ user: result });
+  }),
+);
+
+router.post(
+  "/super-admin/users/bulk-purge",
+  ...superAdminGuard,
+  validate({ body: bulkIdsSchema }),
+  asyncHandler(async (req, res) => {
+    const { ids } = req.body as { ids: string[] };
+    const result = await bulkPurgeUsers(
+      {
+        actorId: req.user!.sub,
+        actorRole: req.user!.role,
+        ip: req.ip,
+        userAgent: req.headers["user-agent"],
+      },
+      ids,
+    );
+    res.json(result);
+  }),
+);
+
+router.post(
+  "/super-admin/trash/empty",
+  ...superAdminGuard,
+  asyncHandler(async (req, res) => {
+    const result = await emptyTrash({
+      actorId: req.user!.sub,
+      actorRole: req.user!.role,
+      ip: req.ip,
+      userAgent: req.headers["user-agent"],
+    });
+    res.json(result);
   }),
 );
 

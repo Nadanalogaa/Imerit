@@ -50,6 +50,16 @@ router.post(
 
     const existing = await findByEmail(email);
     if (existing) {
+      if (existing.deletedAt) {
+        // Email lives in the trash — unique constraint still blocks re-insert.
+        // Only super-admin can free it via purge. Tell the user without
+        // over-disclosing (no name / role details in the message).
+        throw new HttpError(
+          409,
+          "This email was previously deleted and is pending permanent removal. Please contact support to restore or purge the account before re-registering.",
+          "EMAIL_IN_TRASH",
+        );
+      }
       // Don't reveal whether a verified user is squatting the email — point
       // the user toward login instead. Still safe-ish, since both flows then
       // require the OTP they'd never receive without owning the inbox.

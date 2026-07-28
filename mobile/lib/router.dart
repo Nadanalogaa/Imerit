@@ -33,8 +33,13 @@ import 'pages/staff_employer_form_page.dart';
 import 'pages/staff_post_job_page.dart';
 import 'pages/staff_jobs_page.dart';
 import 'pages/super_admin_staff_page.dart';
+import 'pages/super_admin_users_page.dart';
+import 'pages/super_admin_trash_page.dart';
 import 'pages/forgot_password_page.dart';
 import 'pages/account_settings_page.dart';
+import 'pages/legal/legal_privacy_page.dart';
+import 'pages/legal/legal_terms_page.dart';
+import 'pages/legal/legal_refund_page.dart';
 import 'storage/storage.dart';
 
 bool _isLoggedInAs(String role) {
@@ -240,6 +245,16 @@ final appRouter = GoRouter(
       redirect: (_, _) => _isLoggedInAs('super_admin') ? null : '/super-admin',
       builder: (_, _) => const SuperAdminStaffPage(),
     ),
+    GoRoute(
+      path: '/super-admin/users',
+      redirect: (_, _) => _isLoggedInAs('super_admin') ? null : '/super-admin',
+      builder: (_, _) => const SuperAdminUsersPage(),
+    ),
+    GoRoute(
+      path: '/super-admin/trash',
+      redirect: (_, _) => _isLoggedInAs('super_admin') ? null : '/super-admin',
+      builder: (_, _) => const SuperAdminTrashPage(),
+    ),
 
     // ------------------------ Staff (internal ops) ------------------------
     GoRoute(path: '/staff', redirect: (_, _) => '/staff/login'),
@@ -295,6 +310,22 @@ final appRouter = GoRouter(
     GoRoute(
       path: '/settings/account',
       builder: (_, _) => const AccountSettingsPage(),
+    ),
+
+    // ------------------------ Legal (public) ------------------------
+    // Required for Razorpay KYC + Play Store / App Store listing.
+    // Content mirrors web/src/pages/Legal*.tsx exactly.
+    GoRoute(
+      path: '/legal/privacy',
+      builder: (_, _) => const LegalPrivacyPage(),
+    ),
+    GoRoute(
+      path: '/legal/terms',
+      builder: (_, _) => const LegalTermsPage(),
+    ),
+    GoRoute(
+      path: '/legal/refund',
+      builder: (_, _) => const LegalRefundPage(),
     ),
   ],
 );

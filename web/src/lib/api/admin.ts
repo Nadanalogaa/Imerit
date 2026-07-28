@@ -131,3 +131,60 @@ export const superAdminApi = {
       { method: "DELETE" },
     ),
 };
+
+/* --------------------- Super-admin trash (recycle bin) --------------------- */
+
+export interface TrashUser {
+  id: string;
+  role: ApiUserRole | "STAFF";
+  name: string;
+  email: string;
+  mobile: string | null;
+  emailVerified: boolean;
+  createdAt: string;
+  deletedAt: string;
+  employerProfile?: { companyName: string } | null;
+  candidateProfile?: { moderationStatus: ApiModerationStatus } | null;
+}
+
+export interface BulkResult {
+  total: number;
+  succeeded: number;
+  failed: number;
+  results: { id: string; ok: boolean; error?: string }[];
+}
+
+export const trashApi = {
+  list: (role?: ApiUserRole | "STAFF") =>
+    api<{ items: TrashUser[] }>(`/super-admin/trash${qs({ role })}`),
+
+  softDelete: (id: string) =>
+    api<{ user: { id: string; role: string; email: string; deletedAt: string | null; name: string } }>(
+      `/super-admin/users/${encodeURIComponent(id)}`,
+      { method: "DELETE" },
+    ),
+
+  bulkDelete: (ids: string[]) =>
+    api<BulkResult>("/super-admin/users/bulk-delete", { method: "POST", json: { ids } }),
+
+  restore: (id: string) =>
+    api<{ user: { id: string; role: string; email: string; deletedAt: string | null } }>(
+      `/super-admin/users/${encodeURIComponent(id)}/restore`,
+      { method: "POST" },
+    ),
+
+  bulkRestore: (ids: string[]) =>
+    api<BulkResult>("/super-admin/users/bulk-restore", { method: "POST", json: { ids } }),
+
+  purge: (id: string) =>
+    api<{ user: { id: string; email: string; role: string } }>(
+      `/super-admin/users/${encodeURIComponent(id)}/permanent`,
+      { method: "DELETE" },
+    ),
+
+  bulkPurge: (ids: string[]) =>
+    api<BulkResult>("/super-admin/users/bulk-purge", { method: "POST", json: { ids } }),
+
+  emptyTrash: () =>
+    api<BulkResult>("/super-admin/trash/empty", { method: "POST" }),
+};

@@ -59,3 +59,12 @@ export const updatePlanSchema = z.object({
   sortOrder: z.number().int().min(0).max(10_000).optional(),
   active: z.boolean().optional(),
 }).strict();
+
+/** Trash management — bulk lists of user ids. */
+export const bulkIdsSchema = z.object({
+  ids: z.array(z.string().cuid()).min(1).max(500),
+});
+
+export const trashListSchema = z.object({
+  role: z.nativeEnum(UserRole).optional(),
+});

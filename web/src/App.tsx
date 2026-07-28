@@ -40,6 +40,8 @@ import { SuperAdminDashboard } from "./pages/SuperAdminDashboard";
 import { SuperAdminAdmins } from "./pages/SuperAdminAdmins";
 import { SuperAdminPlans } from "./pages/SuperAdminPlans";
 import { SuperAdminStaff } from "./pages/SuperAdminStaff";
+import { SuperAdminUsers } from "./pages/SuperAdminUsers";
+import { SuperAdminTrash } from "./pages/SuperAdminTrash";
 import { StaffLogin } from "./pages/StaffLogin";
 import { StaffDashboard } from "./pages/StaffDashboard";
 import { StaffEmployers } from "./pages/StaffEmployers";
@@ -288,6 +290,8 @@ export default function App() {
         <Route path="/super-admin/admins" element={<RequireAuth role="super_admin"><SuperAdminAdmins /></RequireAuth>} />
         <Route path="/super-admin/plans" element={<RequireAuth role="super_admin"><SuperAdminPlans /></RequireAuth>} />
         <Route path="/super-admin/staff" element={<RequireAuth role="super_admin"><SuperAdminStaff /></RequireAuth>} />
+        <Route path="/super-admin/users" element={<RequireAuth role="super_admin"><SuperAdminUsers /></RequireAuth>} />
+        <Route path="/super-admin/trash" element={<RequireAuth role="super_admin"><SuperAdminTrash /></RequireAuth>} />
 
         {/* --------------------- Staff (internal ops) --------------------- */}
         <Route path="/staff" element={<Navigate to="/staff/login" replace />} />

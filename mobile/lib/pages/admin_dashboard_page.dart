@@ -135,6 +135,36 @@ class AdminDashboardPage extends ConsumerWidget {
                 _stat(isDark, Icons.trending_up_rounded, 'Revenue', '₹${_fmt(totalRevenue)}', '$activeSubs active subs', const [Color(0xFF10B981), Color(0xFF14B8A6)]),
               ],
             ),
+            if (isSuperAdmin) ...[
+              const SizedBox(height: 18),
+              Text('POWER TOOLS', style: TextStyle(fontSize: 11, letterSpacing: 2, fontWeight: FontWeight.w800, color: isDark ? Colors.white.withValues(alpha: 0.55) : const Color(0xFF71717A))),
+              const SizedBox(height: 10),
+              Row(
+                children: [
+                  Expanded(
+                    child: _quickAction(
+                      isDark,
+                      Icons.manage_accounts_outlined,
+                      'Manage users',
+                      'Multi-select · trash',
+                      const [Color(0xFFEF4444), Color(0xFFF59E0B)],
+                      () => context.push('/super-admin/users'),
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: _quickAction(
+                      isDark,
+                      Icons.delete_outline_rounded,
+                      'Trash',
+                      'Restore · purge',
+                      const [Color(0xFF3F3F46), Color(0xFF18181B)],
+                      () => context.push('/super-admin/trash'),
+                    ),
+                  ),
+                ],
+              ),
+            ],
             const SizedBox(height: 22),
             Text('PLATFORM USERS', style: TextStyle(fontSize: 11, letterSpacing: 2, fontWeight: FontWeight.w800, color: isDark ? Colors.white.withValues(alpha: 0.55) : const Color(0xFF71717A))),
             const SizedBox(height: 10),
@@ -239,6 +269,46 @@ class AdminDashboardPage extends ConsumerWidget {
           const SizedBox(height: 8),
           _breakdownRow(isDark, 'Employer Large plans', lg, const Color(0xFF7C3AED)),
         ],
+      ),
+    );
+  }
+
+  Widget _quickAction(bool isDark, IconData icon, String title, String sub, List<Color> colors, VoidCallback onTap) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(16),
+      child: Container(
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: isDark ? const Color(0xFF18181B) : Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: isDark ? Colors.white.withValues(alpha: 0.08) : const Color(0xFFE4E4E7)),
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 40,
+              height: 40,
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(12),
+                gradient: LinearGradient(colors: colors),
+              ),
+              child: Icon(icon, color: Colors.white, size: 20),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(title, style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: isDark ? Colors.white : const Color(0xFF09090B))),
+                  Text(sub, style: TextStyle(fontSize: 10.5, color: isDark ? Colors.white.withValues(alpha: 0.55) : const Color(0xFF71717A))),
+                ],
+              ),
+            ),
+            Icon(Icons.chevron_right, size: 18, color: isDark ? Colors.white38 : Colors.black38),
+          ],
+        ),
       ),
     );
   }
