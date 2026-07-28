@@ -21,13 +21,13 @@ export function Footer() {
 
  {/* Quick contact line */}
  <div className="mt-5 flex flex-col gap-2 text-xs text-zinc-400">
- <a href="mailto:hello@itamilrecruit.com" className="inline-flex items-center gap-2 transition hover:text-white">
+ <a href="mailto:Service@itamilrecruit.net" className="inline-flex items-center gap-2 transition hover:text-white">
  <Mail size={13} className="text-brand-400" />
- hello@itamilrecruit.com
+ Service@itamilrecruit.net
  </a>
  <span className="inline-flex items-center gap-2">
  <MapPin size={13} className="text-brand-400" />
- Tamil Nadu, India
+ RO: Salem · Branches: Chennai, Hosur
  </span>
  </div>
 

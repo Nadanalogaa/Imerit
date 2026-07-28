@@ -1,26 +1,49 @@
 interface Item {
  title: string;
- desc: string;
+ desc: React.ReactNode;
  color: string;
  icon: React.ReactNode;
 }
 
+// Reusable inline emphasis matching the source doc's brand-orange
+// bolding (#BF4E14 ≈ brand-700). Reads well against light + dark cards.
+function Emph({ children, plain = false }: { children: React.ReactNode; plain?: boolean }) {
+ return (
+ <strong
+ className={
+ plain
+ ? "font-semibold text-zinc-900 dark:text-zinc-100"
+ : "font-semibold text-brand-600 dark:text-brand-400"
+ }
+ >
+ {children}
+ </strong>
+ );
+}
+
 const ITEMS: Item[] = [
  {
- title: "No CV needed",
- desc: "Just fill simple structured fields — your photo, your education, your skills. We render it beautifully for employers.",
+ title: "Focus on our Young Aspirants",
+ desc: (
+ <>
+ Our special focus is on creating <Emph>Part-Time Job</Emph> opportunities for college students through our <Emph plain>"Earn While You Learn"</Emph> initiative. We also facilitate <Emph>Internship</Emph> and <Emph>Apprenticeship</Emph> opportunities, helping students gain practical experience while pursuing their education.
+ </>
+ ),
  color: "from-brand-500 to-amber-500",
  icon: (
  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
- <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
- <polyline points="14 2 14 8 20 8" />
- <line x1="9" y1="13" x2="15" y2="13" />
+ <path d="M22 10v6M2 10l10-5 10 5-10 5z" />
+ <path d="M6 12v5c3 3 9 3 12 0v-5" />
  </svg>
  ),
  },
  {
- title: "5 stunning templates",
- desc: "Pick a profile look that fits you — Classic, Modern, Creative, Corporate, or Tech Mono. Always one page, always polished.",
+ title: "5 Stunning Templates",
+ desc: (
+ <>
+ Highlight your skills and achievements in a concise <Emph>one-page résumé</Emph>. Choose from our professional templates — <Emph>Classic</Emph>, <Emph>Modern</Emph>, <Emph>Creative</Emph>, <Emph>Corporate</Emph>, or <Emph>Tech Mono</Emph>.
+ </>
+ ),
  color: "from-emerald-500 to-teal-500",
  icon: (
  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -32,24 +55,33 @@ const ITEMS: Item[] = [
  ),
  },
  {
- title: "Built for every field",
- desc: "IT, HR, Sales, Finance, Supply Chain, BPO, vocational trades — Tamil Nadu's full talent pool, not just one industry.",
+ title: "Update Your Skills First, CV Optional",
+ desc: (
+ <>
+ <Emph>No résumé required.</Emph> Simply provide your education and skills in a structured format, and we'll create a professional profile that attracts the right employers.
+ </>
+ ),
  color: "from-violet-500 to-fuchsia-500",
  icon: (
  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
- <circle cx="12" cy="12" r="10" />
- <path d="M2 12h20M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" />
+ <path d="M9 11l3 3L22 4" />
+ <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11" />
  </svg>
  ),
  },
  {
- title: "Tamil Nadu first",
- desc: "Made in Tamil Nadu, for Tamil Nadu. We know our cities, our colleges, our companies, and what local employers really look for.",
+ title: "Built for Every Industry",
+ desc: (
+ <>
+ Serving businesses across all industries — <Emph>IT and Non-IT</Emph>, <Emph>MSMEs</Emph>, <Emph>large enterprises</Emph>, <Emph>start-ups</Emph>, entrepreneurs, freelancers, and specialised consultants — anyone seeking effective talent-sourcing solutions.
+ </>
+ ),
  color: "from-sky-500 to-cyan-500",
  icon: (
  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
- <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
- <circle cx="12" cy="10" r="3" />
+ <path d="M3 21h18" />
+ <path d="M5 21V7l7-4 7 4v14" />
+ <path d="M9 9h.01M13 9h.01M9 13h.01M13 13h.01M9 17h.01M13 17h.01" />
  </svg>
  ),
  },
@@ -66,17 +98,25 @@ export function WhyUs() {
  Why choose us
  </p>
  <h2 className="mt-3 text-3xl font-semibold tracking-tight md:text-5xl">
- A recruitment platform that actually fits Tamil Nadu
+ Beyond a traditional job portal —{" "}
+ <span className="bg-gradient-to-r from-brand-500 to-amber-500 bg-clip-text text-transparent">
+ built for a Zero-Unemployment Tamil Nadu
+ </span>
  </h2>
- <p className="mt-4 mx-auto max-w-2xl text-zinc-600 dark:text-zinc-400">
- We're not another generic job board. Every part of i-Tamil Recruit is designed for our students, our professionals, and our employers — across every field, every district.
+ <p className="mt-4 mx-auto max-w-3xl text-zinc-600 dark:text-zinc-400">
+ Driven by the vision of creating a{" "}
+ <Emph>"Zero-Unemployment" state</Emph>, our specialised sourcing team identifies talent across every district. Powered by recruitment expertise and data analytics, we enable employers to identify the right candidates —{" "}
+ <Emph plain>ensuring the perfect fit between talent, skills, and job requirements.</Emph>
+ </p>
+ <p className="mt-3 mx-auto max-w-3xl text-sm text-zinc-500 dark:text-zinc-400">
+ For our subscribed candidates, we provide personalised job counselling and career guidance, plus skill-development guidance aligned with real market demand — near their hometown or across the state.
  </p>
  </div>
 
  <div className="mt-14 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
- {ITEMS.map((it) => (
+ {ITEMS.map((it, i) => (
  <div
- key={it.title}
+ key={i}
  className="group relative overflow-hidden rounded-2xl bg-white p-6 transition hover:-translate-y-1 hover:shadow-xl dark:bg-zinc-900"
  >
  <div
@@ -87,8 +127,12 @@ export function WhyUs() {
  >
  <div className="h-6 w-6">{it.icon}</div>
  </div>
- <h3 className="text-lg font-semibold tracking-tight">{it.title}</h3>
- <p className="mt-2 text-sm text-zinc-600 dark:text-zinc-400">{it.desc}</p>
+ <h3 className="text-lg font-bold tracking-tight text-brand-600 dark:text-brand-400">
+ {it.title}
+ </h3>
+ <p className="mt-2 text-sm leading-relaxed text-zinc-600 dark:text-zinc-400">
+ {it.desc}
+ </p>
  </div>
  ))}
  </div>

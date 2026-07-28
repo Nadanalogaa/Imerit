@@ -1,37 +1,75 @@
 import 'package:flutter/material.dart';
 
+/// Inline emphasis colour matching the source doc (Why us.docx uses
+/// #BF4E14 — a close cousin of Tailwind brand-700 on web).
+const _kEmphOnLight = Color(0xFFC2410C);
+const _kEmphOnDark = Color(0xFFFB923C);
+
 class WhyUs extends StatelessWidget {
   const WhyUs({super.key, required this.isDark});
   final bool isDark;
 
   @override
   Widget build(BuildContext context) {
-    final items = const [
+    final items = <_WhyItem>[
       _WhyItem(
-        title: 'No CV needed',
-        desc: 'Just simple structured fields. We render it beautifully for employers.',
-        icon: Icons.description_outlined,
-        colors: [Color(0xFFF97316), Color(0xFFD97706)],
+        title: 'Focus on our Young Aspirants',
+        descBuilder: (isDark) => [
+          const TextSpan(text: 'Part-time job opportunities via our '),
+          _emphPlain('"Earn While You Learn"', isDark),
+          const TextSpan(text: ' initiative — plus '),
+          _emph('Internships', isDark),
+          const TextSpan(text: ' and '),
+          _emph('Apprenticeships', isDark),
+          const TextSpan(text: ' that build real experience.'),
+        ],
+        icon: Icons.school_outlined,
+        colors: const [Color(0xFFF97316), Color(0xFFD97706)],
       ),
       _WhyItem(
-        title: '5 stunning templates',
-        desc: 'Pick a profile look that fits you. Always one page, always polished.',
+        title: '5 Stunning Templates',
+        descBuilder: (isDark) => [
+          const TextSpan(text: 'One-page résumés — '),
+          _emph('Classic', isDark),
+          const TextSpan(text: ', '),
+          _emph('Modern', isDark),
+          const TextSpan(text: ', '),
+          _emph('Creative', isDark),
+          const TextSpan(text: ', '),
+          _emph('Corporate', isDark),
+          const TextSpan(text: ', or '),
+          _emph('Tech Mono', isDark),
+          const TextSpan(text: '.'),
+        ],
         icon: Icons.dashboard_customize_outlined,
-        colors: [Color(0xFF10B981), Color(0xFF14B8A6)],
+        colors: const [Color(0xFF10B981), Color(0xFF14B8A6)],
       ),
       _WhyItem(
-        title: 'Built for every field',
-        desc: "IT, HR, Sales, Finance, BPO, vocational — Tamil Nadu's full talent pool.",
-        icon: Icons.public_outlined,
-        colors: [Color(0xFF8B5CF6), Color(0xFFD946EF)],
+        title: 'Update Your Skills First, CV Optional',
+        descBuilder: (isDark) => [
+          _emph('No résumé needed.', isDark),
+          const TextSpan(text: ' Just add your education and skills — we build the profile.'),
+        ],
+        icon: Icons.check_circle_outline,
+        colors: const [Color(0xFF8B5CF6), Color(0xFFD946EF)],
       ),
       _WhyItem(
-        title: 'Tamil Nadu first',
-        desc: 'Made in Tamil Nadu, for Tamil Nadu. We know our cities, colleges, and companies.',
-        icon: Icons.place_outlined,
-        colors: [Color(0xFF0EA5E9), Color(0xFF06B6D4)],
+        title: 'Built for Every Industry',
+        descBuilder: (isDark) => [
+          _emph('IT and Non-IT', isDark),
+          const TextSpan(text: ', '),
+          _emph('MSMEs', isDark),
+          const TextSpan(text: ', large enterprises, start-ups, freelancers, consultants.'),
+        ],
+        icon: Icons.apartment_outlined,
+        colors: const [Color(0xFF0EA5E9), Color(0xFF06B6D4)],
       ),
     ];
+
+    final bodyColor = isDark
+        ? Colors.white.withValues(alpha: 0.6)
+        : const Color(0xFF52525B);
+    final headColor = isDark ? Colors.white : const Color(0xFF09090B);
 
     return Container(
       width: double.infinity,
@@ -50,13 +88,37 @@ class WhyUs extends StatelessWidget {
           ),
           const SizedBox(height: 8),
           Text(
-            'A recruitment platform that fits Tamil Nadu',
+            'Beyond a traditional job portal',
             textAlign: TextAlign.center,
             style: TextStyle(
-              fontSize: 24,
+              fontSize: 22,
               fontWeight: FontWeight.w600,
               letterSpacing: -0.6,
-              color: isDark ? Colors.white : const Color(0xFF09090B),
+              color: headColor,
+            ),
+          ),
+          const SizedBox(height: 4),
+          const Text(
+            'Built for a Zero-Unemployment Tamil Nadu',
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w600,
+              letterSpacing: -0.4,
+              color: Color(0xFFEA580C),
+            ),
+          ),
+          const SizedBox(height: 12),
+          RichText(
+            textAlign: TextAlign.center,
+            text: TextSpan(
+              style: TextStyle(fontSize: 12.5, height: 1.55, color: bodyColor),
+              children: [
+                const TextSpan(text: 'Driven by the vision of creating a '),
+                _emph('"Zero-Unemployment" state', isDark),
+                const TextSpan(text: ', our specialised sourcing team identifies talent in every district — '),
+                _emphPlain('ensuring the perfect fit between talent, skills, and job requirements.', isDark),
+              ],
             ),
           ),
           const SizedBox(height: 24),
@@ -68,7 +130,7 @@ class WhyUs extends StatelessWidget {
               crossAxisCount: 2,
               mainAxisSpacing: 12,
               crossAxisSpacing: 12,
-              childAspectRatio: 0.85,
+              childAspectRatio: 0.72,
             ),
             itemBuilder: (_, i) => _Tile(item: items[i], isDark: isDark),
           ),
@@ -78,15 +140,33 @@ class WhyUs extends StatelessWidget {
   }
 }
 
+/// Bold + brand-orange inline emphasis span (matches the doc's #BF4E14).
+TextSpan _emph(String text, bool isDark) => TextSpan(
+      text: text,
+      style: TextStyle(
+        fontWeight: FontWeight.w700,
+        color: isDark ? _kEmphOnDark : _kEmphOnLight,
+      ),
+    );
+
+/// Bold only (no colour) — matches "Earn While You Learn" in the doc.
+TextSpan _emphPlain(String text, bool isDark) => TextSpan(
+      text: text,
+      style: TextStyle(
+        fontWeight: FontWeight.w700,
+        color: isDark ? Colors.white : const Color(0xFF18181B),
+      ),
+    );
+
 class _WhyItem {
   const _WhyItem({
     required this.title,
-    required this.desc,
+    required this.descBuilder,
     required this.icon,
     required this.colors,
   });
   final String title;
-  final String desc;
+  final List<InlineSpan> Function(bool isDark) descBuilder;
   final IconData icon;
   final List<Color> colors;
 }
@@ -98,6 +178,10 @@ class _Tile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final bodyColor = isDark
+        ? Colors.white.withValues(alpha: 0.65)
+        : const Color(0xFF52525B);
+
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -129,22 +213,22 @@ class _Tile extends StatelessWidget {
           Text(
             item.title,
             style: TextStyle(
-              fontSize: 14.5,
-              fontWeight: FontWeight.w600,
+              fontSize: 13.5,
+              fontWeight: FontWeight.w700,
               letterSpacing: -0.2,
-              color: isDark ? Colors.white : const Color(0xFF09090B),
+              color: isDark ? _kEmphOnDark : _kEmphOnLight,
             ),
           ),
           const SizedBox(height: 6),
           Expanded(
-            child: Text(
-              item.desc,
-              style: TextStyle(
-                fontSize: 11.5,
-                height: 1.45,
-                color: isDark
-                    ? Colors.white.withValues(alpha: 0.6)
-                    : const Color(0xFF52525B),
+            child: RichText(
+              text: TextSpan(
+                style: TextStyle(
+                  fontSize: 11.5,
+                  height: 1.45,
+                  color: bodyColor,
+                ),
+                children: item.descBuilder(isDark),
               ),
             ),
           ),

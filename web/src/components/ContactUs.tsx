@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Mail, Phone, MapPin, Send, MessageCircle, Sparkles } from "lucide-react";
+import { Mail, MapPin, Send, MessageCircle, Sparkles, Lightbulb, Phone } from "lucide-react";
 import { get, set } from "../lib/storage";
 
 interface Contact {
@@ -20,7 +20,7 @@ export function ContactUs() {
 
  const submit = (e: React.FormEvent) => {
  e.preventDefault();
- if (!form.name.trim() || !form.email.trim() || !form.message.trim()) return;
+ if (!form.name.trim() || !form.message.trim()) return;
  const list = get<Contact[]>(KEY, []);
  const next: Contact = { id: crypto.randomUUID(), createdAt: new Date().toISOString(), ...form };
  set(KEY, [next, ...list]);
@@ -37,8 +37,6 @@ export function ContactUs() {
  id="contact"
  className="relative w-full overflow-hidden bg-zinc-950 py-14 md:py-20"
  >
- {/* Subtle dark backdrop blobs — picks up where SuggestionForm leaves off
- so Suggestion → Contact → Footer reads as one dark sequence. */}
  <div className="absolute inset-0 -z-10">
  <div className="absolute inset-0 bg-gradient-to-br from-zinc-950 via-zinc-900 to-zinc-950" />
  <div className="absolute -top-40 left-1/4 h-[28rem] w-[28rem] rounded-full bg-gradient-to-br from-brand-500/20 to-amber-500/10 blur-[140px]" />
@@ -52,13 +50,13 @@ export function ContactUs() {
  <MessageCircle size={12} /> Contact us
  </span>
  <h2 className="mt-4 text-3xl font-semibold tracking-tight text-white drop-shadow md:text-4xl lg:text-5xl">
- Let's{" "}
+ Contact{" "}
  <span className="bg-gradient-to-r from-brand-400 to-amber-300 bg-clip-text text-transparent">
- talk
+ Us
  </span>
  </h2>
  <p className="mx-auto mt-4 max-w-xl text-sm text-white/80 md:text-base">
- Questions, partnerships, feedback — we'd love to hear from you.
+ We Believe Your <span className="font-semibold text-white">Feedback</span> Drives Our Growth
  </p>
  </div>
 
@@ -69,50 +67,76 @@ export function ContactUs() {
  <ContactCard
  icon={<MapPin size={20} />}
  tone="brand"
- title="Visit us"
+ title="Our Presence"
  line1="RUDRAA HR Solutions Pvt. Ltd."
- line2="Tamil Nadu, India"
+ line2={
+ <>
+ <span className="font-semibold text-zinc-700 dark:text-zinc-300">RO:</span> Salem
+ <span className="mx-1 text-zinc-400">·</span>
+ <span className="font-semibold text-zinc-700 dark:text-zinc-300">Branches:</span> Chennai, Hosur
+ </>
+ }
  />
  <ContactCard
- icon={<Phone size={20} />}
- tone="sky"
- title="Call us"
- line1="Mon – Sat, 9am – 7pm"
- line2={<a href="tel:+910000000000" className="font-bold text-sky-700 hover:underline dark:text-sky-300">+91 00000 00000</a>}
+ icon={<Lightbulb size={20} />}
+ tone="amber"
+ title="How can we improve?"
+ line1="Your suggestions shape the platform."
+ line2="Every message reaches the founding team."
  />
  <ContactCard
  icon={<Mail size={20} />}
  tone="violet"
- title="Email us"
- line1={<a href="mailto:hello@itamilrecruit.com" className="font-bold text-violet-700 hover:underline dark:text-violet-300">hello@itamilrecruit.com</a>}
- line2="Replies within 24 hours"
+ title="Email"
+ line1={
+ <a
+ href="mailto:Service@itamilrecruit.net"
+ className="font-bold text-violet-700 hover:underline dark:text-violet-300"
+ >
+ Service@itamilrecruit.net
+ </a>
+ }
+ line2="Will respond within 48 hours / 2 working days"
+ />
+ <ContactCard
+ icon={<Phone size={20} />}
+ tone="sky"
+ title="Contacts"
+ line1={
+ <>
+ <span className="font-semibold text-zinc-800 dark:text-zinc-200">Mobile</span>
+ <span className="ml-1 text-zinc-500 dark:text-zinc-400">(WhatsApp only)</span>
+ </>
+ }
+ line2="Monday to Saturday · 10 AM to 6 PM"
  />
  </div>
 
- {/* Right: form card — solid white, same surface language as the Suggestion form */}
+ {/* Right: form card */}
  <form
  onSubmit={submit}
- // Brand tint to match the section accent — same gradient
- // language as the hero's Candidate card.
  className="relative overflow-hidden rounded-3xl border border-orange-200/70 bg-gradient-to-br from-brand-50 via-orange-50 to-amber-50 p-6 shadow-2xl shadow-black/40 dark:border-brand-500/30 dark:from-brand-500/10 dark:via-zinc-900 dark:to-amber-500/5 md:p-7"
  >
  <div className="absolute inset-x-0 top-0 h-1.5 bg-gradient-to-r from-brand-500 via-brand-600 to-amber-500" />
  <div className="pointer-events-none absolute -left-10 -top-10 h-48 w-48 rounded-full bg-gradient-to-br from-brand-100/60 to-amber-100/40 blur-3xl dark:from-brand-500/15 dark:to-amber-500/10" />
 
  <div className="relative grid gap-3 sm:grid-cols-2">
- <Field label="Full name" value={form.name} onChange={update("name")} placeholder="e.g. Karthick S." />
- <Field label="Email" value={form.email} onChange={update("email")} placeholder="you@example.com" type="email" />
+ <Field label="Full name" required value={form.name} onChange={update("name")} placeholder="e.g. Karthick S." />
+ <Field label="Email (optional)" value={form.email} onChange={update("email")} placeholder="you@example.com" type="email" />
  <Field label="Phone (optional)" value={form.phone} onChange={update("phone")} placeholder="+91 ..." />
  <Field label="Subject" value={form.subject} onChange={update("subject")} placeholder="What's it about?" />
  </div>
 
  <div className="relative mt-3">
- <label className="mb-1.5 block text-[11px] font-bold uppercase tracking-wider text-zinc-700 dark:text-zinc-300">Message</label>
+ <label className="mb-1.5 block text-[11px] font-bold uppercase tracking-wider text-zinc-700 dark:text-zinc-300">
+ We would love to hear your "Questions &amp; Suggestions"
+ </label>
  <textarea
  value={form.message}
  onChange={update("message")}
- rows={4}
- placeholder="How can we help?"
+ rows={5}
+ required
+ placeholder="Share your questions, feedback, or suggestions here..."
  className="w-full resize-none rounded-lg border border-orange-200/70 bg-white px-4 py-3 text-sm text-zinc-900 placeholder:text-zinc-400 focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500/20 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-100"
  />
  </div>
@@ -127,11 +151,11 @@ export function ContactUs() {
  </button>
  {sent ? (
  <p className="inline-flex items-center gap-1.5 rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-[11.5px] font-semibold text-emerald-700 dark:border-emerald-500/30 dark:bg-emerald-500/10 dark:text-emerald-300">
- <Sparkles size={11} /> Got it — we'll be in touch.
+ <Sparkles size={11} /> Got it — we'll respond within 48 hours.
  </p>
  ) : (
  <span className="text-[11px] text-zinc-500 dark:text-zinc-400">
- We respond in 1–2 business days.
+ Response within 48 hours / 2 working days.
  </span>
  )}
  </div>
@@ -149,7 +173,7 @@ interface ContactCardProps {
  title: string;
  line1: React.ReactNode;
  line2: React.ReactNode;
- tone: "brand" | "sky" | "violet";
+ tone: "brand" | "sky" | "violet" | "amber";
 }
 
 const CARD_TONE: Record<ContactCardProps["tone"], {
@@ -165,6 +189,13 @@ const CARD_TONE: Record<ContactCardProps["tone"], {
  stripe: "from-brand-400 to-amber-500",
  bg: "bg-gradient-to-br from-brand-50 via-orange-50 to-amber-50 dark:from-brand-500/10 dark:via-zinc-900 dark:to-amber-500/5",
  border: "border-orange-200/70 dark:border-brand-500/30",
+ },
+ amber: {
+ iconBg: "bg-gradient-to-br from-amber-500 to-yellow-600",
+ iconGlow: "shadow-amber-500/40",
+ stripe: "from-amber-400 to-yellow-500",
+ bg: "bg-gradient-to-br from-amber-50 via-yellow-50 to-orange-50 dark:from-amber-500/10 dark:via-zinc-900 dark:to-orange-500/5",
+ border: "border-amber-200/70 dark:border-amber-500/30",
  },
  sky: {
  iconBg: "bg-gradient-to-br from-sky-500 to-sky-700",
@@ -210,21 +241,27 @@ function Field({
  onChange,
  placeholder,
  type = "text",
+ required,
 }: {
  label: string;
  value: string;
  onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
  placeholder: string;
  type?: string;
+ required?: boolean;
 }) {
  return (
  <div>
- <label className="mb-1.5 block text-[11px] font-bold uppercase tracking-wider text-zinc-700 dark:text-zinc-300">{label}</label>
+ <label className="mb-1.5 block text-[11px] font-bold uppercase tracking-wider text-zinc-700 dark:text-zinc-300">
+ {label}
+ {required ? <span className="ml-1 text-brand-500">*</span> : null}
+ </label>
  <input
  type={type}
  value={value}
  placeholder={placeholder}
  onChange={onChange}
+ required={required}
  className="w-full rounded-lg border border-orange-200/70 bg-white px-4 py-2.5 text-sm text-zinc-900 placeholder:text-zinc-400 focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500/20 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-100"
  />
  </div>
