@@ -211,6 +211,31 @@ export function EmployerCandidates() {
       return true;
     };
 
+    // Implicit signals derived from what the employer has already posted —
+    // even with zero filters set, we can rank candidates against the skills
+    // and locations they're actively hiring for. This makes the "Best
+    // matches" strip meaningful the moment the page loads.
+    const implicitSkills = new Set<string>();
+    const implicitDistrictIds = new Set<string>();
+    for (const j of activeJobs) {
+      for (const s of j.skills ?? []) implicitSkills.add(s.toLowerCase());
+      if (j.districtId) implicitDistrictIds.add(j.districtId);
+    }
+
+    const hasSkillIn = (profile: CandidateProfile, needed: string): boolean => {
+      const n = needed.toLowerCase();
+      const pool = [
+        ...(profile.topSkills ?? []),
+        ...(profile.itLanguages ?? []),
+        ...(profile.nonItDepartments ?? []),
+        profile.itSpecialization ?? "",
+      ].filter(Boolean);
+      return pool.some((h) => {
+        const hl = h.toLowerCase();
+        return hl.includes(n) || n.includes(hl);
+      });
+    };
+
     const softScore = (user: User, profile: CandidateProfile): number => {
       let score = 0;
       if (q) {
@@ -235,11 +260,23 @@ export function EmployerCandidates() {
       }
       if (filters.nearJobId && filters.maxDistanceKm != null && nearJob) {
         // Reuse the strict match predicate — if the candidate would pass the
-        // distance test they get a boost. Everyone else stays at 0 for this
-        // signal and drops below the divider.
+        // distance test they get a boost.
         if (matchesFilter(profile, { ...filters, districtIds: [], skills: [] }, { districts, nearJob })) {
           score += 2;
         }
+      }
+      // Implicit signals — lower weight so explicit filters still dominate.
+      if (implicitSkills.size > 0) {
+        let hits = 0;
+        for (const skill of implicitSkills) {
+          if (hasSkillIn(profile, skill)) hits++;
+        }
+        score += (hits / implicitSkills.size) * 2;
+      }
+      if (implicitDistrictIds.size > 0) {
+        const inPreferred = (profile.preferredDistricts ?? []).some((id) => implicitDistrictIds.has(id));
+        const inCurrent = profile.currentDistrictId != null && implicitDistrictIds.has(profile.currentDistrictId);
+        if (inPreferred || inCurrent) score += 1;
       }
       return score;
     };
@@ -248,7 +285,9 @@ export function EmployerCandidates() {
       !!q ||
       filters.skills.length > 0 ||
       filters.districtIds.length > 0 ||
-      !!filters.nearJobId;
+      !!filters.nearJobId ||
+      implicitSkills.size > 0 ||
+      implicitDistrictIds.size > 0;
 
     const pool = items.filter(({ profile }) => hardPass(profile));
 
@@ -270,14 +309,26 @@ export function EmployerCandidates() {
       return { matched: [] as typeof scored, others: sorted, hasSignal: false };
     }
 
-    const matched = scored
-      .filter((x) => x.score > 0)
-      .sort((a, b) => (b.score !== a.score ? b.score - a.score : sortFallback(a, b)));
-    const others = scored.filter((x) => x.score === 0).sort(sortFallback);
-    return { matched, others, hasSignal: true };
-  }, [items, filters, districts, nearJob, search]);
+    // Cap the featured strip so it stays a "shortlist to look at first"
+    // rather than dominating the viewport. Full pool is still rendered
+    // in the "All candidates" section beneath.
+    const FEATURED_CAP = 5;
+    const withScore = [...scored].sort(
+      (a, b) => (b.score !== a.score ? b.score - a.score : sortFallback(a, b)),
+    );
+    const positive = withScore.filter((x) => x.score > 0);
+    // If any candidate scored, feature only real matches (up to CAP). If
+    // nothing scored (edge case — sparse profiles), still surface the top
+    // few by fallback so the strip isn't empty when there IS context.
+    const featured = positive.length > 0
+      ? positive.slice(0, FEATURED_CAP)
+      : withScore.slice(0, Math.min(FEATURED_CAP, withScore.length));
+    return { matched: featured, others: withScore, hasSignal: true };
+  }, [items, filters, districts, nearJob, search, activeJobs]);
 
-  const filteredCount = filtered.matched.length + filtered.others.length;
+  // `others` is now the full sorted pool (matches are a subset of it), so
+  // it doubles as the total-in-view count.
+  const filteredCount = filtered.others.length;
 
   /* ---------------- save search ---------------- */
 
@@ -468,11 +519,10 @@ export function EmployerCandidates() {
 
                   const rows: MapListItem[] = [];
                   const showFeatured = filtered.hasSignal && filtered.matched.length > 0;
-                  const total = filtered.matched.length + filtered.others.length;
-                  const all = [...filtered.matched, ...filtered.others];
+                  const total = filtered.others.length;
 
                   if (showFeatured) {
-                    // Featured strip — the matches at the top with a lead-in
+                    // Featured strip — the top-N matches with a lead-in
                     // chip so employers see the ranking at a glance.
                     rows.push({
                       id: "__separator_best__",
@@ -488,9 +538,9 @@ export function EmployerCandidates() {
                     filtered.matched.forEach((it, i) =>
                       rows.push({ ...rowFor(it, i), id: `best_${it.user.id}` }),
                     );
-                    // "All candidates" section below — the full list including
-                    // the matches, so the employer can scroll one continuous
-                    // catalogue without losing anyone.
+                    // "All candidates" section — the full list (matches are a
+                    // subset, they appear again here so the employer can scroll
+                    // one continuous catalogue).
                     rows.push({
                       id: "__separator_all__",
                       fullWidth: true,
@@ -502,11 +552,11 @@ export function EmployerCandidates() {
                         />
                       ),
                     });
-                    all.forEach((it, i) => rows.push(rowFor(it, i)));
+                    filtered.others.forEach((it, i) => rows.push(rowFor(it, i)));
                   } else {
-                    // No soft signal (or nothing matched) — just show the
-                    // full list. No divider needed.
-                    all.forEach((it, i) => rows.push(rowFor(it, i)));
+                    // No signal at all — just show the plain full list, no
+                    // divider needed.
+                    filtered.others.forEach((it, i) => rows.push(rowFor(it, i)));
                   }
                   return rows;
                 })()}

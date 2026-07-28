@@ -102,6 +102,32 @@ class _EmployerCandidatesPageState extends ConsumerState<EmployerCandidatesPage>
       return true;
     }
 
+    // Implicit signals from the employer's active jobs — even before they
+    // type or filter, we can rank against what they're actually hiring for.
+    final implicitSkills = <String>{};
+    final implicitDistrictIds = <String>{};
+    for (final j in activeJobs) {
+      for (final s in j.skills) {
+        implicitSkills.add(s.toLowerCase());
+      }
+      if (j.districtId != null) implicitDistrictIds.add(j.districtId!);
+    }
+
+    bool candidateHasSkill(CandidateProfile p, String needed) {
+      final n = needed.toLowerCase();
+      final pool = <String>[
+        ...(p.topSkills ?? const []),
+        ...(p.itLanguages ?? const []),
+        ...(p.nonItDepartments ?? const []),
+        if (p.itSpecialization != null) p.itSpecialization!,
+      ];
+      for (final h in pool) {
+        final hl = h.toLowerCase();
+        if (hl.contains(n) || n.contains(hl)) return true;
+      }
+      return false;
+    }
+
     double softScore(User user, CandidateProfile p) {
       double score = 0;
       if (q.isNotEmpty) {
@@ -130,8 +156,6 @@ class _EmployerCandidatesPageState extends ConsumerState<EmployerCandidatesPage>
           nearJob != null &&
           nearJob.lat != null &&
           nearJob.lng != null) {
-        // Reuse the strict distance predicate — a "near" candidate gets a
-        // boost; everyone else falls below the divider on this signal alone.
         final locationsMatch = _filters.copyWith(
           districtIds: const [],
           skills: const [],
@@ -139,6 +163,19 @@ class _EmployerCandidatesPageState extends ConsumerState<EmployerCandidatesPage>
         if (locationsMatch.matches(p, locations: locations, nearJob: nearJob)) {
           score += 2;
         }
+      }
+      // Implicit signals — lower weight so explicit filters still dominate.
+      if (implicitSkills.isNotEmpty) {
+        int hits = 0;
+        for (final s in implicitSkills) {
+          if (candidateHasSkill(p, s)) hits++;
+        }
+        score += (hits / implicitSkills.length) * 2;
+      }
+      if (implicitDistrictIds.isNotEmpty) {
+        final inPreferred = p.preferredDistrictIds.any(implicitDistrictIds.contains);
+        final inCurrent = p.currentDistrictId != null && implicitDistrictIds.contains(p.currentDistrictId);
+        if (inPreferred || inCurrent) score += 1;
       }
       return score;
     }
@@ -160,30 +197,35 @@ class _EmployerCandidatesPageState extends ConsumerState<EmployerCandidatesPage>
     final hasSignal = q.isNotEmpty ||
         _filters.skills.isNotEmpty ||
         _filters.districtIds.isNotEmpty ||
-        _filters.nearJobId != null;
+        _filters.nearJobId != null ||
+        implicitSkills.isNotEmpty ||
+        implicitDistrictIds.isNotEmpty;
 
     final poolPass = pool.where((c) => hardPass(c.$2)).toList();
     final scored = poolPass
         .map((c) => (c.$1, c.$2, softScore(c.$1, c.$2)))
-        .toList();
-
-    if (!hasSignal) {
-      final sorted = poolPass.toList()..sort(fallback);
-      return _RankedCandidates(matched: const [], others: sorted, hasSignal: false);
-    }
-
-    final matched = scored.where((t) => t.$3 > 0).toList()
+        .toList()
       ..sort((a, b) {
         final s = b.$3.compareTo(a.$3);
         if (s != 0) return s;
         return fallback((a.$1, a.$2), (b.$1, b.$2));
       });
-    final others = scored.where((t) => t.$3 == 0).toList()
-      ..sort((a, b) => fallback((a.$1, a.$2), (b.$1, b.$2)));
+    final sortedAll = scored.map((t) => (t.$1, t.$2)).toList();
+
+    if (!hasSignal) {
+      return _RankedCandidates(matched: const [], others: sortedAll, hasSignal: false);
+    }
+
+    const featuredCap = 5;
+    final positive = scored.where((t) => t.$3 > 0).toList();
+    final featured = (positive.isNotEmpty ? positive : scored)
+        .take(featuredCap)
+        .map((t) => (t.$1, t.$2))
+        .toList();
 
     return _RankedCandidates(
-      matched: matched.map((t) => (t.$1, t.$2)).toList(),
-      others: others.map((t) => (t.$1, t.$2)).toList(),
+      matched: featured,
+      others: sortedAll,
       hasSignal: true,
     );
   }
@@ -312,11 +354,11 @@ class _EmployerCandidatesPageState extends ConsumerState<EmployerCandidatesPage>
 
     final pool = _pool();
     final ranked = _ranked(pool);
-    final total = ranked.matched.length + ranked.others.length;
-    final all = <(User, CandidateProfile)>[...ranked.matched, ...ranked.others];
-    // "Featured strip" mode — matches at the top, then the full list below.
-    // When there's no signal (or nothing matched), fall back to the plain
-    // full list with no divider.
+    // `others` is now the full sorted pool (matched is a subset). No
+    // concat needed — the "All candidates" section renders `others` and
+    // the featured strip pulls from `matched`.
+    final total = ranked.others.length;
+    final all = ranked.others;
     final showFeatured = ranked.hasSignal && ranked.matched.isNotEmpty;
     final weeklyApps = _weeklyApplicationCount();
     final shortlistIds = ref.watch(shortlistProvider)[employer.id] ?? const <String>[];

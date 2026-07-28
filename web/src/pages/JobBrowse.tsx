@@ -195,31 +195,36 @@ export function JobBrowse() {
  };
 
  const q = search.trim().toLowerCase();
- // Partition threshold: a job is a "best match" when the candidate's
- // profile scores ≥ 40 against it, OR the search hits the title / skills.
- // Below that (or no signal at all) it falls into the "Other jobs" bucket.
- const partitionThreshold = 40;
- const isMatch = (x: typeof bestFiltered[number]) => {
- if (x.result && x.result.score >= partitionThreshold) return true;
- if (q) {
- const hay = `${x.job.title} ${x.job.employerName} ${x.job.skills.join(" ")}`.toLowerCase();
- if (hay.includes(q)) return true;
- }
- return false;
- };
-
+ // Featured cap — the "Best matches" strip is a shortlist, not the full
+ // catalogue. The full list still renders below in the "All jobs" section.
+ const FEATURED_CAP = 5;
+ const sortedAll = sortAll(bestFiltered);
  const hasSignal = !!profile || !!q;
  if (!hasSignal || bestOnly) {
- return { matched: [] as typeof bestFiltered, others: sortAll(bestFiltered), hasSignal: false };
+ return { matched: [] as typeof bestFiltered, others: sortedAll, hasSignal: false };
  }
 
- const matched = sortAll(bestFiltered.filter(isMatch));
- const others = sortAll(bestFiltered.filter((x) => !isMatch(x)));
- return { matched, others, hasSignal: true };
+ // Prefer real scoring wins; fall back to the top of the sorted list when
+ // nothing hits a hard threshold — that way the featured strip is always
+ // populated whenever there's context to rank against.
+ const searchHit = (x: typeof bestFiltered[number]) => {
+ if (!q) return false;
+ const hay = `${x.job.title} ${x.job.employerName} ${x.job.skills.join(" ")}`.toLowerCase();
+ return hay.includes(q);
+ };
+ const positive = sortedAll.filter(
+ (x) => (x.result?.score ?? 0) >= 40 || searchHit(x),
+ );
+ const featured = positive.length > 0
+ ? positive.slice(0, FEATURED_CAP)
+ : sortedAll.slice(0, Math.min(FEATURED_CAP, sortedAll.length));
+
+ return { matched: featured, others: sortedAll, hasSignal: true };
  // eslint-disable-next-line react-hooks/exhaustive-deps
  }, [jobs, filters, search, profile, bestOnly, anchorCoords, radiusKm, sortBy]);
 
- const filteredCount = filtered.matched.length + filtered.others.length;
+ // `others` now holds the full sorted pool (featured is a subset).
+ const filteredCount = filtered.others.length;
 
  /** Total active facet selections — drives the chips bar + drawer badge. */
  const activeCount =
@@ -439,8 +444,7 @@ export function JobBrowse() {
  });
  const rows: MapListItem[] = [];
  const showFeatured = filtered.hasSignal && filtered.matched.length > 0;
- const total = filtered.matched.length + filtered.others.length;
- const all = [...filtered.matched, ...filtered.others];
+ const total = filtered.others.length;
  if (showFeatured) {
  rows.push({
  id: "__separator_best__",
@@ -457,9 +461,9 @@ export function JobBrowse() {
  <SectionSeparator label="All jobs" count={total} tone="zinc" />
  ),
  });
- all.forEach((x, i) => rows.push(rowFor(x, i)));
+ filtered.others.forEach((x, i) => rows.push(rowFor(x, i)));
  } else {
- all.forEach((x, i) => rows.push(rowFor(x, i)));
+ filtered.others.forEach((x, i) => rows.push(rowFor(x, i)));
  }
  return rows;
  })()}

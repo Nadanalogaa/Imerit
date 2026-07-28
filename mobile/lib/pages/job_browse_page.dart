@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import '../store/auth_provider.dart';
 import '../store/jobs_provider.dart';
+import '../store/profile_provider.dart';
 import '../store/theme_provider.dart';
 import '../widgets/job_filter_sheet.dart';
 import '../widgets/map_list_view.dart';
@@ -34,28 +36,69 @@ class _JobBrowsePageState extends ConsumerState<JobBrowsePage> {
 
   /// Rank + partition — mirror of web's JobBrowse.
   ///
-  ///   Filters (`_filters.matches`) still narrow the pool strictly.
-  ///   Within the pool, if the user typed a search term, jobs whose
-  ///   title / company / skills contain it float to the top; everything
-  ///   else drops below the "Other jobs" divider. When no search text is
-  ///   active, the divider stays hidden and everyone lives in `others`.
-  _RankedJobs _ranked(List<Job> jobs) {
+  /// `_filters.matches` narrows the pool strictly. Inside the pool the
+  /// candidate's profile (top skills, preferred districts) plus any typed
+  /// search text act as soft signals — jobs that hit either float to the
+  /// top of a capped "Best matches" strip. The full sorted pool always
+  /// renders in `others` regardless, so the "All jobs" section shows
+  /// everything (matches are a subset — repeated by design).
+  _RankedJobs _ranked(List<Job> jobs, CandidateProfile? profile) {
     final pool = jobs.where((j) => _filters.matches(j)).toList();
     final q = _search.text.trim().toLowerCase();
-    if (q.isEmpty) {
+
+    // Sort the pool once — newest first when no profile, best-scored when
+    // we have one. Same shape as web's `sortAll` fallback.
+    pool.sort((a, b) => b.postedAt.compareTo(a.postedAt));
+
+    final hasSignal = q.isNotEmpty || profile != null;
+    if (!hasSignal) {
       return _RankedJobs(matched: const [], others: pool, hasSignal: false);
     }
-    final matched = <Job>[];
-    final others = <Job>[];
-    for (final j in pool) {
-      final hay = '${j.title} ${j.employerName} ${j.description} ${j.skills.join(" ")}'.toLowerCase();
-      if (hay.contains(q)) {
-        matched.add(j);
-      } else {
-        others.add(j);
+
+    final profileSkills = <String>{
+      ...(profile?.topSkills ?? const []),
+      ...(profile?.itLanguages ?? const []),
+      ...(profile?.nonItDepartments ?? const []),
+    }.map((s) => s.toLowerCase()).toSet();
+    final profileDistricts = <String>{
+      ...(profile?.preferredDistrictIds ?? const []),
+      if (profile?.currentDistrictId != null) profile!.currentDistrictId!,
+    };
+
+    double score(Job j) {
+      double s = 0;
+      if (q.isNotEmpty) {
+        final hay = '${j.title} ${j.employerName} ${j.description} ${j.skills.join(" ")}'.toLowerCase();
+        if (hay.contains(q)) s += 3;
       }
+      if (profileSkills.isNotEmpty) {
+        int hits = 0;
+        for (final needed in j.skills) {
+          final n = needed.toLowerCase();
+          if (profileSkills.any((h) => h.contains(n) || n.contains(h))) hits++;
+        }
+        if (j.skills.isNotEmpty) s += (hits / j.skills.length) * 4;
+      }
+      if (profileDistricts.isNotEmpty && j.districtId != null && profileDistricts.contains(j.districtId)) {
+        s += 2;
+      }
+      return s;
     }
-    return _RankedJobs(matched: matched, others: others, hasSignal: true);
+
+    final scored = pool.map((j) => (j, score(j))).toList()
+      ..sort((a, b) {
+        final c = b.$2.compareTo(a.$2);
+        return c != 0 ? c : b.$1.postedAt.compareTo(a.$1.postedAt);
+      });
+
+    const featuredCap = 5;
+    final positive = scored.where((t) => t.$2 > 0).toList();
+    final featured = (positive.isNotEmpty ? positive : scored)
+        .take(featuredCap)
+        .map((t) => t.$1)
+        .toList();
+
+    return _RankedJobs(matched: featured, others: scored.map((t) => t.$1).toList(), hasSignal: true);
   }
 
   Future<void> _openFilters() async {
@@ -82,11 +125,13 @@ class _JobBrowsePageState extends ConsumerState<JobBrowsePage> {
   Widget build(BuildContext context) {
     final isDark = ref.watch(themeProvider) == ThemeMode.dark;
     final jobs = ref.watch(jobsProvider);
-    final ranked = _ranked(jobs);
-    final total = ranked.matched.length + ranked.others.length;
-    final all = <Job>[...ranked.matched, ...ranked.others];
-    // Featured strip when a signal is active + something matched. Otherwise
-    // plain full list.
+    final user = ref.watch(authProvider);
+    final profiles = ref.watch(profileProvider);
+    final profile = user != null ? profiles[user.id] : null;
+    final ranked = _ranked(jobs, profile);
+    // `others` is the full sorted pool (matches are a subset). No concat.
+    final total = ranked.others.length;
+    final all = ranked.others;
     final showFeatured = ranked.hasSignal && ranked.matched.isNotEmpty;
 
     return Scaffold(
