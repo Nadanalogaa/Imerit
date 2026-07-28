@@ -85,7 +85,9 @@ class _JobBrowsePageState extends ConsumerState<JobBrowsePage> {
     final ranked = _ranked(jobs);
     final total = ranked.matched.length + ranked.others.length;
     final all = <Job>[...ranked.matched, ...ranked.others];
-    final showDivider = ranked.hasSignal && ranked.matched.isNotEmpty && ranked.others.isNotEmpty;
+    // Featured strip when a signal is active + something matched. Otherwise
+    // plain full list.
+    final showFeatured = ranked.hasSignal && ranked.matched.isNotEmpty;
 
     return Scaffold(
       backgroundColor: isDark ? const Color(0xFF09090B) : const Color(0xFFFAFAFA),
@@ -160,34 +162,55 @@ class _JobBrowsePageState extends ConsumerState<JobBrowsePage> {
                 key: _listKey,
                 padding: const EdgeInsets.symmetric(horizontal: 16),
                 sliver: SliverList.builder(
-                  itemCount: total + (showDivider ? 1 : 0),
+                  itemCount: showFeatured
+                      ? total + ranked.matched.length + 2
+                      : total,
                   itemBuilder: (context, i) {
-                    if (showDivider && i == ranked.matched.length) {
-                      return Padding(
-                        padding: const EdgeInsets.only(bottom: 12),
-                        child: _JobSectionSeparator(
-                          label: 'Other jobs',
-                          count: ranked.others.length,
-                          isDark: isDark,
-                        ),
-                      );
+                    Widget jobRow(int index, Job job) => _StaggeredEntry(
+                          index: index,
+                          child: Padding(
+                            padding: const EdgeInsets.only(bottom: 12),
+                            child: _JobCard(
+                              job: job,
+                              isDark: isDark,
+                              onTap: () {
+                                HapticFeedback.selectionClick();
+                                context.go('/candidate/jobs/${job.id}');
+                              },
+                            ),
+                          ),
+                        );
+
+                    if (showFeatured) {
+                      if (i == 0) {
+                        return Padding(
+                          padding: const EdgeInsets.only(bottom: 12),
+                          child: _JobSectionSeparator(
+                            label: 'Best matches',
+                            count: ranked.matched.length,
+                            isDark: isDark,
+                            accent: const Color(0xFFEA580C),
+                          ),
+                        );
+                      }
+                      if (i >= 1 && i <= ranked.matched.length) {
+                        final idx = i - 1;
+                        return jobRow(idx, ranked.matched[idx]);
+                      }
+                      if (i == ranked.matched.length + 1) {
+                        return Padding(
+                          padding: const EdgeInsets.only(bottom: 12),
+                          child: _JobSectionSeparator(
+                            label: 'All jobs',
+                            count: total,
+                            isDark: isDark,
+                          ),
+                        );
+                      }
+                      final idx = i - (ranked.matched.length + 2);
+                      return jobRow(idx, all[idx]);
                     }
-                    final index = showDivider && i > ranked.matched.length ? i - 1 : i;
-                    final job = all[index];
-                    return _StaggeredEntry(
-                      index: index,
-                      child: Padding(
-                        padding: const EdgeInsets.only(bottom: 12),
-                        child: _JobCard(
-                          job: job,
-                          isDark: isDark,
-                          onTap: () {
-                            HapticFeedback.selectionClick();
-                            context.go('/candidate/jobs/${job.id}');
-                          },
-                        ),
-                      ),
-                    );
+                    return jobRow(i, all[i]);
                   },
                 ),
               ),
@@ -695,15 +718,24 @@ class _JobSectionSeparator extends StatelessWidget {
     required this.label,
     required this.count,
     required this.isDark,
+    this.accent,
   });
   final String label;
   final int count;
   final bool isDark;
+  /// Brand accent for the "Best matches" strip. Null → neutral zinc.
+  final Color? accent;
 
   @override
   Widget build(BuildContext context) {
-    final chipBg = isDark ? Colors.white.withValues(alpha: 0.08) : const Color(0xFFF4F4F5);
-    final chipText = isDark ? Colors.white.withValues(alpha: 0.9) : const Color(0xFF3F3F46);
+    final isAccent = accent != null;
+    final chipBg = isAccent
+        ? accent!.withValues(alpha: 0.14)
+        : (isDark ? Colors.white.withValues(alpha: 0.08) : const Color(0xFFF4F4F5));
+    final chipText = isAccent
+        ? accent!
+        : (isDark ? Colors.white.withValues(alpha: 0.9) : const Color(0xFF3F3F46));
+    final pillBg = isAccent ? accent! : const Color(0xFF71717A);
     final line = isDark ? Colors.white.withValues(alpha: 0.10) : const Color(0xFFE4E4E7);
     return Row(
       children: [
@@ -713,7 +745,7 @@ class _JobSectionSeparator extends StatelessWidget {
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Icon(Icons.horizontal_split, size: 12),
+              Icon(Icons.horizontal_split, size: 12, color: chipText),
               const SizedBox(width: 6),
               Text(
                 label.toUpperCase(),
@@ -728,7 +760,7 @@ class _JobSectionSeparator extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                 decoration: BoxDecoration(
-                  color: const Color(0xFF71717A),
+                  color: pillBg,
                   borderRadius: BorderRadius.circular(999),
                 ),
                 child: Text('$count', style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w800, color: Colors.white)),

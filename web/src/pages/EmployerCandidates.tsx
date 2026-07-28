@@ -467,27 +467,47 @@ export function EmployerCandidates() {
                   };
 
                   const rows: MapListItem[] = [];
-                  filtered.matched.forEach((it, i) => rows.push(rowFor(it, i)));
-                  if (
-                    filtered.hasSignal &&
-                    filtered.matched.length > 0 &&
-                    filtered.others.length > 0
-                  ) {
+                  const showFeatured = filtered.hasSignal && filtered.matched.length > 0;
+                  const total = filtered.matched.length + filtered.others.length;
+                  const all = [...filtered.matched, ...filtered.others];
+
+                  if (showFeatured) {
+                    // Featured strip — the matches at the top with a lead-in
+                    // chip so employers see the ranking at a glance.
                     rows.push({
-                      id: "__separator_others__",
+                      id: "__separator_best__",
                       fullWidth: true,
                       listElement: (
                         <SectionSeparator
-                          label="Other candidates"
-                          count={filtered.others.length}
+                          label="Best matches"
+                          count={filtered.matched.length}
+                          tone="brand"
+                        />
+                      ),
+                    });
+                    filtered.matched.forEach((it, i) =>
+                      rows.push({ ...rowFor(it, i), id: `best_${it.user.id}` }),
+                    );
+                    // "All candidates" section below — the full list including
+                    // the matches, so the employer can scroll one continuous
+                    // catalogue without losing anyone.
+                    rows.push({
+                      id: "__separator_all__",
+                      fullWidth: true,
+                      listElement: (
+                        <SectionSeparator
+                          label="All candidates"
+                          count={total}
                           tone="zinc"
                         />
                       ),
                     });
+                    all.forEach((it, i) => rows.push(rowFor(it, i)));
+                  } else {
+                    // No soft signal (or nothing matched) — just show the
+                    // full list. No divider needed.
+                    all.forEach((it, i) => rows.push(rowFor(it, i)));
                   }
-                  filtered.others.forEach((it, i) =>
-                    rows.push(rowFor(it, i + filtered.matched.length)),
-                  );
                   return rows;
                 })()}
                 emptyState={<EmptyState />}

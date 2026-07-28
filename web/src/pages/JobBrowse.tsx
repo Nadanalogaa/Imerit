@@ -438,25 +438,29 @@ export function JobBrowse() {
  popupElement: <JobPopup job={job} matchResult={result ?? undefined} distance={distance} />,
  });
  const rows: MapListItem[] = [];
- filtered.matched.forEach((x, i) => rows.push(rowFor(x, i)));
- if (
- filtered.hasSignal &&
- filtered.matched.length > 0 &&
- filtered.others.length > 0
- ) {
+ const showFeatured = filtered.hasSignal && filtered.matched.length > 0;
+ const total = filtered.matched.length + filtered.others.length;
+ const all = [...filtered.matched, ...filtered.others];
+ if (showFeatured) {
  rows.push({
- id: "__separator_others__",
+ id: "__separator_best__",
  fullWidth: true,
  listElement: (
- <SectionSeparator
- label="Other jobs"
- count={filtered.others.length}
- tone="zinc"
- />
+ <SectionSeparator label="Best matches" count={filtered.matched.length} tone="brand" />
  ),
  });
+ filtered.matched.forEach((x, i) => rows.push({ ...rowFor(x, i), id: `best_${x.job.id}` }));
+ rows.push({
+ id: "__separator_all__",
+ fullWidth: true,
+ listElement: (
+ <SectionSeparator label="All jobs" count={total} tone="zinc" />
+ ),
+ });
+ all.forEach((x, i) => rows.push(rowFor(x, i)));
+ } else {
+ all.forEach((x, i) => rows.push(rowFor(x, i)));
  }
- filtered.others.forEach((x, i) => rows.push(rowFor(x, i + filtered.matched.length)));
  return rows;
  })()}
  emptyState={

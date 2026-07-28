@@ -314,7 +314,10 @@ class _EmployerCandidatesPageState extends ConsumerState<EmployerCandidatesPage>
     final ranked = _ranked(pool);
     final total = ranked.matched.length + ranked.others.length;
     final all = <(User, CandidateProfile)>[...ranked.matched, ...ranked.others];
-    final showDivider = ranked.hasSignal && ranked.matched.isNotEmpty && ranked.others.isNotEmpty;
+    // "Featured strip" mode — matches at the top, then the full list below.
+    // When there's no signal (or nothing matched), fall back to the plain
+    // full list with no divider.
+    final showFeatured = ranked.hasSignal && ranked.matched.isNotEmpty;
     final weeklyApps = _weeklyApplicationCount();
     final shortlistIds = ref.watch(shortlistProvider)[employer.id] ?? const <String>[];
 
@@ -407,49 +410,77 @@ class _EmployerCandidatesPageState extends ConsumerState<EmployerCandidatesPage>
                   SliverPadding(
                     key: _listKey,
                     padding: const EdgeInsets.symmetric(horizontal: 16),
-                    // +1 slot for the divider when both groups are non-empty.
+                    // Featured strip layout when there's a soft signal +
+                    // matches: [Best matches header] + N matched cards +
+                    // [All candidates header] + everyone. Otherwise plain
+                    // full list.
                     sliver: SliverList.builder(
-                      itemCount: total + (showDivider ? 1 : 0),
+                      itemCount: showFeatured
+                          ? total + ranked.matched.length + 2 // + 2 dividers
+                          : total,
                       itemBuilder: (context, i) {
-                        // Injected separator row between "matched" and "others".
-                        if (showDivider && i == ranked.matched.length) {
-                          return Padding(
-                            padding: const EdgeInsets.only(bottom: 12),
-                            child: _SectionSeparator(
-                              label: 'Other candidates',
-                              count: ranked.others.length,
-                              isDark: isDark,
+                        Widget cardFor(int index, User user, CandidateProfile profile) {
+                          final shortlisted = shortlistIds.contains(user.id);
+                          final matchScore = _filters.skills.isEmpty ? null : _filters.skillMatchScore(profile);
+                          final weekApps = weeklyApps[user.id] ?? 0;
+                          return _StaggeredEntry(
+                            index: index,
+                            child: Padding(
+                              padding: const EdgeInsets.only(bottom: 12),
+                              child: _CandidateCard(
+                                user: user,
+                                profile: profile,
+                                hasSub: hasSub,
+                                isDark: isDark,
+                                shortlisted: shortlisted,
+                                matchScore: matchScore,
+                                weeklyApps: weekApps,
+                                onTap: () {
+                                  HapticFeedback.selectionClick();
+                                  context.go('/employer/candidates/${user.id}');
+                                },
+                                onLongPress: () {
+                                  HapticFeedback.mediumImpact();
+                                  ref.read(shortlistProvider.notifier).toggle(employer.id, user.id);
+                                },
+                              ),
                             ),
                           );
                         }
-                        final index = showDivider && i > ranked.matched.length ? i - 1 : i;
-                        final (user, profile) = all[index];
-                        final shortlisted = shortlistIds.contains(user.id);
-                        final matchScore = _filters.skills.isEmpty ? null : _filters.skillMatchScore(profile);
-                        final weekApps = weeklyApps[user.id] ?? 0;
-                        return _StaggeredEntry(
-                          index: index,
-                          child: Padding(
-                            padding: const EdgeInsets.only(bottom: 12),
-                            child: _CandidateCard(
-                              user: user,
-                              profile: profile,
-                              hasSub: hasSub,
-                              isDark: isDark,
-                              shortlisted: shortlisted,
-                              matchScore: matchScore,
-                              weeklyApps: weekApps,
-                              onTap: () {
-                                HapticFeedback.selectionClick();
-                                context.go('/employer/candidates/${user.id}');
-                              },
-                              onLongPress: () {
-                                HapticFeedback.mediumImpact();
-                                ref.read(shortlistProvider.notifier).toggle(employer.id, user.id);
-                              },
-                            ),
-                          ),
-                        );
+
+                        if (showFeatured) {
+                          if (i == 0) {
+                            return Padding(
+                              padding: const EdgeInsets.only(bottom: 12),
+                              child: _SectionSeparator(
+                                label: 'Best matches',
+                                count: ranked.matched.length,
+                                isDark: isDark,
+                                accent: const Color(0xFFEA580C),
+                              ),
+                            );
+                          }
+                          if (i >= 1 && i <= ranked.matched.length) {
+                            final idx = i - 1;
+                            final (u, p) = ranked.matched[idx];
+                            return cardFor(idx, u, p);
+                          }
+                          if (i == ranked.matched.length + 1) {
+                            return Padding(
+                              padding: const EdgeInsets.only(bottom: 12),
+                              child: _SectionSeparator(
+                                label: 'All candidates',
+                                count: total,
+                                isDark: isDark,
+                              ),
+                            );
+                          }
+                          final idx = i - (ranked.matched.length + 2);
+                          final (u, p) = all[idx];
+                          return cardFor(idx, u, p);
+                        }
+                        final (u, p) = all[i];
+                        return cardFor(i, u, p);
                       },
                     ),
                   ),
@@ -1162,15 +1193,25 @@ class _SectionSeparator extends StatelessWidget {
     required this.label,
     required this.count,
     required this.isDark,
+    this.accent,
   });
   final String label;
   final int count;
   final bool isDark;
+  /// When set, the chip renders in that brand accent (used for the
+  /// "Best matches" strip). Null → neutral zinc look.
+  final Color? accent;
 
   @override
   Widget build(BuildContext context) {
-    final chipBg = isDark ? Colors.white.withValues(alpha: 0.08) : const Color(0xFFF4F4F5);
-    final chipText = isDark ? Colors.white.withValues(alpha: 0.9) : const Color(0xFF3F3F46);
+    final isAccent = accent != null;
+    final chipBg = isAccent
+        ? accent!.withValues(alpha: 0.14)
+        : (isDark ? Colors.white.withValues(alpha: 0.08) : const Color(0xFFF4F4F5));
+    final chipText = isAccent
+        ? accent!
+        : (isDark ? Colors.white.withValues(alpha: 0.9) : const Color(0xFF3F3F46));
+    final pillBg = isAccent ? accent! : const Color(0xFF71717A);
     final line = isDark ? Colors.white.withValues(alpha: 0.10) : const Color(0xFFE4E4E7);
     return Row(
       children: [
@@ -1180,7 +1221,7 @@ class _SectionSeparator extends StatelessWidget {
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Icon(Icons.horizontal_split, size: 12),
+              Icon(Icons.horizontal_split, size: 12, color: chipText),
               const SizedBox(width: 6),
               Text(
                 label.toUpperCase(),
@@ -1195,7 +1236,7 @@ class _SectionSeparator extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                 decoration: BoxDecoration(
-                  color: const Color(0xFF71717A),
+                  color: pillBg,
                   borderRadius: BorderRadius.circular(999),
                 ),
                 child: Text('$count', style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w800, color: Colors.white)),
