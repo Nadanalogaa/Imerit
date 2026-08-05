@@ -158,11 +158,10 @@ export function HeroCarousel() {
  <RoleCard
  icon={<GraduationCap size={22} />}
  title="I'm a Candidate"
- tagline="Build a free profile, browse jobs across Tamil Nadu, and apply when you're ready."
+ tagline="Update your profile, highlight your skills, and discover job opportunities."
  bullets={[
- { icon: <Sparkles size={11} />, label: "Profile free" },
- { icon: <MapPin size={11} />, label: "Jobs near home" },
- { icon: <Target size={11} />, label: "Smart match" },
+ { icon: <Sparkles size={11} />, label: "Profile Posting is Free" },
+ { icon: <MapPin size={11} />, label: "Jobs Near Your Hometown" },
  ]}
  ctaTo="/candidate/register"
  ctaLabel="Start as Candidate"
@@ -172,11 +171,10 @@ export function HeroCarousel() {
  <RoleCard
  icon={<Briefcase size={22} />}
  title="I'm an Employer"
- tagline="Post jobs for free. Subscribe only when you're ready to search candidates."
+ tagline="Job posting is absolutely free — unlimited vacancies. No time limit."
  bullets={[
- { icon: <Sparkles size={11} />, label: "Posting free" },
- { icon: <MapPin size={11} />, label: "District-wide" },
- { icon: <Target size={11} />, label: "Ranked apps" },
+ { icon: <MapPin size={11} />, label: "Browse District-Wise Candidates" },
+ { icon: <Target size={11} />, label: "Simple Subscription for Talent" },
  ]}
  ctaTo="/employer/register"
  ctaLabel="Start as Employer"

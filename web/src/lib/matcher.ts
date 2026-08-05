@@ -1,6 +1,7 @@
 import type { Job } from "../store/jobs";
 import type { CandidateProfile } from "../store/profile";
 import { distanceKm } from "./distance";
+import { canonicalize, skillsMatch } from "./skillSynonyms";
 
 export interface MatchBreakdown {
   skills: { score: number; max: number; matched: string[]; missing: string[] };
@@ -69,18 +70,18 @@ export function matchScore(job: Job, profile: CandidateProfile | undefined): Mat
     ...(profile.itLanguages ?? []),
     ...(profile.nonItDepartments ?? []),
     ...(profile.topSkills ?? []),
-  ].map(norm);
+  ];
 
-  const jobSkills = job.skills.map(norm);
+  const jobSkills = job.skills;
 
-  // Skills overlap (35 pts)
+  // Skills overlap (35 pts) — uses word-boundary + synonym matching from
+  // skillSynonyms.ts. Fixes the old bug where "JavaScript" scored a match
+  // for a "Java" requirement (naive substring saw "java" inside "javascript").
   const matched: string[] = [];
   const missing: string[] = [];
   for (const js of jobSkills) {
-    const found = candidateSkills.some(
-      (cs) => cs === js || cs.includes(js) || js.includes(cs)
-    );
-    (found ? matched : missing).push(js);
+    const found = candidateSkills.some((cs) => skillsMatch(cs, js));
+    (found ? matched : missing).push(canonicalize(js));
   }
   const skillsScore = jobSkills.length === 0
     ? 0

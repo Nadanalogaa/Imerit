@@ -6,6 +6,7 @@ import '../store/auth_provider.dart';
 import '../store/jobs_provider.dart';
 import '../store/profile_provider.dart';
 import '../store/theme_provider.dart';
+import '../utils/skill_synonyms.dart';
 import '../widgets/job_filter_sheet.dart';
 import '../widgets/map_list_view.dart';
 import '../widgets/save_job_button.dart';
@@ -55,11 +56,11 @@ class _JobBrowsePageState extends ConsumerState<JobBrowsePage> {
       return _RankedJobs(matched: const [], others: pool, hasSignal: false);
     }
 
-    final profileSkills = <String>{
+    final profileSkills = <String>[
       ...(profile?.topSkills ?? const []),
       ...(profile?.itLanguages ?? const []),
       ...(profile?.nonItDepartments ?? const []),
-    }.map((s) => s.toLowerCase()).toSet();
+    ];
     final profileDistricts = <String>{
       ...(profile?.preferredDistrictIds ?? const []),
       if (profile?.currentDistrictId != null) profile!.currentDistrictId!,
@@ -71,13 +72,16 @@ class _JobBrowsePageState extends ConsumerState<JobBrowsePage> {
         final hay = '${j.title} ${j.employerName} ${j.description} ${j.skills.join(" ")}'.toLowerCase();
         if (hay.contains(q)) s += 3;
       }
-      if (profileSkills.isNotEmpty) {
+      if (profileSkills.isNotEmpty && j.skills.isNotEmpty) {
+        // Word-boundary + synonym match from utils/skill_synonyms.dart —
+        // same algorithm the web side uses (skillSynonyms.ts). No more
+        // false positive where a JavaScript candidate would match a Java
+        // job just because "java" is a substring of "javascript".
         int hits = 0;
         for (final needed in j.skills) {
-          final n = needed.toLowerCase();
-          if (profileSkills.any((h) => h.contains(n) || n.contains(h))) hits++;
+          if (candidateHasSkill(profileSkills, needed)) hits++;
         }
-        if (j.skills.isNotEmpty) s += (hits / j.skills.length) * 4;
+        s += (hits / j.skills.length) * 4;
       }
       if (profileDistricts.isNotEmpty && j.districtId != null && profileDistricts.contains(j.districtId)) {
         s += 2;

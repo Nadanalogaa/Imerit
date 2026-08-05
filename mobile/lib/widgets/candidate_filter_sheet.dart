@@ -7,6 +7,7 @@ import '../store/locations_provider.dart';
 import '../store/profile_provider.dart';
 import '../store/theme_provider.dart';
 import '../utils/distance.dart';
+import '../utils/skill_synonyms.dart';
 
 /// How the candidate list is ordered. Skill-match sort ranks candidates by
 /// what fraction of the employer's required-skill set they have; falls back
@@ -173,11 +174,11 @@ class CandidateFilterState {
       final has = p.education.any((e) => e.enabled && educationLevels.contains(e.level));
       if (!has) return false;
     }
-    if (skills.isNotEmpty) {
-      for (final needed in skills) {
-        if (!_hasSkill(p, needed)) return false;
-      }
-    }
+    // Skills are ranking-only now (see skillMatchScore). Previously an
+    // AND-strict filter — a 2-of-3 candidate for a 3-skill requirement
+    // would be hidden entirely. Now partial matches survive into the pool
+    // and rank naturally via the featured strip. Kept the field for
+    // backwards compatibility with saved searches.
     // Distance filter (only when the caller supplied the required data).
     // Skipping silently when data is absent is the right call — the filter
     // hasn't been "wrong", just unenforceable in this context, so we treat
@@ -206,18 +207,17 @@ class CandidateFilterState {
     return matched / skills.length;
   }
 
+  /// Uses shared skill-matching (word-boundary + synonym-aware). Kills
+  /// the "JavaScript" ↔ "Java" false positive the old substring approach
+  /// produced; keeps "React" ↔ "React.js" + "JS" ↔ "JavaScript" working.
   static bool _hasSkill(CandidateProfile p, String needed) {
-    final n = needed.toLowerCase();
-    for (final have in <String>[
+    final pool = <String>[
       ...(p.topSkills ?? const []),
       ...(p.itLanguages ?? const []),
       ...(p.nonItDepartments ?? const []),
       if (p.itSpecialization != null) p.itSpecialization!,
-    ]) {
-      final h = have.toLowerCase();
-      if (h.contains(n) || n.contains(h)) return true;
-    }
-    return false;
+    ];
+    return candidateHasSkill(pool, needed);
   }
 
   /// Distance in km from the given point to the candidate's nearest known

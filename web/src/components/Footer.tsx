@@ -11,7 +11,7 @@ export function Footer() {
  <div className="absolute -bottom-40 right-1/3 h-[20rem] w-[20rem] rounded-full bg-gradient-to-br from-sky-500/10 to-violet-500/5 blur-[120px]" />
  </div>
 
- <div className="relative grid gap-10 md:grid-cols-[1.6fr_1fr_1fr_1fr]">
+ <div className="relative grid gap-10 md:grid-cols-[1.6fr_1fr_1fr_1fr_1fr]">
  {/* Brand block */}
  <div>
  <Brand size="lg" forceTheme="dark" />
@@ -63,6 +63,10 @@ export function Footer() {
  <Col title="Support">
  <FooterHash to="#contact">Contact us</FooterHash>
  <FooterHash to="#suggestions">Suggestions</FooterHash>
+ </Col>
+
+ <Col title="Team access">
+ <FooterLink to="/staff/login">Staff login</FooterLink>
  <FooterLink to="/admin">Admin login</FooterLink>
  <FooterLink to="/super-admin">Super admin</FooterLink>
  </Col>

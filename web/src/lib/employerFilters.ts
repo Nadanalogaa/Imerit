@@ -2,6 +2,7 @@ import type { CandidateProfile, CandidateType, Field, EducationLevel } from "../
 import type { Job } from "../store/jobs";
 import type { District } from "../store/locations";
 import { distanceKm } from "./distance";
+import { skillsMatch } from "./skillSynonyms";
 
 /**
  * Ordering options for the employer candidate list. `skill_match` ranks by
@@ -71,22 +72,19 @@ export function activeFacetCount(f: CandidateFilterState): number {
 
 /**
  * True when the profile has any skill in its topSkills / itLanguages /
- * nonItDepartments / itSpecialization list that fuzzily matches `needed`.
- * Case-insensitive substring match either way so "React" and "React.js"
- * are treated as the same skill.
+ * nonItDepartments / itSpecialization list that matches `needed`. Uses
+ * the shared `skillsMatch` (word-boundary + synonym-aware) so "React"
+ * and "React.js" match, "JS" and "JavaScript" match, but "Java" does
+ * NOT match "JavaScript".
  */
 function hasSkill(profile: CandidateProfile, needed: string): boolean {
-  const n = needed.toLowerCase();
   const pool = [
     ...(profile.topSkills ?? []),
     ...(profile.itLanguages ?? []),
     ...(profile.nonItDepartments ?? []),
     profile.itSpecialization ?? "",
   ].filter(Boolean);
-  return pool.some((have) => {
-    const h = have.toLowerCase();
-    return h.includes(n) || n.includes(h);
-  });
+  return pool.some((have) => skillsMatch(have, needed));
 }
 
 /**
@@ -141,11 +139,12 @@ export function matchesFilter(
     const has = (profile.education ?? []).some((e) => e.enabled && f.educationLevels.includes(e.level));
     if (!has) return false;
   }
-  if (f.skills.length > 0) {
-    for (const needed of f.skills) {
-      if (!hasSkill(profile, needed)) return false;
-    }
-  }
+  // Skills used to hard-AND-filter here — a required-skills list would
+  // hide any candidate missing even one. That's too strict: a "React +
+  // Node + MongoDB" employer would never see a 2-of-3 candidate. Skills
+  // are now ranking-only (see skillMatchScore + the featured strip in
+  // EmployerCandidates). Leave the check off here so partial matches
+  // survive into the pool and rank naturally.
   if (f.nearJobId && f.maxDistanceKm != null && ctx?.districts && ctx?.nearJob) {
     const { lat, lng } = ctx.nearJob;
     if (lat == null || lng == null) return false;

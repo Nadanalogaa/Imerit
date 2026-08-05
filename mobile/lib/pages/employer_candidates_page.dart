@@ -10,6 +10,7 @@ import '../store/locations_provider.dart';
 import '../store/profile_provider.dart';
 import '../store/subscriptions_provider.dart';
 import '../store/theme_provider.dart';
+import '../utils/skill_synonyms.dart';
 import '../widgets/candidate_filter_sheet.dart';
 import '../widgets/employer/recently_viewed_strip.dart';
 import '../widgets/employer/saved_search_strip.dart';
@@ -113,19 +114,16 @@ class _EmployerCandidatesPageState extends ConsumerState<EmployerCandidatesPage>
       if (j.districtId != null) implicitDistrictIds.add(j.districtId!);
     }
 
-    bool candidateHasSkill(CandidateProfile p, String needed) {
-      final n = needed.toLowerCase();
+    // Word-boundary + synonym-aware from utils/skill_synonyms.dart —
+    // fixes the JavaScript-matches-Java false positive.
+    bool profileHasSkill(CandidateProfile p, String needed) {
       final pool = <String>[
         ...(p.topSkills ?? const []),
         ...(p.itLanguages ?? const []),
         ...(p.nonItDepartments ?? const []),
         if (p.itSpecialization != null) p.itSpecialization!,
       ];
-      for (final h in pool) {
-        final hl = h.toLowerCase();
-        if (hl.contains(n) || n.contains(hl)) return true;
-      }
-      return false;
+      return candidateHasSkill(pool, needed);
     }
 
     double softScore(User user, CandidateProfile p) {
@@ -168,7 +166,7 @@ class _EmployerCandidatesPageState extends ConsumerState<EmployerCandidatesPage>
       if (implicitSkills.isNotEmpty) {
         int hits = 0;
         for (final s in implicitSkills) {
-          if (candidateHasSkill(p, s)) hits++;
+          if (profileHasSkill(p, s)) hits++;
         }
         score += (hits / implicitSkills.length) * 2;
       }

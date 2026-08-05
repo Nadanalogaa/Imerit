@@ -41,6 +41,7 @@ import {
   skillMatchScore,
   type CandidateFilterState,
 } from "../lib/employerFilters";
+import { matchScore as candidateJobScore } from "../lib/matcher";
 
 /** Frozen empty fallback for the shortlist selector — see the note on the
  *  Zustand snapshot cache in RecentlyViewedStrip. */
@@ -211,29 +212,20 @@ export function EmployerCandidates() {
       return true;
     };
 
-    // Implicit signals derived from what the employer has already posted —
-    // even with zero filters set, we can rank candidates against the skills
-    // and locations they're actively hiring for. This makes the "Best
-    // matches" strip meaningful the moment the page loads.
-    const implicitSkills = new Set<string>();
-    const implicitDistrictIds = new Set<string>();
-    for (const j of activeJobs) {
-      for (const s of j.skills ?? []) implicitSkills.add(s.toLowerCase());
-      if (j.districtId) implicitDistrictIds.add(j.districtId);
-    }
-
-    const hasSkillIn = (profile: CandidateProfile, needed: string): boolean => {
-      const n = needed.toLowerCase();
-      const pool = [
-        ...(profile.topSkills ?? []),
-        ...(profile.itLanguages ?? []),
-        ...(profile.nonItDepartments ?? []),
-        profile.itSpecialization ?? "",
-      ].filter(Boolean);
-      return pool.some((h) => {
-        const hl = h.toLowerCase();
-        return hl.includes(n) || n.includes(hl);
-      });
+    // Best-fit against the employer's own active jobs — uses the SAME
+    // 100-point breakdown the candidate side uses (matcher.ts), so a
+    // candidate showing "82% match" here is scored identically to the way
+    // the candidate would see this employer's job. `max` over jobs answers
+    // "is this candidate great for at least ONE of my openings?" — more
+    // useful than an average when the employer has diverse listings.
+    const bestJobFit = (profile: CandidateProfile): number => {
+      if (activeJobs.length === 0) return 0;
+      let best = 0;
+      for (const j of activeJobs) {
+        const s = candidateJobScore(j, profile).score;
+        if (s > best) best = s;
+      }
+      return best;
     };
 
     const softScore = (user: User, profile: CandidateProfile): number => {
@@ -259,24 +251,16 @@ export function EmployerCandidates() {
         if (inPreferred || inCurrent) score += 2;
       }
       if (filters.nearJobId && filters.maxDistanceKm != null && nearJob) {
-        // Reuse the strict match predicate — if the candidate would pass the
-        // distance test they get a boost.
         if (matchesFilter(profile, { ...filters, districtIds: [], skills: [] }, { districts, nearJob })) {
           score += 2;
         }
       }
-      // Implicit signals — lower weight so explicit filters still dominate.
-      if (implicitSkills.size > 0) {
-        let hits = 0;
-        for (const skill of implicitSkills) {
-          if (hasSkillIn(profile, skill)) hits++;
-        }
-        score += (hits / implicitSkills.size) * 2;
-      }
-      if (implicitDistrictIds.size > 0) {
-        const inPreferred = (profile.preferredDistricts ?? []).some((id) => implicitDistrictIds.has(id));
-        const inCurrent = profile.currentDistrictId != null && implicitDistrictIds.has(profile.currentDistrictId);
-        if (inPreferred || inCurrent) score += 1;
+      // Implicit signal from active jobs — same match algorithm both sides
+      // will see. Weighted so it dominates when no explicit filter is set
+      // (matcher score is 0–100 → scaled to 0–5 here) but leaves room for
+      // explicit filters to break ties when both are present.
+      if (activeJobs.length > 0) {
+        score += (bestJobFit(profile) / 100) * 5;
       }
       return score;
     };
@@ -286,8 +270,7 @@ export function EmployerCandidates() {
       filters.skills.length > 0 ||
       filters.districtIds.length > 0 ||
       !!filters.nearJobId ||
-      implicitSkills.size > 0 ||
-      implicitDistrictIds.size > 0;
+      activeJobs.length > 0;
 
     const pool = items.filter(({ profile }) => hardPass(profile));
 
@@ -495,7 +478,17 @@ export function EmployerCandidates() {
                   ): MapListItem => {
                     const lat = profile.preferredLat ?? profile.currentLat;
                     const lng = profile.preferredLng ?? profile.currentLng;
-                    const score = filters.skills.length > 0 ? skillMatchScore(profile, filters) : null;
+                    // Prefer the unified 100-point match against the
+                    // employer's own active jobs (best-fit) so the number
+                    // shown to the employer is the same score the candidate
+                    // would see on the candidate side. Falls back to the
+                    // legacy 0-1 skill fraction only when the employer has
+                    // no active jobs yet AND has typed a skills filter.
+                    const score = activeJobs.length > 0
+                      ? Math.max(...activeJobs.map((j) => candidateJobScore(j, profile).score)) / 100
+                      : filters.skills.length > 0
+                        ? skillMatchScore(profile, filters)
+                        : null;
                     const shortlisted = shortlistIds.includes(user.id);
                     return {
                       id: user.id,
