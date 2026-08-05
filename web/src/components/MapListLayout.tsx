@@ -29,6 +29,12 @@ interface Props {
  /** Optional radius circle around the anchor (km). */
  radiusKm?: number | null;
  markerTone?: MarkerTone;
+ /**
+  * Number of columns to use in the list view when the layout is not split.
+  * Split view always renders a single list column so the cards stay readable
+  * beside the map.
+  */
+ listColumns?: 1 | 2;
  /** Fallback center if no items have coords (default: Tamil Nadu center). */
  defaultCenter?: { lat: number; lng: number };
  defaultZoom?: number;
@@ -102,16 +108,20 @@ export function MapListLayout({
  anchor,
  radiusKm,
  markerTone = "brand",
+ listColumns = 2,
  defaultCenter = TN_CENTER,
  defaultZoom = 7,
  emptyState,
  initialView,
 }: Props) {
- // Default: split on md+, list on small. We pick on mount.
+ // Default: split on xl+ only. At <1280px the list column gets pinched
+ // by the surrounding sidebar (EmployerCandidates has a 280px filter
+ // panel) which was making cards render awkwardly narrow. Users can
+ // still switch to split from the toolbar.
  const [view, setView] = useState<ViewMode>(() => {
  if (initialView) return initialView;
  if (typeof window === "undefined") return "list";
- return window.matchMedia("(min-width: 1024px)").matches ? "split" : "list";
+ return window.matchMedia("(min-width: 1280px)").matches ? "split" : "list";
  });
  /**
  * `hovered` = visual cross-link only (marker/card highlight). Drives no
@@ -195,7 +205,10 @@ export function MapListLayout({
  <div
  className={[
  "gap-4",
- view === "split" ? "grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.1fr)] lg:items-start" : "block",
+ // Bump the split breakpoint to xl and give the list slightly more
+ // room than the map (1.2fr vs 1fr) so cards read comfortably even at
+ // the borderline width. Below xl we render list-only.
+ view === "split" ? "grid grid-cols-1 xl:grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)] xl:items-start" : "block",
  ].join(" ")}
  >
  {/* LIST */}
@@ -212,8 +225,13 @@ export function MapListLayout({
  ) : (
  <div
  className={[
- "grid gap-3",
- view === "split" ? "grid-cols-1" : "md:grid-cols-2",
+ // Split view + explicit listColumns=1 use flex-col — bulletproof
+ // single-column stacking that nothing external can accidentally
+ // multiply. Only the "list" view with listColumns=2 opts into
+ // the responsive 2-col grid.
+ view === "split" || listColumns === 1
+   ? "flex flex-col gap-3"
+   : "grid gap-3 grid-cols-1 md:grid-cols-2",
  ].join(" ")}
  >
  {items.map((it) => (
@@ -223,7 +241,10 @@ export function MapListLayout({
  onMouseEnter={() => setHovered(it.id)}
  onMouseLeave={() => setHovered((cur) => (cur === it.id ? null : cur))}
  className={[
- "relative transition rounded-3xl",
+ // w-full so cards fill their row in the flex container.
+ // md:col-span-2 only matters when the parent is a 2-col
+ // grid (list mode + listColumns=2).
+ "relative w-full transition rounded-3xl",
  highlight === it.id ? "ring-2 ring-brand-400" : "",
  it.fullWidth ? "md:col-span-2" : "",
  ].join(" ")}
@@ -255,7 +276,7 @@ export function MapListLayout({
  <div
  className={[
  "relative overflow-hidden rounded-3xl bg-zinc-100 dark:bg-zinc-900 min-h-[22rem]",
- view === "split" ? "lg:sticky lg:top-24 lg:h-[calc(100vh-12rem)] lg:self-start" : "h-[70vh]",
+ view === "split" ? "xl:sticky xl:top-24 xl:h-[calc(100vh-12rem)] xl:self-start" : "h-[70vh]",
  ].join(" ")}
  >
  <MapContainer

@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import {
   Search,
@@ -471,6 +471,7 @@ export function EmployerCandidates() {
             ) : (
               <MapListLayout
                 markerTone="sky"
+                listColumns={1}
                 items={(() => {
                   const rowFor = (
                     { user, profile }: { user: User; profile: CandidateProfile },
@@ -692,6 +693,7 @@ function CandidateCard({
   shortlisted: boolean;
   onToggleShortlist: () => void;
 }) {
+  const navigate = useNavigate();
   const initials = user.name
     .split(/\s+/)
     .slice(0, 2)
@@ -783,7 +785,9 @@ function CandidateCard({
         <div className="mt-4 flex flex-wrap gap-1.5 text-[10px] font-semibold">
           {profile.preferredLocation && (
             <Pill icon={<MapPin size={10} />} color="zinc">
-              {profile.preferredLocation}
+              <span className="inline-block max-w-[8rem] truncate align-middle" title={profile.preferredLocation}>
+                {profile.preferredLocation}
+              </span>
             </Pill>
           )}
           {profile.field === "it" && (
@@ -831,9 +835,23 @@ function CandidateCard({
         )}
 
         {!hasSub && (
-          <div className="mt-4 flex items-center gap-2 rounded-2xl border border-amber-200 bg-amber-50 px-3 py-2 text-[11px] font-semibold text-amber-700 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-300">
-            <Lock size={12} /> Full profile locked — subscribe to view
-          </div>
+          <button
+            type="button"
+            onClick={(e) => {
+              // The whole card is wrapped in a <Link> to the candidate
+              // detail page — stop that navigation from firing and route
+              // the employer straight to the plans page instead.
+              e.preventDefault();
+              e.stopPropagation();
+              navigate("/employer/subscribe");
+            }}
+            className="mt-4 flex w-full items-center justify-between gap-2 rounded-2xl border border-amber-200 bg-amber-50 px-3 py-2 text-[11px] font-semibold text-amber-700 transition hover:border-amber-400 hover:bg-amber-100 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-300 dark:hover:border-amber-500/60 dark:hover:bg-amber-500/20"
+          >
+            <span className="inline-flex items-center gap-2">
+              <Lock size={12} /> Full profile locked — subscribe to view
+            </span>
+            <ChevronRight size={12} className="shrink-0" />
+          </button>
         )}
 
         {shortlisted && (
@@ -847,6 +865,7 @@ function CandidateCard({
 }
 
 function CandidatePopup({ user, profile, hasSub }: { user: User; profile: CandidateProfile; hasSub: boolean }) {
+  const navigate = useNavigate();
   const initials = user.name
     .split(/\s+/)
     .slice(0, 2)
@@ -882,9 +901,17 @@ function CandidatePopup({ user, profile, hasSub }: { user: User; profile: Candid
         </div>
       </div>
       {!hasSub && (
-        <p className="mt-2 inline-flex items-center gap-1 rounded-md bg-amber-50 px-1.5 py-0.5 text-[10px] font-semibold text-amber-700 dark:bg-amber-500/10 dark:text-amber-300">
+        <button
+          type="button"
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            navigate("/employer/subscribe");
+          }}
+          className="mt-2 inline-flex items-center gap-1 rounded-md bg-amber-50 px-1.5 py-0.5 text-[10px] font-semibold text-amber-700 transition hover:bg-amber-100 dark:bg-amber-500/10 dark:text-amber-300 dark:hover:bg-amber-500/20"
+        >
           <Lock size={9} /> Subscribe to view
-        </p>
+        </button>
       )}
     </Link>
   );
