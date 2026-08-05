@@ -115,6 +115,8 @@ class _LandingPageState extends ConsumerState<LandingPage> {
               isDark: isDark,
               onCandidate: () => context.go('/candidate/register'),
               onEmployer: () => context.go('/employer'),
+              onCandidateSignIn: () => context.go('/candidate/login'),
+              onEmployerSignIn: () => context.go('/employer/login'),
             ),
             WhyUs(isDark: isDark),
             AboutUs(isDark: isDark),
