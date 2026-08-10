@@ -11,11 +11,17 @@ import { useAuth, HOME_PATH, type Role } from "../store/auth";
  * Marketing nav — anchor links that only resolve on the landing page (`/`).
  * Used for visitors who haven't signed in yet.
  */
-const PUBLIC_LINKS = [
+type PublicLink =
+  | { label: string; href: string }
+  | { label: string; to: string };
+
+const PUBLIC_LINKS: PublicLink[] = [
   { label: "Home", href: "#home" },
   { label: "Why Us", href: "#why" },
   { label: "About", href: "#about" },
-  { label: "Suggestions", href: "#suggestions" },
+  // "Browse jobs" is a hard route (not an anchor) so it takes visitors
+  // to the public listings page. Apply/Save gate to register/login there.
+  { label: "Browse jobs", to: "/jobs" },
   { label: "Contact", href: "#contact" },
 ];
 
@@ -147,15 +153,25 @@ export function Navbar() {
                   </Link>
                 );
               })
-            : PUBLIC_LINKS.map((l) => (
-                <a
-                  key={l.label}
-                  href={l.href}
-                  className={[MENU_ITEM_BASE, MENU_ITEM_IDLE].join(" ")}
-                >
-                  {l.label}
-                </a>
-              ))}
+            : PUBLIC_LINKS.map((l) =>
+                "to" in l ? (
+                  <Link
+                    key={l.label}
+                    to={l.to}
+                    className={[MENU_ITEM_BASE, MENU_ITEM_IDLE].join(" ")}
+                  >
+                    {l.label}
+                  </Link>
+                ) : (
+                  <a
+                    key={l.label}
+                    href={l.href}
+                    className={[MENU_ITEM_BASE, MENU_ITEM_IDLE].join(" ")}
+                  >
+                    {l.label}
+                  </a>
+                ),
+              )}
         </nav>
 
         <div className="flex items-center gap-2">
@@ -207,16 +223,27 @@ export function Navbar() {
               })
             : (
               <>
-                {PUBLIC_LINKS.map((l) => (
-                  <a
-                    key={l.label}
-                    href={l.href}
-                    onClick={() => setOpen(false)}
-                    className={[MOBILE_ITEM_BASE, MOBILE_ITEM_IDLE].join(" ")}
-                  >
-                    {l.label}
-                  </a>
-                ))}
+                {PUBLIC_LINKS.map((l) =>
+                  "to" in l ? (
+                    <Link
+                      key={l.label}
+                      to={l.to}
+                      onClick={() => setOpen(false)}
+                      className={[MOBILE_ITEM_BASE, MOBILE_ITEM_IDLE].join(" ")}
+                    >
+                      {l.label}
+                    </Link>
+                  ) : (
+                    <a
+                      key={l.label}
+                      href={l.href}
+                      onClick={() => setOpen(false)}
+                      className={[MOBILE_ITEM_BASE, MOBILE_ITEM_IDLE].join(" ")}
+                    >
+                      {l.label}
+                    </a>
+                  ),
+                )}
                 <Link
                   to="/candidate"
                   onClick={() => setOpen(false)}

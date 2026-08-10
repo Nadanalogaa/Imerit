@@ -26,7 +26,10 @@ export function JobDetail() {
  const navigate = useNavigate();
  const job = useJobs((s) => s.byId)(id ?? "");
  const fetchById = useJobs((s) => s.fetchById);
- const user = useAuth((s) => s.currentUser)!;
+ // `user` may be null when the page is served through the public /jobs
+ // route. Every downstream store lookup has to tolerate that so a random
+ // visitor can read the job detail; Apply/Save gate to register below.
+ const user = useAuth((s) => s.currentUser);
  const applyAsync = useApplications((s) => s.applyAsync);
  const toggleSaveAsync = useApplications((s) => s.toggleSaveAsync);
  // Subscribe to the underlying data slices — not the store's `isSaved`
@@ -34,12 +37,12 @@ export function JobDetail() {
  // re-renders when the maps below them change, which is why the button
  // color used to only update on page refresh.
  const hasApplied = useApplications((s) =>
- s.applications.some((a) => a.userId === user.id && a.jobId === (id ?? ""))
+ user ? s.applications.some((a) => a.userId === user.id && a.jobId === (id ?? "")) : false,
  );
  const isSaved = useApplications((s) =>
- (s.saved[user.id] ?? []).includes(id ?? "")
+ user ? (s.saved[user.id] ?? []).includes(id ?? "") : false,
  );
- const activeSub = useSubscriptions((s) => s.activeFor)(user.id, "candidate");
+ const activeSub = useSubscriptions((s) => s.activeFor)(user?.id ?? "", "candidate");
 
  const [showApplied, setShowApplied] = useState(false);
  const [applying, setApplying] = useState(false);
@@ -57,7 +60,7 @@ export function JobDetail() {
  return () => { alive = false; };
  }, [id, job, fetchById]);
 
- if (notFound) return <Navigate to="/candidate/jobs" replace />;
+ if (notFound) return <Navigate to={user ? "/candidate/jobs" : "/jobs"} replace />;
  if (!job) {
  return (
  <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950">
@@ -75,6 +78,13 @@ export function JobDetail() {
 
  const onApply = async () => {
  if (hasApplied) return;
+ // Unauthenticated visitor arriving through /jobs/:id — send them to
+ // register with a return URL so they land back here after signup.
+ if (!user) {
+ const back = `/candidate/jobs/${job.id}`;
+ navigate(`/candidate/register?return=${encodeURIComponent(back)}&apply=${job.id}`);
+ return;
+ }
  if (!activeSub) {
  navigate(
  `/candidate/subscribe?return=${encodeURIComponent(`/candidate/jobs/${job.id}`)}&apply=${job.id}`,
@@ -94,6 +104,11 @@ export function JobDetail() {
  };
 
  const onToggleSave = () => {
+ if (!user) {
+ const back = `/candidate/jobs/${job.id}`;
+ navigate(`/candidate/register?return=${encodeURIComponent(back)}`);
+ return;
+ }
  void toggleSaveAsync(user.id, job.id).catch((err) => {
  setErrorMsg(err instanceof Error ? err.message : "Could not update saved jobs.");
  });

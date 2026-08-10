@@ -3,7 +3,6 @@ import { WelcomeStrip } from "../components/WelcomeStrip";
 import { HeroCarousel } from "../components/HeroCarousel";
 import { WhyUs } from "../components/WhyUs";
 import { AboutUs } from "../components/AboutUs";
-import { SuggestionForm } from "../components/SuggestionForm";
 import { ContactUs } from "../components/ContactUs";
 import { Footer } from "../components/Footer";
 
@@ -16,7 +15,6 @@ export function Landing() {
  <HeroCarousel />
  <WhyUs />
  <AboutUs />
- <SuggestionForm />
  <ContactUs />
  </main>
  <Footer />

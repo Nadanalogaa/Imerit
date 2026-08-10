@@ -62,7 +62,7 @@ export function Footer() {
 
  <Col title="Support">
  <FooterHash to="#contact">Contact us</FooterHash>
- <FooterHash to="#suggestions">Suggestions</FooterHash>
+ <FooterLink to="/jobs">Browse jobs</FooterLink>
  </Col>
 
  <Col title="Team access">

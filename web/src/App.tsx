@@ -93,6 +93,12 @@ export default function App() {
       <Routes>
         <Route path="/" element={<LandingOrDashboard />} />
 
+        {/* Public jobs — visitors can browse and read job detail without
+            signing in. Apply / Save gate to /candidate/register when
+            they're not authenticated. */}
+        <Route path="/jobs" element={<JobBrowse />} />
+        <Route path="/jobs/:id" element={<JobDetail />} />
+
         <Route path="/candidate" element={<Navigate to="/candidate/register" replace />} />
         <Route
           path="/candidate/register"

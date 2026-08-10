@@ -12,7 +12,6 @@ import '../widgets/user_avatar_menu.dart';
 import '../widgets/landing/entry_cards.dart';
 import '../widgets/landing/why_us.dart';
 import '../widgets/landing/about_us.dart';
-import '../widgets/landing/suggestion_form.dart';
 import '../widgets/landing/contact_us.dart';
 import '../widgets/landing/footer.dart';
 
@@ -44,7 +43,11 @@ class _LandingPageState extends ConsumerState<LandingPage> {
           curve: Curves.easeOut,
         );
       case 1:
-        context.go('/employer'); // browse jobs (placeholder)
+        // Browse jobs — a visitor should be able to look before they
+        // register. The candidate/jobs route currently requires auth on
+        // mobile; unauth users get bounced to register with a return URL
+        // so they land back on the browse page after signup.
+        context.go(loggedIn ? '/candidate/jobs' : '/candidate/register?return=/candidate/jobs');
       case 2:
         context.go(loggedIn ? '/candidate/dashboard' : '/candidate/register');
       case 3:
@@ -120,7 +123,6 @@ class _LandingPageState extends ConsumerState<LandingPage> {
             ),
             WhyUs(isDark: isDark),
             AboutUs(isDark: isDark),
-            const SuggestionForm(),
             ContactUs(isDark: isDark),
             LandingFooter(isDark: isDark),
           ],

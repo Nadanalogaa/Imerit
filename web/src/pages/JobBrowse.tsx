@@ -568,7 +568,7 @@ function JobPopup({
 }) {
  return (
  <Link
- to={`/candidate/jobs/${job.id}`}
+ to={`/jobs/${job.id}`}
  className="block w-[240px] p-3 transition hover:bg-zinc-50 dark:hover:bg-zinc-800"
  >
  <div className="flex items-start justify-between gap-2">
@@ -627,7 +627,7 @@ function JobCard({ job, matchResult, distance, delay }: { job: Job; matchResult?
  className="relative"
  >
  <Link
- to={`/candidate/jobs/${job.id}`}
+ to={`/jobs/${job.id}`}
  className={[
  "group flex h-full flex-col rounded-3xl bg-white p-5 shadow-[0_4px_16px_rgba(15,23,42,0.06)] transition duration-200 hover:-translate-y-0.5 dark:bg-zinc-900 dark:shadow-[0_4px_16px_rgba(0,0,0,0.35)]",
  isSaved
