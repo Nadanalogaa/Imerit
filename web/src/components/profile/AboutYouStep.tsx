@@ -18,6 +18,7 @@ import type {
  Experience,
  ProfileLink,
 } from "../../store/profile";
+import { suggestionsForField } from "../../lib/skillSuggestions";
 
 const IT_SPECIALIZATIONS = [
  "Artificial Intelligence",
@@ -153,7 +154,8 @@ export function AboutYouStep(p: Props) {
  onChange={p.onItLanguages}
  max={5}
  placeholder="e.g. Python, React, SQL"
- hint="Add up to 5 languages or tools you can use in interviews."
+ suggestions={suggestionsForField("it")}
+ hint="Pick from suggestions tuned for IT roles, or type your own."
  />
  {p.errors.itLanguages && <ErrorBanner message={p.errors.itLanguages} />}
  </Group>
@@ -222,7 +224,18 @@ export function AboutYouStep(p: Props) {
  onChange={p.onTopSkills}
  max={5}
  placeholder="e.g. Backend, Node.js, AWS"
- hint="Add the 5 skills that best describe your current expertise."
+ // Same suggestion pool the employer sees on the job-post
+ // form. `field` is only set for freshers, so experienced
+ // candidates see the merged IT + Non-IT + Common list; they
+ // can still type freely for anything outside the pool.
+ suggestions={suggestionsForField(p.field)}
+ hint={
+ p.field === "it"
+ ? "Suggestions tuned for IT roles. Add or type your own."
+ : p.field === "non_it"
+ ? "Suggestions tuned for Non-IT roles. Add or type your own."
+ : "Pick from suggestions or type your own — up to 5 skills."
+ }
  />
  {p.errors.topSkills && <ErrorBanner message={p.errors.topSkills} />}
  </Group>

@@ -37,6 +37,11 @@ export function CandidateProfileForm() {
  const user = useAuth((s) => s.currentUser)!;
  const profile = useProfile((s) => s.get)(user.id);
  const patch = useProfile((s) => s.patch);
+ // Education has its own bulk-replace endpoint (see profile.ts) — the
+ // scalar `patch` deliberately strips education out so it doesn't leak
+ // into the profile PATCH. Bind the store's setEducation under a
+ // different local name to avoid clashing with useState's setter below.
+ const saveEducation = useProfile((s) => s.setEducation);
 
  const [step, setStep] = useState(0);
 
@@ -185,7 +190,9 @@ export function CandidateProfileForm() {
  return;
  }
  setErrors({});
- patch(user.id, { education });
+ // setEducation → bulk-replaces on the server via
+ // /profiles/me/education. `patch({ education })` silently drops it.
+ saveEducation(user.id, education);
  }
 
  if (step === 2) {
