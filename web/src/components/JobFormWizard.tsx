@@ -279,11 +279,11 @@ export function JobFormWizard({
   const isBusy = submitting || externalSubmitting;
   const primaryLabel = submitLabel
     ?? (mode === "edit" ? (isBusy ? "Saving…" : "Save changes") : (isBusy ? "Posting…" : "Post job"));
-  const defaultHeading = heading ?? (mode === "edit" ? "Edit job" : "List a new opening");
+  const defaultHeading = heading ?? (mode === "edit" ? "Edit job" : "Post a New Job Opening");
   const defaultSubheading = subheading
     ?? (mode === "edit"
       ? "Update the details below. The 45-day expiry timer is preserved — use Repost to reset it."
-      : "Job posting is free. Your listing stays live for 45 days — repost with one click from My jobs if you're still hiring after that.");
+      : "Job Posting is Free. Your Job listing stays live for 45 days, and you can repost with one click from My Jobs if you're still hiring after that.");
 
   const isLast = step === steps.length - 1;
 
@@ -303,7 +303,7 @@ export function JobFormWizard({
 
       <AnimatePresence mode="wait">
         {step === 0 && (
-          <StepShell key="basics" title="Job basics" subtitle="Title, the role pitch, and how candidates should categorise it." onNext={next}>
+          <StepShell key="basics" title="Job Posting Basics" subtitle="How Your Job Postings Appear to Candidates" onNext={next}>
             <BasicsStep
               title={title} setTitle={setTitle}
               description={description} setDescription={setDescription}
@@ -400,10 +400,10 @@ function BasicsStep(props: {
 }) {
   return (
     <div className="flex flex-col gap-5">
-      <TextField label="Job title" value={props.title} onChange={props.setTitle} placeholder="e.g. Senior React developer" error={props.errors.title} />
+      <TextField label="JOB TITLE / SPECIFICATION " value={props.title} onChange={props.setTitle} placeholder="e.g. Senior React developer" error={props.errors.title} />
       <div>
         <label className="mb-1.5 flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wider text-zinc-700 dark:text-zinc-300">
-          <Building2 size={12} /> Description
+          <Building2 size={12} />job Description
         </label>
         <textarea
           value={props.description}
@@ -417,7 +417,7 @@ function BasicsStep(props: {
       </div>
       <div className="grid gap-4 sm:grid-cols-2">
         <div>
-          <p className="mb-1.5 text-[11px] font-bold uppercase tracking-wider text-zinc-700 dark:text-zinc-300">Field</p>
+          <p className="mb-1.5 text-[11px] font-bold uppercase tracking-wider text-zinc-700 dark:text-zinc-300"> select the Field</p>
           <SegmentedToggle
             value={props.field}
             onChange={(v) => props.setField(v as JobField)}

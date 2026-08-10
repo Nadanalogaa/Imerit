@@ -17,11 +17,11 @@ type PublicLink =
 
 const PUBLIC_LINKS: PublicLink[] = [
   { label: "Home", href: "#home" },
-  { label: "Why Us", href: "#why" },
-  { label: "About", href: "#about" },
+  { label: "Our Advantage", href: "#why" },
+  { label: "About Us", href: "#about" },
   // "Browse jobs" is a hard route (not an anchor) so it takes visitors
   // to the public listings page. Apply/Save gate to register/login there.
-  { label: "Browse jobs", to: "/jobs" },
+  { label: "Browse Jobs", to: "/jobs" },
   { label: "Contact", href: "#contact" },
 ];
 
