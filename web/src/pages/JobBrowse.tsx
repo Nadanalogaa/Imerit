@@ -61,7 +61,12 @@ export function JobBrowse() {
  const [search, setSearch] = useState("");
  const [bestOnly, setBestOnly] = useState(false);
  const [radiusKm, setRadiusKm] = useState<number>(9999); // default "Any"
- const [sortBy, setSortBy] = useState<"smart" | "nearest" | "newest">("smart");
+ // Default to "smart" only when we have a profile to score against —
+ // otherwise the option isn't in the Select's list and the control
+ // would render an empty selection.
+ const [sortBy, setSortBy] = useState<"smart" | "nearest" | "newest">(() =>
+ user ? "smart" : "newest",
+ );
 
  // Faceted filter state — the new FilterPanel owns this.
  const [filters, setFilters] = useState<FilterState>({
@@ -174,11 +179,8 @@ export function JobBrowse() {
  const radiusFiltered = anchorCoords && radiusKm < 9999
  ? withMatch.filter((x) => x.distance != null && x.distance <= radiusKm)
  : withMatch;
- const bestFiltered = bestOnly
- ? radiusFiltered.filter((x) => x.result && x.result.score >= 70)
- : radiusFiltered;
 
- const sortAll = (arr: typeof bestFiltered) => {
+ const sortAll = (arr: typeof radiusFiltered) => {
  const sorted = [...arr];
  if (sortBy === "nearest" && anchorCoords) {
  sorted.sort((a, b) => (a.distance ?? Infinity) - (b.distance ?? Infinity));
@@ -198,16 +200,13 @@ export function JobBrowse() {
  // Featured cap — the "Best matches" strip is a shortlist, not the full
  // catalogue. The full list still renders below in the "All jobs" section.
  const FEATURED_CAP = 5;
- const sortedAll = sortAll(bestFiltered);
+ const sortedAll = sortAll(radiusFiltered);
  const hasSignal = !!profile || !!q;
- if (!hasSignal || bestOnly) {
- return { matched: [] as typeof bestFiltered, others: sortedAll, hasSignal: false };
- }
 
  // Prefer real scoring wins; fall back to the top of the sorted list when
  // nothing hits a hard threshold — that way the featured strip is always
  // populated whenever there's context to rank against.
- const searchHit = (x: typeof bestFiltered[number]) => {
+ const searchHit = (x: typeof radiusFiltered[number]) => {
  if (!q) return false;
  const hay = `${x.job.title} ${x.job.employerName} ${x.job.skills.join(" ")}`.toLowerCase();
  return hay.includes(q);
@@ -218,15 +217,44 @@ export function JobBrowse() {
  // one of the job's required skills to be featured. Jobs with an empty
  // required-skills list (internships / generic roles) bypass the gate
  // and rank on the other signals as before.
- const passesSkillGate = (x: typeof bestFiltered[number]): boolean => {
+ const passesSkillGate = (x: typeof radiusFiltered[number]): boolean => {
  const jobRequiresSkills = (x.job.skills?.length ?? 0) > 0;
  if (!jobRequiresSkills) return true;
  return (x.result?.breakdown.skills.matched.length ?? 0) > 0;
  };
 
- const positive = sortedAll.filter(
+ // Featured strip is intentionally SCORE-sorted, not sortBy-sorted.
+ // "Best matches" should always mean "highest matcher score first" —
+ // otherwise picking Newest / Nearest from the sort dropdown would
+ // shuffle the featured strip into a meaningless order. The sort
+ // dropdown only affects the "All jobs" section below.
+ const scoreSorted = [...radiusFiltered].sort(
+ (a, b) => {
+ const ds = (b.result?.score ?? 0) - (a.result?.score ?? 0);
+ if (ds !== 0) return ds;
+ return (a.distance ?? Infinity) - (b.distance ?? Infinity);
+ },
+ );
+ const positive = scoreSorted.filter(
  (x) => passesSkillGate(x) && ((x.result?.score ?? 0) >= 40 || searchHit(x)),
  );
+
+ // "Best matches only" toggle → use the SAME predicate the strip uses,
+ // so the count in the strip lines up with what the toggle reveals. The
+ // old code used a hard-coded >= 70 threshold, which mismatched the
+ // strip's >= 40 + skill-gate rule and produced the "shows N matches
+ // but toggle hides all N" complaint.
+ if (bestOnly) {
+ if (!hasSignal) {
+ // No profile / no search → no defined "best" — show empty.
+ return { matched: [] as typeof radiusFiltered, others: [], hasSignal: false };
+ }
+ return { matched: [] as typeof radiusFiltered, others: positive, hasSignal: false };
+ }
+
+ if (!hasSignal) {
+ return { matched: [] as typeof radiusFiltered, others: sortedAll, hasSignal: false };
+ }
 
  // If the gate leaves us empty (candidate has no profile skills yet, or
  // no jobs overlap their skills), fall back to top-N by the current
@@ -332,8 +360,11 @@ export function JobBrowse() {
  <Select
  value={sortBy}
  onChange={(v) => setSortBy(v as typeof sortBy)}
+ // Drop the "smart" option for anonymous/no-profile visitors —
+ // it degenerates to plain Newest and would double up with the
+ // explicit "Newest" entry below.
  options={[
- { id: "smart", label: profile ? "Best match" : "Newest" },
+ ...(profile ? [{ id: "smart", label: "Best match" }] : []),
  ...(anchorCoords ? [{ id: "nearest", label: "Nearest first" }] : []),
  { id: "newest", label: "Newest" },
  ]}

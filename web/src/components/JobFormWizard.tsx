@@ -38,6 +38,11 @@ import { StepIndicator } from "./profile/StepIndicator";
 import { StepShell } from "./profile/StepShell";
 import { JOB_BENEFITS, type JobBenefit, type JobExperience, type JobField, type JobType } from "../store/jobs";
 import { type PlaceRef } from "../store/locations";
+import {
+  SKILL_SUGGESTIONS_COMMON,
+  SKILL_SUGGESTIONS_IT,
+  SKILL_SUGGESTIONS_NON_IT,
+} from "../lib/skillSuggestions";
 
 /**
  * Full state object the wizard captures + emits on submit. The parent
@@ -561,35 +566,6 @@ function SkillsStep(props: {
     </div>
   );
 }
-
-const SKILL_SUGGESTIONS_IT = [
-  "JavaScript", "TypeScript", "Python", "Java", "C#", "C++", "Go", "Rust", "PHP", "Ruby", "Kotlin", "Swift", "Dart",
-  "React", "Next.js", "Vue.js", "Angular", "Svelte", "HTML/CSS", "Tailwind CSS", "SASS", "Redux", "Zustand", "TanStack Query",
-  "Node.js", "Express", "NestJS", "Django", "Flask", "FastAPI", "Spring Boot", ".NET", "Laravel", "Ruby on Rails",
-  "React Native", "Flutter", "iOS", "Android", "Xamarin",
-  "SQL", "PostgreSQL", "MySQL", "MongoDB", "Redis", "SQLite", "MariaDB", "Cassandra", "DynamoDB", "Elasticsearch",
-  "AWS", "Azure", "GCP", "Docker", "Kubernetes", "Terraform", "Jenkins", "GitHub Actions", "CI/CD", "Linux",
-  "Data Science", "Machine Learning", "Deep Learning", "TensorFlow", "PyTorch", "NLP", "Computer Vision", "Pandas", "NumPy", "Power BI", "Tableau",
-  "Figma", "Adobe XD", "Sketch", "Illustrator", "Photoshop", "UI Design", "UX Design",
-  "Selenium", "Cypress", "Jest", "Postman", "Git", "REST API", "GraphQL", "Microservices",
-];
-
-const SKILL_SUGGESTIONS_NON_IT = [
-  "Sales", "Field Sales", "Marketing", "Digital Marketing", "SEO", "Social Media", "Content Writing",
-  "Customer Service", "Voice Process", "Non-Voice Process", "Insurance", "Telesales",
-  "HR", "Recruitment", "Payroll", "Employee Engagement", "Administration",
-  "Accounting", "Finance", "Excel", "Tally", "GST", "Financial Modeling", "Auditing", "Taxation",
-  "Supply Chain", "Logistics", "Purchase", "Warehouse Management", "Inventory Management",
-  "Operations", "Procurement",
-  "Civil Engineering", "AutoCAD", "Site Management", "Electrical Wiring", "Plumbing", "Welding", "Carpentry",
-  "Driving", "Delivery", "Two-wheeler License", "Heavy Vehicle License",
-  "Nursing", "Pharmacy", "Teaching", "Retail", "Cashier",
-];
-
-const SKILL_SUGGESTIONS_COMMON = [
-  "Communication", "English", "Tamil", "Hindi", "Telugu", "Kannada", "Malayalam",
-  "MS Word", "MS PowerPoint", "Team Management", "Problem Solving",
-];
 
 function SalaryRangePicker({ value, onChange }: { value: string; onChange: (v: string) => void }) {
   const parsed = parseLpaRange(value);

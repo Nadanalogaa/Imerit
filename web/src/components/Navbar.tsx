@@ -109,6 +109,48 @@ export function Navbar() {
   const logoHref = user ? HOME_PATH[user.role] : "/";
   const appLinks = user ? APP_LINKS[user.role] : null;
 
+  /* --- Active-section tracking for the public nav ---------------------
+   * The marketing nav is anchor-based (#home, #why, #about, #contact)
+   * so we watch the four landing sections with an IntersectionObserver
+   * and highlight whichever the reader is currently on. When the user
+   * is off the landing page (e.g. on /jobs) `activeAnchor` stays empty
+   * and the route-based active state takes over. */
+  const [activeAnchor, setActiveAnchor] = useState<string>("");
+  useEffect(() => {
+    if (appLinks) return; // authed nav uses route-matching, not anchors
+    if (location.pathname !== "/") {
+      setActiveAnchor("");
+      return;
+    }
+    const ids = ["home", "why", "about", "contact"];
+    const nodes = ids
+      .map((id) => document.getElementById(id))
+      .filter((n): n is HTMLElement => n != null);
+    if (nodes.length === 0) return;
+
+    // Track the section closest to the top of the viewport that's still
+    // in view. "topmost visible wins" is the pattern users expect from
+    // marketing-site scrollspy nav.
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const visible = entries
+          .filter((e) => e.isIntersecting)
+          .sort((a, b) => a.boundingClientRect.top - b.boundingClientRect.top);
+        if (visible.length > 0) setActiveAnchor(`#${visible[0]!.target.id}`);
+      },
+      // Trigger when a section's top crosses roughly the header height.
+      { rootMargin: "-72px 0px -60% 0px", threshold: [0, 0.1, 0.5, 1] },
+    );
+    nodes.forEach((n) => observer.observe(n));
+    return () => observer.disconnect();
+  }, [appLinks, location.pathname]);
+
+  const isPublicLinkActive = (l: PublicLink): boolean => {
+    if ("to" in l) return location.pathname === l.to || location.pathname.startsWith(l.to + "/");
+    return l.href === activeAnchor;
+  };
+
+
   /** Which menu item owns the current pathname — longest matching prefix
    *  wins so /staff/jobs/new highlights "Post job" (exact match) and does
    *  NOT also highlight "My jobs" (/staff/jobs prefix). The naive
@@ -153,25 +195,44 @@ export function Navbar() {
                   </Link>
                 );
               })
-            : PUBLIC_LINKS.map((l) =>
-                "to" in l ? (
+            : PUBLIC_LINKS.map((l) => {
+                const active = isPublicLinkActive(l);
+                const cls = [MENU_ITEM_BASE, active ? MENU_ITEM_ACTIVE : MENU_ITEM_IDLE].join(" ");
+                if ("to" in l) {
+                  return (
+                    <Link key={l.label} to={l.to} aria-current={active ? "page" : undefined} className={cls}>
+                      {l.label}
+                    </Link>
+                  );
+                }
+                // Anchor link. On the landing page a plain <a href="#foo">
+                // gives us the smooth same-page scroll. Off the landing
+                // page we need a real route change to "/" + a hash — use
+                // <Link> for client-side nav; the Landing page has an
+                // effect that scrolls to the hash after mount.
+                if (location.pathname === "/") {
+                  return (
+                    <a
+                      key={l.label}
+                      href={l.href}
+                      aria-current={active ? "true" : undefined}
+                      className={cls}
+                    >
+                      {l.label}
+                    </a>
+                  );
+                }
+                return (
                   <Link
                     key={l.label}
-                    to={l.to}
-                    className={[MENU_ITEM_BASE, MENU_ITEM_IDLE].join(" ")}
+                    to={{ pathname: "/", hash: l.href }}
+                    aria-current={active ? "true" : undefined}
+                    className={cls}
                   >
                     {l.label}
                   </Link>
-                ) : (
-                  <a
-                    key={l.label}
-                    href={l.href}
-                    className={[MENU_ITEM_BASE, MENU_ITEM_IDLE].join(" ")}
-                  >
-                    {l.label}
-                  </a>
-                ),
-              )}
+                );
+              })}
         </nav>
 
         <div className="flex items-center gap-2">
@@ -223,27 +284,47 @@ export function Navbar() {
               })
             : (
               <>
-                {PUBLIC_LINKS.map((l) =>
-                  "to" in l ? (
+                {PUBLIC_LINKS.map((l) => {
+                  const active = isPublicLinkActive(l);
+                  const cls = [MOBILE_ITEM_BASE, active ? MOBILE_ITEM_ACTIVE : MOBILE_ITEM_IDLE].join(" ");
+                  if ("to" in l) {
+                    return (
+                      <Link
+                        key={l.label}
+                        to={l.to}
+                        onClick={() => setOpen(false)}
+                        aria-current={active ? "page" : undefined}
+                        className={cls}
+                      >
+                        {l.label}
+                      </Link>
+                    );
+                  }
+                  if (location.pathname === "/") {
+                    return (
+                      <a
+                        key={l.label}
+                        href={l.href}
+                        onClick={() => setOpen(false)}
+                        aria-current={active ? "true" : undefined}
+                        className={cls}
+                      >
+                        {l.label}
+                      </a>
+                    );
+                  }
+                  return (
                     <Link
                       key={l.label}
-                      to={l.to}
+                      to={{ pathname: "/", hash: l.href }}
                       onClick={() => setOpen(false)}
-                      className={[MOBILE_ITEM_BASE, MOBILE_ITEM_IDLE].join(" ")}
+                      aria-current={active ? "true" : undefined}
+                      className={cls}
                     >
                       {l.label}
                     </Link>
-                  ) : (
-                    <a
-                      key={l.label}
-                      href={l.href}
-                      onClick={() => setOpen(false)}
-                      className={[MOBILE_ITEM_BASE, MOBILE_ITEM_IDLE].join(" ")}
-                    >
-                      {l.label}
-                    </a>
-                  ),
-                )}
+                  );
+                })}
                 <Link
                   to="/candidate"
                   onClick={() => setOpen(false)}
