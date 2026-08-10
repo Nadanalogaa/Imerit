@@ -214,12 +214,39 @@ class _EmployerCandidatesPageState extends ConsumerState<EmployerCandidatesPage>
       return _RankedCandidates(matched: const [], others: sortedAll, hasSignal: false);
     }
 
+    // Skill gate for Best Matches — location/field/experience alone
+    // don't qualify. Candidate needs ≥1 skill hit against either the
+    // explicit `_filters.skills` list or the implicit skills derived
+    // from the employer's active jobs. When neither has any skills,
+    // the gate is inert (nothing to enforce).
+    final activeJobsWithSkills =
+        activeJobs.where((j) => j.skills.isNotEmpty).toList();
+    final skillGateActive =
+        _filters.skills.isNotEmpty || activeJobsWithSkills.isNotEmpty;
+
+    bool passesSkillGate(CandidateProfile p) {
+      if (_filters.skills.isNotEmpty) {
+        return _filters.skillMatchScore(p) > 0;
+      }
+      if (activeJobsWithSkills.isNotEmpty) {
+        for (final j in activeJobsWithSkills) {
+          for (final needed in j.skills) {
+            if (profileHasSkill(p, needed)) return true;
+          }
+        }
+        return false;
+      }
+      return true;
+    }
+
     const featuredCap = 5;
-    final positive = scored.where((t) => t.$3 > 0).toList();
-    final featured = (positive.isNotEmpty ? positive : scored)
-        .take(featuredCap)
-        .map((t) => (t.$1, t.$2))
-        .toList();
+    final positive =
+        scored.where((t) => t.$3 > 0 && passesSkillGate(t.$2)).toList();
+    final featured = positive.isNotEmpty
+        ? positive.take(featuredCap).map((t) => (t.$1, t.$2)).toList()
+        : skillGateActive
+            ? <(User, CandidateProfile)>[]
+            : scored.take(featuredCap).map((t) => (t.$1, t.$2)).toList();
 
     return _RankedCandidates(
       matched: featured,

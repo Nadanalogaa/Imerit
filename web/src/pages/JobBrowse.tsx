@@ -212,11 +212,34 @@ export function JobBrowse() {
  const hay = `${x.job.title} ${x.job.employerName} ${x.job.skills.join(" ")}`.toLowerCase();
  return hay.includes(q);
  };
+
+ // Skill gate for Best Matches. Location + field + experience alone
+ // shouldn't qualify — the candidate needs to actually have at least
+ // one of the job's required skills to be featured. Jobs with an empty
+ // required-skills list (internships / generic roles) bypass the gate
+ // and rank on the other signals as before.
+ const passesSkillGate = (x: typeof bestFiltered[number]): boolean => {
+ const jobRequiresSkills = (x.job.skills?.length ?? 0) > 0;
+ if (!jobRequiresSkills) return true;
+ return (x.result?.breakdown.skills.matched.length ?? 0) > 0;
+ };
+
  const positive = sortedAll.filter(
- (x) => (x.result?.score ?? 0) >= 40 || searchHit(x),
+ (x) => passesSkillGate(x) && ((x.result?.score ?? 0) >= 40 || searchHit(x)),
  );
+
+ // If the gate leaves us empty (candidate has no profile skills yet, or
+ // no jobs overlap their skills), fall back to top-N by the current
+ // sort so the strip isn't awkwardly hidden — but ONLY when the profile
+ // has zero skills declared, otherwise we're just showing bad matches.
+ const profileHasSkills =
+ (profile?.topSkills?.length ?? 0) +
+ (profile?.itLanguages?.length ?? 0) +
+ (profile?.nonItDepartments?.length ?? 0) > 0;
  const featured = positive.length > 0
  ? positive.slice(0, FEATURED_CAP)
+ : profileHasSkills
+ ? [] // profile has skills but none matched → truly no best matches
  : sortedAll.slice(0, Math.min(FEATURED_CAP, sortedAll.length));
 
  return { matched: featured, others: sortedAll, hasSignal: true };

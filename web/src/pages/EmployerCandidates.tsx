@@ -299,13 +299,49 @@ export function EmployerCandidates() {
     const withScore = [...scored].sort(
       (a, b) => (b.score !== a.score ? b.score - a.score : sortFallback(a, b)),
     );
-    const positive = withScore.filter((x) => x.score > 0);
-    // If any candidate scored, feature only real matches (up to CAP). If
-    // nothing scored (edge case — sparse profiles), still surface the top
-    // few by fallback so the strip isn't empty when there IS context.
+
+    /* ---------------- skill gate for Best Matches ----------------
+     *
+     * Location / field / experience aren't enough on their own to feature
+     * a candidate — the employer needs someone who can actually do the
+     * job. We gate Best Matches on skill overlap.
+     *
+     * Gate context (in priority order):
+     *   1. Explicit `filters.skills` — if the employer typed required
+     *      skills, candidate must hit ≥1 of them.
+     *   2. Active-jobs implicit — if any of the employer's active jobs
+     *      lists required skills, candidate must hit ≥1 skill across all
+     *      such jobs (via matcher.ts breakdown).
+     *   3. Neither → gate is inert (no skill context to enforce), the
+     *      existing scoring wins.
+     */
+    const activeJobsWithSkills = activeJobs.filter((j) => (j.skills?.length ?? 0) > 0);
+
+    const passesSkillGate = (profile: CandidateProfile): boolean => {
+      if (filters.skills.length > 0) {
+        return skillMatchScore(profile, filters) > 0;
+      }
+      if (activeJobsWithSkills.length > 0) {
+        for (const j of activeJobsWithSkills) {
+          if (candidateJobScore(j, profile).breakdown.skills.matched.length > 0) {
+            return true;
+          }
+        }
+        return false;
+      }
+      return true;
+    };
+
+    const skillGateActive =
+      filters.skills.length > 0 || activeJobsWithSkills.length > 0;
+
+    const positive = withScore.filter((x) => x.score > 0 && passesSkillGate(x.profile));
     const featured = positive.length > 0
       ? positive.slice(0, FEATURED_CAP)
-      : withScore.slice(0, Math.min(FEATURED_CAP, withScore.length));
+      : skillGateActive
+        ? [] // Gate active but no candidate hit any required skill — no best matches, only All Candidates
+        : withScore.slice(0, Math.min(FEATURED_CAP, withScore.length));
+
     return { matched: featured, others: withScore, hasSignal: true };
   }, [items, filters, districts, nearJob, search, activeJobs]);
 

@@ -95,12 +95,38 @@ class _JobBrowsePageState extends ConsumerState<JobBrowsePage> {
         return c != 0 ? c : b.$1.postedAt.compareTo(a.$1.postedAt);
       });
 
+    // Skill gate for Best Matches — location + type + posted-window
+    // alone aren't enough. The candidate needs at least one skill in
+    // common with the job's required skills. Jobs with no required
+    // skills listed (internships / generic) bypass the gate.
+    bool passesSkillGate(Job j) {
+      if (j.skills.isEmpty) return true;
+      if (profileSkills.isEmpty) return false;
+      for (final needed in j.skills) {
+        if (candidateHasSkill(profileSkills, needed)) return true;
+      }
+      // Search hit as escape hatch — user intent overrides the gate.
+      if (q.isNotEmpty) {
+        final hay = '${j.title} ${j.employerName} ${j.description} ${j.skills.join(" ")}'.toLowerCase();
+        if (hay.contains(q)) return true;
+      }
+      return false;
+    }
+
     const featuredCap = 5;
-    final positive = scored.where((t) => t.$2 > 0).toList();
-    final featured = (positive.isNotEmpty ? positive : scored)
-        .take(featuredCap)
-        .map((t) => t.$1)
+    final positive = scored
+        .where((t) => t.$2 > 0 && passesSkillGate(t.$1))
         .toList();
+
+    // Fall back to top-N only when the profile has zero skills declared —
+    // otherwise an empty featured strip is the correct answer (no jobs
+    // truly match the candidate's skills).
+    final profileHasSkills = profileSkills.isNotEmpty;
+    final featured = positive.isNotEmpty
+        ? positive.take(featuredCap).map((t) => t.$1).toList()
+        : profileHasSkills
+            ? <Job>[]
+            : scored.take(featuredCap).map((t) => t.$1).toList();
 
     return _RankedJobs(matched: featured, others: scored.map((t) => t.$1).toList(), hasSignal: true);
   }
