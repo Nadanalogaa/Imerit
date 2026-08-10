@@ -33,10 +33,10 @@ export function EmployerSubscribe() {
  Employer subscription
  </p>
  <h1 className="mt-2 text-2xl font-semibold tracking-tight md:text-3xl">
- Pick your plan
+ Choose your plan
  </h1>
  <p className="mt-2 text-sm text-zinc-600 dark:text-zinc-400">
- Job posting is always free. Subscribe to view full candidate profiles + contact directly.
+ Subscribe to Unlock Full Candidate Profiles and their Contact Details
  </p>
  </header>
 
@@ -52,7 +52,7 @@ export function EmployerSubscribe() {
  )}
 
  <section className="mb-10">
- <SectionHeader icon={<Building2 size={16} />} label="SME — 1 to 50 employees" badge="Most chosen" />
+ <SectionHeader icon={<Building2 size={16} />} label="MSME — 1 to 50 employees" badge="Most chosen" />
  <div className="mt-4 grid gap-4 md:grid-cols-3">
  {sme.map((p, i) => (
  <PlanCard

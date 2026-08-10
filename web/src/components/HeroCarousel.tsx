@@ -161,7 +161,7 @@ export function HeroCarousel() {
  tagline="Update your profile, highlight your skills, and discover job opportunities."
  bullets={[
  { icon: <Sparkles size={11} />, label: "Profile Posting is Free" },
- { icon: <MapPin size={11} />, label: "Jobs Near Your Hometown" },
+ { icon: <MapPin size={11} />, label: "Explore Jobs Near Your Hometown Today" },
  ]}
  ctaTo="/candidate/register"
  ctaLabel="Start as Candidate"
@@ -174,7 +174,7 @@ export function HeroCarousel() {
  tagline="Job posting is absolutely free — unlimited vacancies. No time limit."
  bullets={[
  { icon: <MapPin size={11} />, label: "Browse District-Wise Candidates" },
- { icon: <Target size={11} />, label: "Simple Subscription for Talent" },
+ { icon: <Target size={11} />, label: "A Simple Subscription to Find the Right Talent" },
  ]}
  ctaTo="/employer/register"
  ctaLabel="Start as Employer"

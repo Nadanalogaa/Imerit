@@ -406,7 +406,7 @@ export function EmployerCandidates() {
               ? `Sorted by skill-match against ${filters.skills.length} required skill${filters.skills.length === 1 ? "" : "s"}.`
               : hasSub
                 ? "Click any card to view their full CV. Right-click to shortlist."
-                : "Subscribe to unlock full CVs. Right-click cards to shortlist for later."}
+                : "Subscribe to Unlock Full Candidate Profiles and their Contact Details"}
           </p>
           {apiError && (
             <p className="mt-3 rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-xs text-rose-700 dark:border-rose-500/30 dark:bg-rose-500/10 dark:text-rose-400">
@@ -430,7 +430,7 @@ export function EmployerCandidates() {
                   You're browsing without an active subscription
                 </p>
                 <p className="text-xs text-amber-800/80 dark:text-amber-300/80">
-                  You can preview cards. Subscribe to view full profiles + contact details.
+                  Subscribe to Unlock Full Candidate Profiles and their Contact Details
                 </p>
               </div>
             </div>
@@ -1006,9 +1006,9 @@ function EmptyState() {
   return (
     <div className="flex flex-col items-center rounded-3xl border border-dashed border-zinc-300 bg-white px-6 py-16 text-center dark:border-zinc-700 dark:bg-zinc-900">
       <Search size={32} className="text-zinc-400" />
-      <p className="mt-3 text-sm font-semibold">No candidates match your filters</p>
+      <p className="mt-3 text-sm font-semibold">No suitable candidates found for your selected filters.</p>
       <p className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">
-        Try widening your search, or wait for more profiles to be created.
+        Try widening your search, or wait until we find relevant profiles for you.
       </p>
     </div>
   );

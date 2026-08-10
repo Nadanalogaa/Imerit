@@ -108,8 +108,8 @@ export interface JobFormWizardProps {
  */
 
 const STEPS_WITH_BRAND = [
-  { id: "basics", label: "Basics" },
-  { id: "skills", label: "Skills & pay" },
+  { id: "basics", label: "Job Basics" },
+  { id: "skills", label: "Skills & Pay" },
   { id: "location", label: "Location" },
   { id: "benefits", label: "Benefits" },
   { id: "brand", label: "Brand" },
@@ -278,7 +278,7 @@ export function JobFormWizard({
 
   const isBusy = submitting || externalSubmitting;
   const primaryLabel = submitLabel
-    ?? (mode === "edit" ? (isBusy ? "Saving…" : "Save changes") : (isBusy ? "Posting…" : "Post job"));
+    ?? (mode === "edit" ? (isBusy ? "Saving…" : "Save changes") : (isBusy ? "Posting…" : "Post Job"));
   const defaultHeading = heading ?? (mode === "edit" ? "Edit job" : "Post a New Job Opening");
   const defaultSubheading = subheading
     ?? (mode === "edit"
@@ -317,8 +317,8 @@ export function JobFormWizard({
         {step === 1 && (
           <StepShell
             key="skills"
-            title="Skills & pay"
-            subtitle="What you need on day one, and what you're offering."
+            title="Skills & Pay"
+            subtitle="Skills are powerful search keywords. Mention all relevant skills to help the right candidates discover your job quickly."
             onBack={back}
             onNext={hideBrandStep && steps.length === 4 ? next : next}
           >
@@ -334,15 +334,15 @@ export function JobFormWizard({
           </StepShell>
         )}
         {step === 2 && (
-          <StepShell key="location" title="Where is the role?" subtitle="District + taluk so we can match candidates near home." onBack={back} onNext={next}>
+          <StepShell key="location" title="Mention the Job Location" subtitle="District + taluk so we can match candidates near home." onBack={back} onNext={next}>
             <LocationStep place={place} setPlace={setPlace} errors={errors} />
           </StepShell>
         )}
         {step === 3 && (
           <StepShell
             key="benefits"
-            title="Employee benefits"
-            subtitle="Pick everything that applies. Candidates filter by these."
+            title="Employee Benefits"
+            subtitle="Select the benefits your company provides. Offering more benefits can attract more candidates to apply."
             onBack={back}
             onNext={isLast ? runSubmit : next}
             nextLabel={isLast ? primaryLabel : undefined}
@@ -359,10 +359,10 @@ export function JobFormWizard({
         {step === 4 && !hideBrandStep && (
           <StepShell
             key="brand"
-            title={brandStepLogoOnly ? "Company logo" : "Company brand"}
+            title={brandStepLogoOnly ? "Company logo" : "Company Brand"}
             subtitle={brandStepLogoOnly
               ? "Optional — a logo on the listing helps candidates recognise the brand."
-              : "Your logo and a hiring contact go on the listing."}
+              : "Your Company Logo and Hiring Contact Are Displayed on Every Job Listings."}
             onBack={back}
             onNext={runSubmit}
             nextLabel={primaryLabel}
@@ -400,7 +400,7 @@ function BasicsStep(props: {
 }) {
   return (
     <div className="flex flex-col gap-5">
-      <TextField label="JOB TITLE / SPECIFICATION " value={props.title} onChange={props.setTitle} placeholder="e.g. Senior React developer" error={props.errors.title} />
+      <TextField label="JOB TITLE / SPECIFICATION " value={props.title} onChange={props.setTitle} placeholder="e.g. Senior React Developer" error={props.errors.title} />
       <div>
         <label className="mb-1.5 flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wider text-zinc-700 dark:text-zinc-300">
           <Building2 size={12} />job Description
@@ -409,7 +409,7 @@ function BasicsStep(props: {
           value={props.description}
           onChange={(e) => props.setDescription(e.target.value)}
           rows={5}
-          placeholder="What the role involves, who you're looking for, day-to-day responsibilities…"
+          placeholder="Roles & Responsibilities , Required Skills and Educational Qualification "
           className="w-full resize-none rounded-lg bg-white px-4 py-3 text-sm text-zinc-900 placeholder:text-zinc-400 focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500/20 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-100 border border-zinc-200 dark:border-zinc-800"
         />
         <p className="mt-1 text-[11px] text-zinc-500 dark:text-zinc-400">{props.description.length} / 1500 characters</p>
@@ -511,7 +511,7 @@ function SkillsStep(props: {
         <ChipInput
           value={props.skills}
           onChange={props.setSkills}
-          placeholder="Type a skill — pick from suggestions or add your own"
+          placeholder="Type a skill — pick from suggestions or add your own (eg. Digital Marketing, F&B Service, HR, Purchase, Accounts."
           suggestions={suggestions}
           hint={hint}
         />
@@ -520,7 +520,7 @@ function SkillsStep(props: {
       {props.experience !== "fresher" && (
         <div>
           <label className="mb-1.5 block text-[12px] font-semibold text-zinc-700 dark:text-zinc-300">
-            Years of experience <span className="font-normal text-zinc-500">(optional)</span>
+            Years of Experience <span className="font-normal text-zinc-500">(optional)</span>
           </label>
           <div className="flex flex-wrap items-center gap-2">
             <div className="flex items-center gap-1 rounded-lg border border-zinc-300 bg-white px-1 py-1 dark:border-zinc-700 dark:bg-zinc-950">
@@ -617,7 +617,7 @@ function SalaryRangePicker({ value, onChange }: { value: string; onChange: (v: s
   return (
     <div>
       <label className="mb-1.5 block text-[12px] font-semibold text-zinc-700 dark:text-zinc-300">
-        Salary range <span className="font-normal text-zinc-500">(optional)</span>
+        Salary Range <span className="font-normal text-zinc-500">(optional)</span>
       </label>
       <div className="flex flex-wrap items-center gap-2">
         <div className="flex items-center gap-1 rounded-lg border border-zinc-300 bg-white px-1 py-1 dark:border-zinc-700 dark:bg-zinc-950">
@@ -719,9 +719,6 @@ function BenefitsStep(props: { benefits: JobBenefit[]; setBenefits: (b: JobBenef
   };
   return (
     <div>
-      <p className="mb-3 text-xs text-zinc-600 dark:text-zinc-400">
-        Pick everything that applies — candidates can filter listings by these.
-      </p>
       <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
         {JOB_BENEFITS.map((b) => {
           const active = props.benefits.includes(b.id);
@@ -821,7 +818,7 @@ function BrandStep(props: {
           <TextField label="Company name" value={props.companyName} onChange={props.setCompanyName} placeholder="e.g. Acme Tamil Pvt. Ltd." error={props.errors.companyName} />
           <TextField label="Hiring contact email" value={props.contactEmail} onChange={props.setContactEmail} placeholder="hiring@yourcompany.com" type="email" error={props.errors.contactEmail} />
           <p className="text-[11px] text-zinc-500 dark:text-zinc-400">
-            <MapPin size={11} className="-mt-0.5 inline" /> The logo + company name are saved on the employer profile and reused for every future job post.
+            <MapPin size={11} className="-mt-0.5 inline" /> The logo and company name are stored in the employer profile and automatically applied to all future job posts.
           </p>
         </>
       )}

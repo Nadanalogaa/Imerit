@@ -73,7 +73,7 @@ export function EmployerDashboard() {
  </div>
 
  <h1 className="mt-1.5 flex items-center gap-2 text-2xl font-semibold tracking-tight md:text-3xl">
- Hello {firstName}
+ {user.company}
  <motion.span animate={{ rotate: [0, 14, -8, 14, -4, 10, 0] }} transition={{ duration: 1.5, ease: "easeInOut", repeat: 1, repeatDelay: 1 }} className="inline-block">👋</motion.span>
  </h1>
 
@@ -88,7 +88,7 @@ export function EmployerDashboard() {
  <span className="text-zinc-300 dark:text-zinc-700">·</span>
  <span className="inline-flex items-center gap-1.5 font-semibold text-zinc-700 dark:text-zinc-200">
  <Building2 size={14} className="text-sky-500" />
- {user.company}
+ Hello {firstName} 
  </span>
  </>
  )}
@@ -99,7 +99,7 @@ export function EmployerDashboard() {
  className="inline-flex items-center gap-1.5 font-semibold text-sky-600 underline-offset-2 transition hover:underline dark:text-sky-400"
  >
  <Briefcase size={14} />
- Post your first job
+ Post your first Job
  <ArrowRight size={13} />
  </Link>
  ) : (
@@ -129,13 +129,13 @@ export function EmployerDashboard() {
  to="/employer/jobs/new"
  className="inline-flex items-center justify-center gap-1.5 rounded-lg bg-gradient-to-r from-sky-500 to-sky-700 px-4 py-2 text-[13px] font-semibold text-white shadow-sm shadow-sky-500/30 transition hover:shadow-md"
  >
- <Briefcase size={14} /> Post a job
+ <Briefcase size={14} /> Post a Job
  </Link>
  <Link
  to="/employer/my-jobs"
  className="inline-flex items-center justify-center gap-1.5 rounded-lg border border-zinc-200 bg-white px-4 py-2 text-[13px] font-semibold text-zinc-700 transition hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200 dark:hover:bg-zinc-800"
  >
- My jobs
+ My Jobs
  </Link>
  </div>
  </div>
@@ -148,15 +148,15 @@ export function EmployerDashboard() {
  variants={itemVariants}
  icon={<Search size={20} />}
  gradient="from-sky-500 to-cyan-500"
- title="Search candidates"
- desc={sub ? `Browse all ${totalRegistered} profiles + view full CVs.` : `Browse ${totalCandidates} profiles. Subscribe to view full CVs.`}
+ title="Search Candidates"
+ desc={sub ? `Browse all ${totalRegistered} profiles + view full CVs.` : ` ${totalCandidates} profiles. Subscribe to view full CVs.`}
  to="/employer/candidates"
  />
  <ActionCard
  variants={itemVariants}
  icon={<Briefcase size={20} />}
  gradient="from-violet-500 to-fuchsia-500"
- title="Post a job"
+ title="Post a Job"
  desc="Job posting is always free. Listing stays live for 45 days."
  to="/employer/jobs/new"
  />
@@ -164,8 +164,8 @@ export function EmployerDashboard() {
  variants={itemVariants}
  icon={<ShieldCheck size={20} />}
  gradient="from-brand-500 to-amber-500"
- title="My posted jobs"
- desc="Track your postings + see ranked applicants."
+ title="My Posted Jobs"
+ desc="Track Your Job Postings and View the List of Applicants"
  to="/employer/my-jobs"
  />
  <ActionCard
@@ -173,7 +173,7 @@ export function EmployerDashboard() {
  icon={<CreditCard size={20} />}
  gradient="from-emerald-500 to-teal-500"
  title="Subscription"
- desc={sub ? `Active · expires ${new Date(sub.expiresAt).toLocaleDateString()}` : "Choose an SME or Enterprise plan."}
+ desc={sub ? `Active · expires ${new Date(sub.expiresAt).toLocaleDateString()}` : "Select Your Company Type : MSME or Large Corporate"}
  to="/employer/subscribe"
  />
  </motion.div>

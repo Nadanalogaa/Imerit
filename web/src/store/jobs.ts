@@ -23,16 +23,16 @@ export type JobExperience = "fresher" | "experienced" | "any";
 export const JOB_BENEFITS: { id: JobBenefit; label: string }[] = [
   { id: "PF", label: "Provident Fund (PF)" },
   { id: "ESI", label: "ESI" },
-  { id: "HEALTH_INSURANCE", label: "Health insurance" },
-  { id: "WFH", label: "Work from home" },
-  { id: "HYBRID", label: "Hybrid working" },
+  { id: "HEALTH_INSURANCE", label: "Health Insurance" },
+  { id: "WFH", label: "Work From Home" },
+  { id: "HYBRID", label: "Hybrid Working" },
   { id: "MEALS", label: "Meals" },
-  { id: "TRANSPORT", label: "Transport / cab" },
-  { id: "PAID_LEAVE", label: "Paid leave" },
-  { id: "LEARNING_BUDGET", label: "Learning budget" },
-  { id: "PERFORMANCE_BONUS", label: "Performance bonus" },
-  { id: "STOCK_OPTIONS", label: "Stock options" },
-  { id: "GYM_WELLNESS", label: "Gym / wellness" },
+  { id: "TRANSPORT", label: "Transport / Cab" },
+  { id: "PAID_LEAVE", label: "Paid Leave" },
+  { id: "LEARNING_BUDGET", label: "Learning Budget" },
+  { id: "PERFORMANCE_BONUS", label: "Performance Bonus" },
+  { id: "STOCK_OPTIONS", label: "Stock Options" },
+  { id: "GYM_WELLNESS", label: "Gym / Wellness" },
 ];
 export type JobBenefit =
   | "PF" | "ESI" | "HEALTH_INSURANCE" | "WFH" | "HYBRID" | "MEALS"

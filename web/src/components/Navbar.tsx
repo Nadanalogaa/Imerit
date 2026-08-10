@@ -32,15 +32,15 @@ const PUBLIC_LINKS: PublicLink[] = [
 const APP_LINKS: Record<Role, { label: string; to: string }[]> = {
   candidate: [
     { label: "Dashboard", to: "/candidate/dashboard" },
-    { label: "Browse jobs", to: "/candidate/jobs" },
-    { label: "My applications", to: "/candidate/applications" },
+    { label: "Browse Jobs", to: "/candidate/jobs" },
+    { label: "My Applications", to: "/candidate/applications" },
     { label: "Saved", to: "/candidate/saved" },
   ],
   employer: [
     { label: "Dashboard", to: "/employer/dashboard" },
-    { label: "Post a job", to: "/employer/jobs/new" },
-    { label: "My jobs", to: "/employer/my-jobs" },
-    { label: "Candidates", to: "/employer/candidates" },
+    { label: "Post a Job", to: "/employer/jobs/new" },
+    { label: "My Jobs", to: "/employer/my-jobs" },
+    { label: "Search Candidates", to: "/employer/candidates" },
   ],
   admin: [
     { label: "Dashboard", to: "/admin/dashboard" },
