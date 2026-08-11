@@ -265,7 +265,7 @@ export function CandidateDashboard() {
  variants={itemVariants}
  icon={hasResume ? <Edit3 size={20} /> : <ScrollText size={20} />}
  gradient="from-brand-500 to-amber-500"
- title={hasResume ? "Update profile" : "Build your profile"}
+ title={hasResume ? "Update Your profile" : "Build your profile"}
  desc={hasResume
  ? "Refresh your details, add new experience, or switch templates."
  : "Add your education, skills, and ambitions. No CV needed."}
@@ -302,7 +302,7 @@ export function CandidateDashboard() {
  title={activeSub ? "Manage subscription" : "Subscription"}
  desc={activeSub
  ? `Active plan · expires ${new Date(activeSub.expiresAt).toLocaleDateString()}`
- : "Apply for jobs with a ₹333 / 45-day plan."}
+ : "Apply for Jobs with a ₹333 / 45-days plan."}
  to="/candidate/subscribe"
  />
  <ActionCard
