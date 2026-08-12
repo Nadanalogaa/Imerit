@@ -43,6 +43,8 @@ export interface ApiJob {
   skills: string[];
   benefits?: string[];
   contactEmail?: string | null;
+  contactMobile?: string | null;
+  industry?: string | null;
   status: ApiJobStatus;
   moderationStatus: "PENDING" | "APPROVED" | "REJECTED";
   postedAt: string;
@@ -90,6 +92,8 @@ export interface CreateJobInput {
   skills: string[];
   benefits?: string[];
   contactEmail?: string;
+  contactMobile?: string;
+  industry?: string;
 }
 
 interface ListResponse<T> { items: T[]; total: number; page: number; pageSize: number }

@@ -125,6 +125,19 @@ class AuthApi {
     return ApiUser.fromJson(res['user'] as Map<String, dynamic>);
   }
 
+  /// Patch the signed-in user's editable identity fields (name /
+  /// mobile). Empty mobile clears the field server-side. Backend
+  /// returns the fresh user row so the caller can seed local caches.
+  Future<ApiUser> updateMe({String? name, String? mobile}) async {
+    final res = await _client.patch<Map<String, dynamic>>('/auth/me', {
+      if (name != null) 'name': name,
+      // Explicit-null wins over "field not present" — sending null
+      // clears the mobile server-side, which matches the web contract.
+      if (mobile != null) 'mobile': mobile.isEmpty ? null : mobile,
+    });
+    return ApiUser.fromJson(res['user'] as Map<String, dynamic>);
+  }
+
   /// Rotate the refresh + access cookies. Called silently by
   /// ApiClient on 401s — providers shouldn't need to invoke directly.
   Future<void> refresh() async {

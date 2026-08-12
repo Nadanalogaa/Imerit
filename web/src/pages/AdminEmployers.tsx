@@ -10,6 +10,9 @@ import {
  Clock,
  ChevronLeft,
  ChevronRight,
+ Pencil,
+ X,
+ Save,
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { allUsers } from "../store/auth";
@@ -18,6 +21,7 @@ import { Navbar } from "../components/Navbar";
 import { exportExcel, exportWord, exportSummaryPdf } from "../lib/export";
 import { apiEnabled, ApiError } from "../lib/api";
 import { adminApi, type AdminUserListItem } from "../lib/api/admin";
+import { TextField } from "../components/TextField";
 
 const PAGE_SIZE = 20;
 
@@ -42,6 +46,12 @@ export function AdminEmployers() {
  const [apiTotal, setApiTotal] = useState(0);
  const [apiLoading, setApiLoading] = useState(apiEnabled);
  const [apiError, setApiError] = useState<string | null>(null);
+
+ // Inline "edit company" modal state — super-admin picks a row from the
+ // employer table, we open the same values in a small form and PATCH
+ // /admin/employers/:id on save. Kept local so the surrounding fetch
+ // logic doesn't need a re-mount when the modal opens/closes.
+ const [editTarget, setEditTarget] = useState<EmployerRow | null>(null);
 
  useEffect(() => {
  const t = setTimeout(() => setSearchDebounced(search.trim()), 250);
@@ -173,13 +183,14 @@ export function AdminEmployers() {
  <th className="px-4 py-3">Mobile</th>
  <th className="px-4 py-3">Plan</th>
  <th className="px-4 py-3">Status</th>
+ <th className="px-4 py-3 w-14 text-right">Edit</th>
  </tr>
  </thead>
  <tbody>
  {apiLoading ? (
- <tr><td colSpan={6} className="px-6 py-12 text-center text-sm text-zinc-500 dark:text-zinc-400">Loading…</td></tr>
+ <tr><td colSpan={7} className="px-6 py-12 text-center text-sm text-zinc-500 dark:text-zinc-400">Loading…</td></tr>
  ) : visibleRows.length === 0 ? (
- <tr><td colSpan={6} className="px-6 py-12 text-center text-sm text-zinc-500 dark:text-zinc-400">No employers match.</td></tr>
+ <tr><td colSpan={7} className="px-6 py-12 text-center text-sm text-zinc-500 dark:text-zinc-400">No employers match.</td></tr>
  ) : visibleRows.map((u, i) => {
  const sub = subs.find((s) => s.userId === u.id && new Date(s.expiresAt) > new Date());
  return (
@@ -205,6 +216,16 @@ export function AdminEmployers() {
  <Clock size={13} /> Pending
  </span>
  )}
+ </td>
+ <td className="px-4 py-3 text-right">
+ <button
+ type="button"
+ onClick={() => setEditTarget(u)}
+ title="Edit employer"
+ className="inline-flex h-7 w-7 items-center justify-center rounded-full border border-zinc-200 text-zinc-500 transition hover:border-brand-400 hover:bg-brand-50 hover:text-brand-700 dark:border-zinc-700 dark:text-zinc-400 dark:hover:border-brand-500/50 dark:hover:bg-brand-500/10 dark:hover:text-brand-300"
+ >
+ <Pencil size={12} />
+ </button>
  </td>
  </motion.tr>
  );
@@ -238,6 +259,103 @@ export function AdminEmployers() {
  )}
  </div>
  </main>
+
+ {editTarget && (
+ <EditEmployerModal
+ target={editTarget}
+ onClose={() => setEditTarget(null)}
+ onSaved={(updated) => {
+ setApiRows((prev) => prev.map((r) => (r.id === updated.id ? updated : r)));
+ setEditTarget(null);
+ }}
+ />
+ )}
+ </div>
+ );
+}
+
+interface EditEmployerModalProps {
+ target: EmployerRow;
+ onSaved: (row: EmployerRow) => void;
+ onClose: () => void;
+}
+
+function EditEmployerModal({ target, onSaved, onClose }: EditEmployerModalProps) {
+ const [name, setName] = useState(target.name);
+ const [company, setCompany] = useState(target.company);
+ const [mobile, setMobile] = useState(target.mobile ?? "");
+ const [saving, setSaving] = useState(false);
+ const [error, setError] = useState<string | null>(null);
+
+ const save = async () => {
+ setError(null);
+ if (!name.trim()) {
+ setError("Contact name is required.");
+ return;
+ }
+ setSaving(true);
+ try {
+ const { user } = await adminApi.updateEmployer(target.id, {
+ name: name.trim(),
+ company: company.trim() === "" ? null : company.trim(),
+ mobile: mobile.trim() === "" ? null : mobile.trim(),
+ });
+ onSaved(userApiToRow(user));
+ } catch (err) {
+ setError(err instanceof ApiError ? err.message : "Could not save changes.");
+ } finally {
+ setSaving(false);
+ }
+ };
+
+ return (
+ <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+ <div className="w-full max-w-md rounded-3xl border border-zinc-200 bg-white p-6 shadow-2xl dark:border-zinc-800 dark:bg-zinc-900">
+ <div className="mb-4 flex items-start justify-between gap-3">
+ <div>
+ <h2 className="text-base font-semibold">Edit employer</h2>
+ <p className="mt-0.5 text-xs text-zinc-500 dark:text-zinc-400">
+ {target.email} — email is locked; change the label fields as needed.
+ </p>
+ </div>
+ <button
+ type="button"
+ onClick={onClose}
+ className="inline-flex h-8 w-8 items-center justify-center rounded-full text-zinc-500 hover:bg-zinc-100 dark:hover:bg-zinc-800"
+ aria-label="Close"
+ >
+ <X size={14} />
+ </button>
+ </div>
+ <div className="flex flex-col gap-3">
+ <TextField label="Contact name" value={name} onChange={setName} placeholder="e.g. Priya Ramesh" />
+ <TextField label="Company" value={company} onChange={setCompany} placeholder="e.g. Zoho Corporation" />
+ <TextField label="Mobile" value={mobile} onChange={setMobile} placeholder="9876543210" inputMode="tel" maxLength={10} />
+ {error && (
+ <p className="rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-xs text-rose-700 dark:border-rose-500/30 dark:bg-rose-500/10 dark:text-rose-400">
+ {error}
+ </p>
+ )}
+ <div className="mt-1 flex items-center justify-end gap-2">
+ <button
+ type="button"
+ onClick={onClose}
+ disabled={saving}
+ className="inline-flex items-center gap-1.5 rounded-2xl border border-zinc-200 px-4 py-2 text-sm font-semibold text-zinc-700 transition hover:bg-zinc-50 disabled:opacity-60 dark:border-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-800"
+ >
+ Cancel
+ </button>
+ <button
+ type="button"
+ onClick={save}
+ disabled={saving}
+ className="inline-flex items-center gap-1.5 rounded-2xl bg-gradient-to-r from-brand-500 to-brand-600 px-4 py-2 text-sm font-semibold text-white shadow-md shadow-brand-500/30 transition hover:shadow-lg disabled:opacity-60"
+ >
+ <Save size={14} /> {saving ? "Saving…" : "Save"}
+ </button>
+ </div>
+ </div>
+ </div>
  </div>
  );
 }

@@ -54,18 +54,19 @@ export function Brand({
 
   let art: React.ReactNode;
   if (forceTheme === "dark") {
+    // Explicit dark surfaces (AuthLayout side panel) still use the
+    // white-ink variant so the wordmark stays legible against a solid
+    // dark background.
     art = <img src="/logo-white.png" alt={ALT} className={imgClass} />;
-  } else if (forceTheme === "light") {
-    art = <img src="/logo-dark.png" alt={ALT} className={imgClass} />;
   } else {
-    art = (
-      <>
-        {/* Light theme — dark ink logo. Hidden in dark mode. */}
-        <img src="/logo-dark.png" alt={ALT} className={[imgClass, "dark:hidden"].join(" ")} />
-        {/* Dark theme — white ink logo. Only rendered visible in dark mode. */}
-        <img src="/logo-white.png" alt="" aria-hidden="true" className={[imgClass, "hidden dark:inline-block"].join(" ")} />
-      </>
-    );
+    // Everywhere else: always render the light-theme (dark-ink) logo.
+    // Product decision — the brand should look identical in both site
+    // themes; the old dark-mode swap to logo-white.png changed the
+    // visual identity depending on the visitor's theme preference,
+    // which felt off-brand. If the logo becomes hard to read against a
+    // dark background later, add a subtle rounded white plate here
+    // instead of switching art files.
+    art = <img src="/logo-dark.png" alt={ALT} className={imgClass} />;
   }
 
   if (!to) return <span className={wrapClass}>{art}</span>;

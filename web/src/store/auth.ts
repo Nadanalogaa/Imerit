@@ -118,6 +118,14 @@ interface AuthState {
   /** Restore the session on app boot. No-op in localStorage mode. */
   init: () => Promise<void>;
 
+  /**
+   * Re-hit /auth/me and swap currentUser with the fresh row. Callers
+   * (Account Settings save, avatar upload, etc.) use this when they've
+   * mutated the user via a targeted PATCH and want the rest of the app
+   * to observe the change without a full reload.
+   */
+  refreshFromServer: () => Promise<void>;
+
   /* ------------------ Async API-aware flows ------------------ */
 
   /**
@@ -299,6 +307,23 @@ export const useAuth = create<AuthState>((set, get) => ({
         set({ currentUser: null });
       }
       set({ initialized: true });
+    }
+  },
+
+  refreshFromServer: async () => {
+    if (!apiEnabled) return;
+    try {
+      const { user } = await authApi.me();
+      const u = fromApiUser(user);
+      save(KEYS.currentUser, u);
+      set({ currentUser: u });
+    } catch (err) {
+      // 401 → session died out from under us. Anything else is transient
+      // and we deliberately keep the cached row rather than blank the UI.
+      if (err instanceof ApiError && err.status === 401) {
+        remove(KEYS.currentUser);
+        set({ currentUser: null });
+      }
     }
   },
 

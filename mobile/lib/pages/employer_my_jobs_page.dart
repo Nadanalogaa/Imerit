@@ -248,6 +248,18 @@ class _JobRow extends ConsumerWidget {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(job.title, maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(fontSize: 13.5, fontWeight: FontWeight.w700, color: isDark ? Colors.white : const Color(0xFF09090B))),
+                            // Employer / company name — mirrors web My Jobs
+                            // card. Falls back gracefully when unset (some
+                            // seed rows carry an empty string).
+                            if (job.employerName.trim().isNotEmpty) ...[
+                              const SizedBox(height: 2),
+                              Text(
+                                job.employerName,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: Color(0xFF0369A1)),
+                              ),
+                            ],
                             const SizedBox(height: 2),
                             Text('${job.location} · ${fieldLabel[job.field]} · ${typeLabelShort[job.type]}', maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(fontSize: 11, color: isDark ? Colors.white.withValues(alpha: 0.6) : const Color(0xFF52525B))),
                           ],

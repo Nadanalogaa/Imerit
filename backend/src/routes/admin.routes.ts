@@ -25,6 +25,7 @@ import {
   createAdmin,
   listAdmins,
   softDeleteAdmin,
+  updateEmployerByAdmin,
 } from "../services/admin-users.service.js";
 import {
   bulkPurgeUsers,
@@ -286,6 +287,40 @@ router.post(
       userAgent: req.headers["user-agent"],
     });
     res.json(result);
+  }),
+);
+
+/* ------------------------- Employer identity edit ------------------------- */
+
+// Admin/super-admin patch of an employer's identity (name / mobile / company
+// name). The staff route (`PATCH /staff/employers/:id`) is scoped to the
+// staff user who provisioned the row; this one has no ownership check so
+// the platform reviewer can correct any employer.
+router.patch(
+  "/admin/employers/:id",
+  ...adminGuard,
+  asyncHandler(async (req, res) => {
+    const rawId = req.params.id;
+    const targetId = Array.isArray(rawId) ? rawId[0] : rawId;
+    if (!targetId) throw new HttpError(400, "id is required", "ID_REQUIRED");
+    const body = req.body as { name?: unknown; mobile?: unknown; company?: unknown };
+    const patch: { name?: string; mobile?: string | null; company?: string | null } = {};
+    if (typeof body.name === "string") patch.name = body.name;
+    if (body.mobile !== undefined) {
+      patch.mobile = typeof body.mobile === "string" ? body.mobile : null;
+    }
+    if (body.company !== undefined) {
+      patch.company = typeof body.company === "string" ? body.company : null;
+    }
+    const updated = await updateEmployerByAdmin({
+      actorId: req.user!.sub,
+      actorRole: req.user!.role,
+      employerId: targetId,
+      patch,
+      ip: req.ip,
+      userAgent: req.headers["user-agent"],
+    });
+    res.json({ user: updated });
   }),
 );
 

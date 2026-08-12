@@ -63,6 +63,16 @@ export interface JobFormValues {
   benefits: JobBenefit[];
   companyName: string;
   contactEmail: string;
+  /** Employer-level mobile number — mirrored into the employer profile
+   *  on submit so it's reused across all future job posts. Optional at
+   *  the schema level; the wizard requires it because employers often
+   *  need a phone contact alongside the email one. */
+  contactMobile: string;
+  /** Free-form industry tag (Healthcare, Fintech, Retail, etc.).
+   *  Displayed on job cards and used for candidate ranking beyond the
+   *  coarse IT / Non-IT split. Optional client-side; server-side
+   *  persistence lands in a follow-up migration. */
+  industry?: string;
   logoUrl: string | null;
   /** True when the user changed the logo in this session; parent uses
    *  this to decide whether to hit the profile-patch endpoint. */
@@ -149,6 +159,37 @@ const FIELD_OPTIONS: { id: JobField; label: string; icon: LucideIcon; tone: Tone
   { id: "non_it", label: "Non-IT", icon: Building2, tone: "amber" },
 ];
 
+/**
+ * Curated industry list — used by the Select Industry dropdown in
+ * BasicsStep. Kept modest (12 entries) so the dropdown stays scannable;
+ * "Other" as the escape hatch preserves free-form intent without
+ * turning the list into a hundred-item scroll.
+ *
+ * If we later add server-side persistence + filtering by industry,
+ * this list moves to the backend and is served through /admin/plans-
+ * style config — but the wire format (single lowercase snake_case
+ * enum) stays the same.
+ */
+const INDUSTRY_OPTIONS: readonly string[] = [
+  "Software / IT services",
+  "BPO / KPO / ITES",
+  "Healthcare / Pharma",
+  "Banking / Finance / Insurance",
+  "Education / EdTech",
+  "Retail / eCommerce",
+  "Manufacturing / Engineering",
+  "Construction / Real estate",
+  "Hospitality / Travel",
+  "Media / Marketing / Advertising",
+  "Logistics / Supply chain",
+  "Government / Public sector",
+  "NGO / Non-profit",
+  "Agriculture / Food processing",
+  "Automobile",
+  "Telecom",
+  "Other",
+];
+
 const EXPERIENCE_OPTIONS: { id: JobExperience; label: string; icon: LucideIcon; tone: Tone }[] = [
   { id: "fresher", label: "Fresher", icon: Sparkles, tone: "emerald" },
   { id: "experienced", label: "Experienced", icon: UserCheck, tone: "violet" },
@@ -212,6 +253,8 @@ export function JobFormWizard({
   const [benefits, setBenefits] = useState<JobBenefit[]>(initialValues?.benefits ?? []);
   const [companyName, setCompanyName] = useState(initialValues?.companyName ?? "");
   const [contactEmail, setContactEmail] = useState(initialValues?.contactEmail ?? "");
+  const [contactMobile, setContactMobile] = useState(initialValues?.contactMobile ?? "");
+  const [industry, setIndustry] = useState(initialValues?.industry ?? "");
   const [logoUrl, setLogoUrl] = useState<string | null>(initialValues?.logoUrl ?? null);
   const [logoDirty, setLogoDirty] = useState(false);
   const topRef = useRef<HTMLDivElement>(null);
@@ -246,6 +289,8 @@ export function JobFormWizard({
     if (initialValues.benefits !== undefined) setBenefits(initialValues.benefits);
     if (initialValues.companyName !== undefined) setCompanyName(initialValues.companyName);
     if (initialValues.contactEmail !== undefined) setContactEmail(initialValues.contactEmail);
+    if (initialValues.contactMobile !== undefined) setContactMobile(initialValues.contactMobile);
+    if (initialValues.industry !== undefined) setIndustry(initialValues.industry);
     if (initialValues.logoUrl !== undefined) setLogoUrl(initialValues.logoUrl);
   }, [initialValues]);
 
@@ -274,6 +319,7 @@ export function JobFormWizard({
       // validation — those inputs are hidden and can't be edited.
       if (!companyName.trim()) errs.companyName = "Required";
       if (!contactEmail.trim()) errs.contactEmail = "Required";
+      if (!contactMobile.trim()) errs.contactMobile = "Required";
     }
     setErrors(errs);
     return Object.keys(errs).length === 0;
@@ -304,6 +350,8 @@ export function JobFormWizard({
         benefits,
         companyName: companyName.trim(),
         contactEmail: contactEmail.trim(),
+        contactMobile: contactMobile.trim(),
+        industry: industry.trim() || undefined,
         logoUrl,
         logoDirty,
       });
@@ -355,6 +403,7 @@ export function JobFormWizard({
               field={field} setField={setField}
               type={type} setType={setType}
               experience={experience} setExperience={setExperience}
+              industry={industry} setIndustry={setIndustry}
               errors={errors}
             />
           </StepShell>
@@ -416,6 +465,7 @@ export function JobFormWizard({
             <BrandStep
               companyName={companyName} setCompanyName={setCompanyName}
               contactEmail={contactEmail} setContactEmail={setContactEmail}
+              contactMobile={contactMobile} setContactMobile={setContactMobile}
               logoUrl={logoUrl}
               setLogoUrl={(v) => { setLogoUrl(v); setLogoDirty(true); }}
               errors={errors}
@@ -441,11 +491,29 @@ function BasicsStep(props: {
   field?: JobField; setField: (v: JobField) => void;
   type?: JobType; setType: (v: JobType) => void;
   experience?: JobExperience; setExperience: (v: JobExperience) => void;
+  industry: string; setIndustry: (v: string) => void;
   errors: Record<string, string>;
 }) {
   return (
     <div className="flex flex-col gap-5">
       <TextField label="JOB TITLE / SPECIFICATION " value={props.title} onChange={props.setTitle} placeholder="e.g. Senior React Developer" error={props.errors.title} />
+      <div>
+        <label htmlFor="job-industry" className="mb-1.5 flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wider text-zinc-700 dark:text-zinc-300">
+          <Building2 size={12} /> Select Industry
+        </label>
+        <select
+          id="job-industry"
+          value={props.industry}
+          onChange={(e) => props.setIndustry(e.target.value)}
+          className="h-11 w-full rounded-lg border border-zinc-200 bg-white px-3.5 text-sm text-zinc-900 focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500/15 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-100"
+        >
+          <option value="">Select industry…</option>
+          {INDUSTRY_OPTIONS.map((label) => (
+            <option key={label} value={label}>{label}</option>
+          ))}
+        </select>
+        {props.errors.industry && <p className="mt-1 text-[11px] text-rose-600">{props.errors.industry}</p>}
+      </div>
       <div>
         <label className="mb-1.5 flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wider text-zinc-700 dark:text-zinc-300">
           <Building2 size={12} />job Description
@@ -831,6 +899,7 @@ function BenefitsStep(props: { benefits: JobBenefit[]; setBenefits: (b: JobBenef
 function BrandStep(props: {
   companyName: string; setCompanyName: (v: string) => void;
   contactEmail: string; setContactEmail: (v: string) => void;
+  contactMobile: string; setContactMobile: (v: string) => void;
   logoUrl: string | null; setLogoUrl: (v: string | null) => void;
   errors: Record<string, string>;
   /** When true, hide the companyName + contactEmail fields — those came
@@ -887,8 +956,16 @@ function BrandStep(props: {
         <>
           <TextField label="Company name" value={props.companyName} onChange={props.setCompanyName} placeholder="e.g. Acme Tamil Pvt. Ltd." error={props.errors.companyName} />
           <TextField label="Hiring contact email" value={props.contactEmail} onChange={props.setContactEmail} placeholder="hiring@yourcompany.com" type="email" error={props.errors.contactEmail} />
+          <TextField
+            label="Contact number (mobile)"
+            value={props.contactMobile}
+            onChange={props.setContactMobile}
+            placeholder="e.g. +91 98xxxxxxxx"
+            inputMode="tel"
+            error={props.errors.contactMobile}
+          />
           <p className="text-[11px] text-zinc-500 dark:text-zinc-400">
-            <MapPin size={11} className="-mt-0.5 inline" /> The logo and company name are stored in the employer profile and automatically applied to all future job posts.
+            <MapPin size={11} className="-mt-0.5 inline" /> The logo, company name, email + phone are stored in the employer profile and automatically applied to all future job posts.
           </p>
         </>
       )}

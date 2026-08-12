@@ -145,3 +145,85 @@ export async function softDeleteAdmin(args: DeleteAdminArgs) {
     return updated;
   });
 }
+
+interface AdminUpdateEmployerArgs {
+  actorId: string;
+  actorRole: UserRole;
+  employerId: string;
+  patch: { name?: string; mobile?: string | null; company?: string | null };
+  ip?: string;
+  userAgent?: string;
+}
+
+/**
+ * Admin/super-admin edit of an employer's identity fields — used from the
+ * SUPER_ADMIN "Employers" table where the reviewer needs to correct a
+ * company name mid-flight (misspellings, rebrands, staff-typed placeholders).
+ *
+ * Distinct from `updateEmployerByStaff` in staff.service.ts: no
+ * "provisioned-by-me" ownership check. Any employer row is fair game
+ * for the platform reviewer.
+ */
+export async function updateEmployerByAdmin(args: AdminUpdateEmployerArgs) {
+  const target = await prisma.user.findFirst({
+    where: { id: args.employerId, role: UserRole.EMPLOYER, deletedAt: null },
+    select: { id: true, email: true },
+  });
+  if (!target) throw new HttpError(404, "Employer not found", "EMPLOYER_NOT_FOUND");
+
+  return prisma.$transaction(async (tx) => {
+    const updated = await tx.user.update({
+      where: { id: target.id },
+      data: {
+        name: args.patch.name?.trim() ?? undefined,
+        mobile:
+          args.patch.mobile === undefined
+            ? undefined
+            : args.patch.mobile?.trim() || null,
+      },
+      select: {
+        id: true,
+        role: true,
+        name: true,
+        email: true,
+        mobile: true,
+        emailVerified: true,
+        createdAt: true,
+        employerProfile: { select: { companyName: true, moderationStatus: true } },
+      },
+    });
+
+    if (args.patch.company !== undefined) {
+      const company = args.patch.company?.trim() || "";
+      // Upsert so admins can seed a companyName even if the employer
+      // never completed onboarding — same shape as the staff path.
+      await tx.employerProfile.upsert({
+        where: { userId: target.id },
+        create: { userId: target.id, companyName: company },
+        update: { companyName: company },
+      });
+    }
+
+    await tx.auditLog.create({
+      data: {
+        actorId: args.actorId,
+        actorRole: args.actorRole,
+        // No dedicated USER_UPDATED action in the enum yet — reuse
+        // ADMIN_NOTE_ADDED so the change still shows up in
+        // /admin/activity with the diff in payload. Introduce a proper
+        // enum value the next time we roll a Prisma migration.
+        action: AuditAction.ADMIN_NOTE_ADDED,
+        targetType: "user",
+        targetId: target.id,
+        payload: {
+          email: target.email,
+          patch: args.patch,
+        } as Prisma.InputJsonValue,
+        ip: args.ip,
+        userAgent: args.userAgent?.slice(0, 512),
+      },
+    });
+
+    return updated;
+  });
+}

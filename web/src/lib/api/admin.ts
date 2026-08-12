@@ -116,6 +116,21 @@ export const adminApi = {
       method: "PATCH",
       json: input,
     }),
+
+  /**
+   * Admin/super-admin patch of an employer's identity — currently used to
+   * correct the company name from the SUPER_ADMIN "Employers" table.
+   * Backend accepts any subset of {name, mobile, company}; send only what
+   * you want to change. Pass `mobile: null` / `company: null` to clear.
+   */
+  updateEmployer: (
+    employerId: string,
+    patch: { name?: string; mobile?: string | null; company?: string | null },
+  ) =>
+    api<{ user: AdminUserListItem }>(`/admin/employers/${encodeURIComponent(employerId)}`, {
+      method: "PATCH",
+      json: patch,
+    }),
 };
 
 /** Super-admin only — manage other admins. */

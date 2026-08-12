@@ -68,13 +68,27 @@ export function EmployerDashboard() {
  <div className="flex flex-wrap items-center gap-2">
  <span className="inline-flex items-center gap-1.5 rounded-full bg-gradient-to-r from-sky-500/10 to-cyan-500/10 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-widest text-sky-700 dark:text-sky-300">
  <Sparkles size={11} />
- Employer dashboard
+ Employer Dashboard
+ {user.company && (
+ <>
+ <span className="text-sky-400/60 dark:text-sky-500/60">·</span>
+ <span className="max-w-[16rem] truncate normal-case tracking-normal">{user.company}</span>
+ </>
+ )}
  </span>
  </div>
 
- <h1 className="mt-1.5 flex items-center gap-2 text-2xl font-semibold tracking-tight md:text-3xl">
- {user.company}
- <motion.span animate={{ rotate: [0, 14, -8, 14, -4, 10, 0] }} transition={{ duration: 1.5, ease: "easeInOut", repeat: 1, repeatDelay: 1 }} className="inline-block">👋</motion.span>
+ {/* Greeting — company name first, wave animation aligned to the same
+    baseline. `leading-none` + `translate-y-[2px]` on the emoji fixes
+    the visual drift emojis inherit from their default line box. */}
+ <h1 className="mt-1.5 flex items-center gap-2 text-2xl font-semibold leading-tight tracking-tight md:text-3xl">
+ <span className="truncate">{user.company || `Hi ${firstName}`}</span>
+ <motion.span
+ animate={{ rotate: [0, 14, -8, 14, -4, 10, 0] }}
+ transition={{ duration: 1.5, ease: "easeInOut", repeat: 1, repeatDelay: 1 }}
+ className="inline-block translate-y-[2px] leading-none"
+ aria-hidden="true"
+ >👋</motion.span>
  </h1>
 
  {/* Status rail — Account · Company · Jobs · Soonest expiry */}

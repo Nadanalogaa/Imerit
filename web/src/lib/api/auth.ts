@@ -72,6 +72,15 @@ export const authApi = {
 
   me: () => api<{ user: ApiUser }>("/auth/me"),
 
+  /**
+   * Self-service patch of the caller's identity fields. Backend accepts
+   * `name` and `mobile`; email + role stay immutable through this
+   * endpoint. Send `mobile: null` (or empty string) to clear a stored
+   * number.
+   */
+  updateMe: (patch: { name?: string; mobile?: string | null }) =>
+    api<{ user: ApiUser }>("/auth/me", { method: "PATCH", json: patch }),
+
   refresh: () => api<{ ok: true }>("/auth/refresh", { method: "POST" }),
 
   logout: () => api<{ ok: true }>("/auth/logout", { method: "POST" }),

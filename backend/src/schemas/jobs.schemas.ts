@@ -59,6 +59,13 @@ export const createJobSchema = z.object({
   skills,
   benefits: benefits.default([]),
   contactEmail: contactEmail.optional(),
+  // Hiring-contact phone shown to matched candidates. Not required at the
+  // schema level so older clients keep posting; the web+mobile wizard
+  // both enforce it as required at input time.
+  contactMobile: z.string().trim().min(4).max(20).optional(),
+  // Curated industry list on the client, but we accept any short string
+  // here — future free-tag support without a schema change.
+  industry: z.string().trim().max(120).optional(),
 });
 
 export const updateJobSchema = createJobSchema.partial().extend({

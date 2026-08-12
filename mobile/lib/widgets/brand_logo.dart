@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
 
-/// Single source of truth for the app wordmark. Ships in two ink
-/// colours — dark for light surfaces, white for dark surfaces —
-/// which we swap based on the caller's theme.
+/// Single source of truth for the app wordmark. The dark-ink art
+/// (`logo-dark.png`) ships in both light AND dark app themes so the
+/// brand looks identical regardless of the visitor's theme choice.
+/// The white-ink variant (`logo-white.png`) is only used on always-
+/// dark surfaces (auth screen), and only when the caller opts in via
+/// `forceTheme = Brightness.dark`.
 ///
 /// The PNGs were trimmed of their transparent padding at build time
 /// (see web/public/logo-*.png sources), so the sizes here map
@@ -49,15 +52,23 @@ class BrandLogo extends StatelessWidget {
         BrandLogoSize.large => 8,
       };
 
-  String _assetFor(Brightness b) => b == Brightness.dark
+  /// The default (dark-ink) logo is used in both light AND dark app
+  /// themes — the brand should look identical regardless of the
+  /// visitor's theme choice. The white-ink variant only ships when a
+  /// caller explicitly asks for it via `forceTheme = Brightness.dark`
+  /// (used on always-dark surfaces like the auth screen so the
+  /// wordmark stays legible against a solid dark background).
+  ///
+  /// Mirrors web/src/components/Brand.tsx — dropping the automatic
+  /// dark-mode swap was a product decision, not a bug.
+  String _assetFor(Brightness? forced) => forced == Brightness.dark
       ? 'assets/logo/logo-white.png'
       : 'assets/logo/logo-dark.png';
 
   @override
   Widget build(BuildContext context) {
-    final effective = forceTheme ?? Theme.of(context).brightness;
     final image = Image.asset(
-      _assetFor(effective),
+      _assetFor(forceTheme),
       height: _height,
       fit: BoxFit.contain,
       semanticLabel: 'i-Tamil Recruit — Job Portal for Skilled Talent',

@@ -108,6 +108,8 @@ interface CreateJobArgs {
     skills: string[];
     benefits?: string[];
     contactEmail?: string;
+    contactMobile?: string;
+    industry?: string;
   };
 }
 

@@ -311,6 +311,30 @@ class AuthNotifier extends Notifier<User?> {
     state = null;
   }
 
+  /// Re-fetch the signed-in user from /auth/me and swap it into
+  /// `state` so every widget reading `authProvider` re-renders. Used
+  /// after PATCH /auth/me (Account Settings inline edit) so the
+  /// dashboard header + everywhere else picks up the new name/mobile
+  /// without needing a full app restart. Mirrors web's
+  /// `useAuth.refreshFromServer`.
+  Future<void> refreshFromServer() async {
+    if (!apiEnabled) return;
+    try {
+      final api = await AuthApi.instance.me();
+      _setCurrent(_fromApiUser(api));
+    } on ApiError catch (e) {
+      // 401 → session died out from under us. Anything else is
+      // transient and we deliberately keep the cached row rather
+      // than blank the UI.
+      if (e.status == 401) {
+        Storage.instance.remove(StorageKeys.currentUser);
+        state = null;
+      }
+    } catch (_) {
+      // Network hiccup — keep the cached row.
+    }
+  }
+
   /// Hydrate the current-user cache from the server on app boot when
   /// there's a valid auth cookie in the jar. Silently no-ops for
   /// offline mode or when the cookie is missing/expired.

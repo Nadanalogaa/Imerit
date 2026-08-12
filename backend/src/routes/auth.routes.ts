@@ -429,6 +429,68 @@ router.get(
 );
 
 /**
+ * PATCH /auth/me — self-service update for the two identity fields
+ * users can safely change from Account Settings: their display name
+ * and mobile number. Email stays immutable (it's the account key) and
+ * role changes require admin.
+ *
+ * Body: { name?: string; mobile?: string | null }
+ *   - `mobile: null` explicitly clears the stored number.
+ *   - `mobile: ""` is treated the same as null.
+ *   - Missing keys are left alone (Prisma partial update semantics).
+ */
+router.patch(
+  "/auth/me",
+  requireAuth,
+  asyncHandler(async (req, res) => {
+    const body = req.body as { name?: unknown; mobile?: unknown };
+    const patch: { name?: string; mobile?: string | null } = {};
+    if (body.name !== undefined) {
+      if (typeof body.name !== "string") {
+        throw new HttpError(400, "name must be a string", "INVALID_NAME");
+      }
+      const trimmed = body.name.trim();
+      if (trimmed.length < 2) {
+        throw new HttpError(400, "Name must be at least 2 characters", "NAME_TOO_SHORT");
+      }
+      if (trimmed.length > 120) {
+        throw new HttpError(400, "Name is too long", "NAME_TOO_LONG");
+      }
+      patch.name = trimmed;
+    }
+    if (body.mobile !== undefined) {
+      if (body.mobile === null || body.mobile === "") {
+        patch.mobile = null;
+      } else if (typeof body.mobile !== "string") {
+        throw new HttpError(400, "mobile must be a string or null", "INVALID_MOBILE");
+      } else {
+        // Store only digits — strip spaces / punctuation. Length isn't
+        // enforced here because international numbers vary; the client's
+        // form uses inputMode="tel" for the OS-level UX.
+        const digits = body.mobile.replace(/\D+/g, "");
+        if (digits.length > 0 && digits.length < 7) {
+          throw new HttpError(400, "Mobile number is too short", "MOBILE_TOO_SHORT");
+        }
+        patch.mobile = digits.length > 0 ? digits : null;
+      }
+    }
+    if (Object.keys(patch).length === 0) {
+      // No-op requests get the current user back so the client's
+      // useAuth store stays consistent without extra round-trips.
+      const current = await prisma.user.findUnique({ where: { id: req.user!.sub } });
+      if (!current || current.deletedAt) throw new HttpError(404, "User not found", "USER_NOT_FOUND");
+      res.json({ user: publicUser(current) });
+      return;
+    }
+    const updated = await prisma.user.update({
+      where: { id: req.user!.sub },
+      data: patch,
+    });
+    res.json({ user: publicUser(updated) });
+  }),
+);
+
+/**
  * Strip server-only fields before returning a User to the client, and
  * derive `hasPassword` (a boolean flag the frontend uses to decide
  * whether to show the "set password" prompt or the "change password"

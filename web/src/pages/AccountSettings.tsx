@@ -1,10 +1,11 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { Eye, EyeOff, KeyRound, ShieldCheck, User as UserIcon } from "lucide-react";
+import { Eye, EyeOff, KeyRound, Pencil, ShieldCheck, User as UserIcon, X } from "lucide-react";
 import { Navbar } from "../components/Navbar";
 import { authApi } from "../lib/api/auth";
 import { useAuth } from "../store/auth";
 import { ApiError } from "../lib/api";
+import { TextField } from "../components/TextField";
 
 /**
  * Signed-in user's account settings — currently just the password
@@ -73,30 +74,10 @@ export function AccountSettings() {
           )}
         </section>
 
-        {/* Account section (read-only for now — quick identity summary) */}
-        <section className="mt-4 rounded-3xl border border-zinc-200 bg-white p-6 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
-          <div className="mb-4 flex items-start gap-3">
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-sky-100 text-sky-600 dark:bg-sky-500/15 dark:text-sky-300">
-              <UserIcon size={18} />
-            </div>
-            <div>
-              <h2 className="text-base font-semibold">Account</h2>
-              <p className="mt-0.5 text-xs text-zinc-600 dark:text-zinc-400">
-                Basic identity — edit deeper details from your role's profile page.
-              </p>
-            </div>
-          </div>
-          <dl className="grid gap-3 text-sm sm:grid-cols-2">
-            <Field label="Name" value={user.name} />
-            <Field label="Email" value={user.email} />
-            {user.mobile && <Field label="Mobile" value={user.mobile} />}
-            <Field label="Role" value={user.role.replace("_", " ")} className="capitalize" />
-            <Field
-              label="Member since"
-              value={new Date(user.createdAt).toLocaleDateString(undefined, { year: "numeric", month: "long", day: "numeric" })}
-            />
-          </dl>
-        </section>
+        {/* Account section — editable name + mobile via the pencil icon.
+            Email and role stay locked (email = account key; role changes
+            are admin-only). */}
+        <AccountIdentitySection />
       </main>
     </div>
   );
@@ -108,6 +89,148 @@ function Field({ label, value, className = "" }: { label: string; value: string;
       <dt className="text-[11px] font-semibold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">{label}</dt>
       <dd className={["mt-0.5 text-sm text-zinc-900 dark:text-zinc-100", className].join(" ")}>{value}</dd>
     </div>
+  );
+}
+
+/**
+ * "Account" card — read-only view by default, flips to an inline edit
+ * form when the pencil icon in the header is clicked. Only name and
+ * mobile are editable (email is the account key; role changes are
+ * admin-only). On save we hit PATCH /auth/me and refresh the local
+ * useAuth store so the header + dashboards pick up the new values
+ * without a page reload.
+ */
+function AccountIdentitySection() {
+  const user = useAuth((s) => s.currentUser)!;
+  const refreshFromServer = useAuth((s) => s.refreshFromServer);
+
+  const [editing, setEditing] = useState(false);
+  const [name, setName] = useState(user.name);
+  const [mobile, setMobile] = useState(user.mobile ?? "");
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState<string | null>(null);
+
+  const startEdit = () => {
+    setName(user.name);
+    setMobile(user.mobile ?? "");
+    setError(null);
+    setSuccess(null);
+    setEditing(true);
+  };
+
+  const cancel = () => {
+    setEditing(false);
+    setError(null);
+  };
+
+  const save = async () => {
+    setError(null);
+    setSuccess(null);
+    const trimmedName = name.trim();
+    if (trimmedName.length < 2) {
+      setError("Name must be at least 2 characters.");
+      return;
+    }
+    setSaving(true);
+    try {
+      await authApi.updateMe({
+        name: trimmedName,
+        mobile: mobile.trim() === "" ? null : mobile.trim(),
+      });
+      // Pull the fresh user row back through the store so every hook
+      // that reads `useAuth(s => s.currentUser)` re-renders.
+      await refreshFromServer?.();
+      setSuccess("Saved.");
+      setEditing(false);
+    } catch (err) {
+      const code = err instanceof ApiError ? err.code : "";
+      setError(
+        code === "MOBILE_TOO_SHORT"
+          ? "Mobile number looks too short."
+          : code === "NAME_TOO_SHORT"
+            ? "Name must be at least 2 characters."
+            : code === "NAME_TOO_LONG"
+              ? "Name is too long."
+              : "Could not save. Try again.",
+      );
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <section className="mt-4 rounded-3xl border border-zinc-200 bg-white p-6 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
+      <div className="mb-4 flex items-start justify-between gap-3">
+        <div className="flex items-start gap-3">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-sky-100 text-sky-600 dark:bg-sky-500/15 dark:text-sky-300">
+            <UserIcon size={18} />
+          </div>
+          <div>
+            <h2 className="text-base font-semibold">Account</h2>
+            <p className="mt-0.5 text-xs text-zinc-600 dark:text-zinc-400">
+              Update your display name or mobile number. Email + role are locked.
+            </p>
+          </div>
+        </div>
+        {!editing && (
+          <button
+            type="button"
+            onClick={startEdit}
+            title="Edit contact details"
+            className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-zinc-200 text-zinc-600 transition hover:border-brand-400 hover:bg-brand-50 hover:text-brand-700 dark:border-zinc-700 dark:text-zinc-300 dark:hover:border-brand-500/50 dark:hover:bg-brand-500/10 dark:hover:text-brand-300"
+          >
+            <Pencil size={14} />
+          </button>
+        )}
+      </div>
+
+      {editing ? (
+        <div className="flex flex-col gap-3">
+          <div className="grid gap-3 sm:grid-cols-2">
+            <TextField label="Name" value={name} onChange={setName} placeholder="Your full name" />
+            <TextField label="Mobile" value={mobile} onChange={setMobile} placeholder="9876543210" inputMode="tel" />
+          </div>
+          <dl className="grid gap-3 text-sm sm:grid-cols-2">
+            <Field label="Email (locked)" value={user.email} className="text-zinc-500 dark:text-zinc-400" />
+            <Field label="Role (locked)" value={user.role.replace("_", " ")} className="capitalize text-zinc-500 dark:text-zinc-400" />
+          </dl>
+          {error && <p className="text-xs text-rose-500">{error}</p>}
+          <div className="mt-1 flex items-center gap-2">
+            <button
+              type="button"
+              onClick={save}
+              disabled={saving}
+              className="inline-flex items-center gap-2 rounded-2xl bg-gradient-to-r from-brand-500 to-brand-600 px-5 py-2.5 text-sm font-semibold text-white shadow-md shadow-brand-500/30 transition hover:shadow-lg disabled:opacity-60"
+            >
+              {saving ? "Saving…" : "Save changes"}
+            </button>
+            <button
+              type="button"
+              onClick={cancel}
+              disabled={saving}
+              className="inline-flex items-center gap-1.5 rounded-2xl border border-zinc-200 px-4 py-2.5 text-sm font-semibold text-zinc-700 transition hover:bg-zinc-50 disabled:opacity-60 dark:border-zinc-700 dark:text-zinc-300 dark:hover:bg-zinc-800"
+            >
+              <X size={13} /> Cancel
+            </button>
+          </div>
+        </div>
+      ) : (
+        <>
+          <dl className="grid gap-3 text-sm sm:grid-cols-2">
+            <Field label="Name" value={user.name} />
+            <Field label="Email" value={user.email} />
+            {user.mobile && <Field label="Mobile" value={user.mobile} />}
+            <Field label="Role" value={user.role.replace("_", " ")} className="capitalize" />
+            <Field
+              label="Member since"
+              value={new Date(user.createdAt).toLocaleDateString(undefined, { year: "numeric", month: "long", day: "numeric" })}
+            />
+          </dl>
+          {success && <p className="mt-3 text-xs text-emerald-600 dark:text-emerald-400">{success}</p>}
+        </>
+      )}
+    </section>
   );
 }
 

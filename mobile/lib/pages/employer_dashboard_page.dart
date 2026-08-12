@@ -107,31 +107,59 @@ class EmployerDashboardPage extends ConsumerWidget {
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
+                      // Eyebrow pill — mirrors web `Employer Dashboard · {company}`.
+                      // The company name reads as a compact right-hand
+                      // slug inside the same pill.
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                         decoration: BoxDecoration(color: const Color(0xFF0EA5E9).withValues(alpha: 0.10), borderRadius: BorderRadius.circular(999)),
-                        child: const Row(
+                        child: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            Icon(Icons.auto_awesome_rounded, size: 12, color: Color(0xFF0369A1)),
-                            SizedBox(width: 6),
-                            Text('EMPLOYER DASHBOARD', style: TextStyle(fontSize: 10, letterSpacing: 1.5, fontWeight: FontWeight.w800, color: Color(0xFF0369A1))),
+                            const Icon(Icons.auto_awesome_rounded, size: 12, color: Color(0xFF0369A1)),
+                            const SizedBox(width: 6),
+                            const Text('EMPLOYER DASHBOARD', style: TextStyle(fontSize: 10, letterSpacing: 1.5, fontWeight: FontWeight.w800, color: Color(0xFF0369A1))),
+                            if (user.company != null && user.company!.trim().isNotEmpty) ...[
+                              const SizedBox(width: 6),
+                              const Text('·', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w800, color: Color(0xFF0369A1))),
+                              const SizedBox(width: 6),
+                              ConstrainedBox(
+                                constraints: const BoxConstraints(maxWidth: 160),
+                                child: Text(
+                                  user.company!,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w700, color: Color(0xFF0369A1)),
+                                ),
+                              ),
+                            ],
                           ],
                         ),
                       ),
                       const SizedBox(height: 12),
-                      Text('Hello $firstName', style: TextStyle(fontSize: 28, fontWeight: FontWeight.w700, letterSpacing: -0.6, color: isDark ? Colors.white : const Color(0xFF09090B))),
-                      if (user.company != null) ...[
-                        const SizedBox(height: 4),
-                        Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(Icons.business_rounded, size: 13, color: isDark ? Colors.white.withValues(alpha: 0.6) : const Color(0xFF52525B)),
-                            const SizedBox(width: 4),
-                            Text(user.company!, style: TextStyle(fontSize: 12, color: isDark ? Colors.white.withValues(alpha: 0.6) : const Color(0xFF52525B))),
-                          ],
-                        ),
-                      ],
+                      // Heading — company name first, wave emoji nudged
+                      // down 2px so it sits on the text baseline instead of
+                      // floating above the cap height. Same fix web needed.
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.end,
+                        children: [
+                          Flexible(
+                            child: Text(
+                              (user.company != null && user.company!.trim().isNotEmpty)
+                                  ? user.company!
+                                  : 'Hi $firstName',
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(fontSize: 28, fontWeight: FontWeight.w700, letterSpacing: -0.6, color: isDark ? Colors.white : const Color(0xFF09090B)),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          const Padding(
+                            padding: EdgeInsets.only(bottom: 2),
+                            child: Text('👋', style: TextStyle(fontSize: 24, height: 1)),
+                          ),
+                        ],
+                      ),
                       const SizedBox(height: 8),
                       Text(
                         'Post jobs free, then subscribe to discover the $totalCandidates candidate${totalCandidates == 1 ? "" : "s"} who match your roles.',

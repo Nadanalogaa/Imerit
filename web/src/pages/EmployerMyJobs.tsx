@@ -136,6 +136,11 @@ export function EmployerMyJobs() {
  </span>
  )}
  </div>
+ {job.employerName && (
+ <p className="truncate text-xs font-medium text-sky-700 dark:text-sky-300">
+ {job.employerName}
+ </p>
+ )}
  <p className="truncate text-xs text-zinc-600 dark:text-zinc-400">
  <MapPin size={10} className="inline" /> {job.location} · {FIELD_LABEL[job.field]} · {TYPE_LABEL[job.type]} · Posted {relativeTime(job.postedAt)}
  </p>

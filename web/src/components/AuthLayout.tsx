@@ -1,3 +1,5 @@
+import { Link } from "react-router-dom";
+import { Home } from "lucide-react";
 import { Brand } from "./Brand";
 import { ThemeToggle } from "./ThemeToggle";
 
@@ -48,7 +50,21 @@ export function AuthLayout({
 
  <header className="relative z-10 flex items-center justify-between px-4 py-4 sm:px-6 lg:px-8">
  <Brand to="/" size="md" forceTheme="dark" />
+ <div className="flex items-center gap-2">
+ {/* Explicit Home button — the logo already links to /, but users
+     who logged out or landed here from a shared link expect a
+     visible way back to the marketing site. Shared across both
+     Employer + Candidate login screens because AuthLayout wraps
+     both. */}
+ <Link
+ to="/"
+ className="inline-flex items-center gap-1.5 rounded-full border border-white/15 bg-white/10 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-white/20"
+ >
+ <Home size={14} />
+ <span className="hidden sm:inline">Home</span>
+ </Link>
  <ThemeToggle />
+ </div>
  </header>
 
  <main className="relative z-10 mx-auto flex min-h-[calc(100vh-4.5rem)] w-full max-w-7xl items-center px-4 pb-5 pt-2 sm:px-6 lg:px-8 lg:pt-4">

@@ -713,6 +713,8 @@ class JobsNotifier extends Notifier<List<Job>> {
     List<String> skills = const [],
     List<JobBenefit> benefits = const [],
     String? contactEmail,
+    String? contactMobile,
+    String? industry,
   }) async {
     if (!apiEnabled) {
       return addJob(
@@ -730,7 +732,7 @@ class JobsNotifier extends Notifier<List<Job>> {
       pincode: pincode, street: street, field: field, type: type,
       experience: experience, yearsMin: yearsMin, yearsMax: yearsMax,
       salaryRange: salaryRange, skills: skills, benefits: benefits,
-      contactEmail: contactEmail,
+      contactEmail: contactEmail, contactMobile: contactMobile, industry: industry,
     );
     final row = await JobsApi.instance.employerCreate(input);
     final job = _fromApi(row);
@@ -822,6 +824,8 @@ class JobsNotifier extends Notifier<List<Job>> {
     List<String> skills = const [],
     List<JobBenefit> benefits = const [],
     String? contactEmail,
+    String? contactMobile,
+    String? industry,
   }) {
     final typeStr = _typeKey(type).toUpperCase();
     return {
@@ -844,6 +848,8 @@ class JobsNotifier extends Notifier<List<Job>> {
       'skills': skills,
       'benefits': benefits.map(benefitKey).toList(),
       if (contactEmail != null) 'contactEmail': contactEmail,
+      if (contactMobile != null && contactMobile.isNotEmpty) 'contactMobile': contactMobile,
+      if (industry != null && industry.isNotEmpty) 'industry': industry,
     };
   }
 

@@ -385,7 +385,13 @@ model Job {
   salaryRange  String?
   skills       Json          // string[]
   benefits     Json          @default("[]") // JobBenefit[] (strict enum, validated at API boundary)
-  contactEmail String?       @db.VarChar(254) // optional hiring contact, distinct from employer login
+  contactEmail  String?       @db.VarChar(254) // optional hiring contact, distinct from employer login
+  contactMobile String?       @db.VarChar(20)  // optional hiring-contact phone; only shown to matched candidates
+  // Free-text industry tag the employer picks in the wizard's Basics step
+  // (Software/IT, Healthcare, Retail, etc.). Kept per-job rather than per-
+  // employer because staffing agencies rotate across industries and a single
+  // employer can legitimately post jobs across categories.
+  industry      String?       @db.VarChar(120)
   // Lifecycle
   status            JobStatus        @default(ACTIVE)
   moderationStatus  ModerationStatus @default(PENDING)

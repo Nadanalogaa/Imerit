@@ -52,13 +52,29 @@ class AuthScaffold extends ConsumerWidget {
                         borderRadius: BorderRadius.circular(10),
                         child: BrandLogo(
                           size: BrandLogoSize.small,
-                          // On dark auth surfaces the JPEG's white matte
-                          // would clash — always sit it on a light plate so
-                          // the wordmark reads cleanly in either theme.
-                          plateColor: isDark ? Colors.white : null,
+                          // Auth surfaces flip to a solid dark tint when the
+                          // app is in dark mode — force the white-ink logo
+                          // there so the wordmark stays legible. Light mode
+                          // uses the default dark-ink art.
+                          forceTheme: isDark ? Brightness.dark : null,
                         ),
                       ),
                       const Spacer(),
+                      // Home button — mirrors the web AuthLayout header
+                      // affordance so signed-out visitors can bounce back
+                      // to the landing page without hunting for a back
+                      // arrow.
+                      IconButton(
+                        tooltip: 'Home',
+                        onPressed: () => context.go('/'),
+                        icon: Icon(
+                          Icons.home_outlined,
+                          size: 20,
+                          color: isDark
+                              ? Colors.white.withValues(alpha: 0.85)
+                              : const Color(0xFF3F3F46),
+                        ),
+                      ),
                       const ThemeToggle(),
                     ],
                   ),

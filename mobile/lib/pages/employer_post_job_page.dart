@@ -47,6 +47,11 @@ class _EmployerPostJobPageState extends ConsumerState<EmployerPostJobPage> {
   final _title = TextEditingController();
   final _description = TextEditingController();
   JobField? _field;
+  // Optional industry tag — mirrors the "Select Industry" dropdown web
+  // added to the Basics step. Sent through to the API as `industry`
+  // when set; skipped from the payload when the user leaves it on the
+  // default placeholder.
+  String? _industry;
 
   // Step 2 — Role
   JobType? _type;
@@ -62,6 +67,11 @@ class _EmployerPostJobPageState extends ConsumerState<EmployerPostJobPage> {
   // Step 4 — Location + contact
   PlaceRef _place = const PlaceRef();
   final _contactEmail = TextEditingController();
+  // Required contact mobile — matches web's Brand-step contactMobile.
+  // Mobile has no separate Brand step, so it lives alongside the
+  // contact email on the Location step where both contact fields
+  // naturally belong.
+  final _contactMobile = TextEditingController();
 
   Map<String, String?> _errors = {};
 
@@ -76,6 +86,7 @@ class _EmployerPostJobPageState extends ConsumerState<EmployerPostJobPage> {
     _title.dispose();
     _description.dispose();
     _contactEmail.dispose();
+    _contactMobile.dispose();
     _pager.dispose();
     for (final controller in _scrolls) {
       controller.dispose();
@@ -110,6 +121,9 @@ class _EmployerPostJobPageState extends ConsumerState<EmployerPostJobPage> {
       if (_contactEmail.text.trim().isNotEmpty &&
           !RegExp(r'^[^\s@]+@[^\s@]+\.[^\s@]+$').hasMatch(_contactEmail.text.trim())) {
         errs['contactEmail'] = 'That doesn\'t look like a valid email';
+      }
+      if (_contactMobile.text.trim().isEmpty) {
+        errs['contactMobile'] = 'Required';
       }
     }
     setState(() => _errors = errs);
@@ -167,6 +181,8 @@ class _EmployerPostJobPageState extends ConsumerState<EmployerPostJobPage> {
             skills: _skills,
             benefits: _benefits,
             contactEmail: _contactEmail.text.trim().isEmpty ? null : _contactEmail.text.trim(),
+            contactMobile: _contactMobile.text.trim().isEmpty ? null : _contactMobile.text.trim(),
+            industry: _industry,
           );
     } catch (err) {
       if (mounted) {
@@ -228,6 +244,8 @@ class _EmployerPostJobPageState extends ConsumerState<EmployerPostJobPage> {
                     description: _description,
                     field: _field,
                     onField: (v) => setState(() => _field = v),
+                    industry: _industry,
+                    onIndustry: (v) => setState(() => _industry = v),
                     errors: _errors,
                     isDark: isDark,
                   )),
@@ -261,6 +279,7 @@ class _EmployerPostJobPageState extends ConsumerState<EmployerPostJobPage> {
                     place: _place,
                     onPlace: (p) => setState(() => _place = p),
                     contactEmail: _contactEmail,
+                    contactMobile: _contactMobile,
                     errors: _errors,
                     isDark: isDark,
                   )),
@@ -378,12 +397,37 @@ class _WizardFooter extends StatelessWidget {
 // Step 1 — Basics: title, description, field
 // ---------------------------------------------------------------------------
 
+/// Curated 17-entry industry list — mirrors the "Select Industry"
+/// dropdown web added to the Basics step. Optional; sent through as
+/// `industry` on the API payload when set.
+const _industryOptions = <String>[
+  'Software/IT services',
+  'BPO/KPO/ITES',
+  'Healthcare/Pharma',
+  'Banking/Finance/Insurance',
+  'Manufacturing',
+  'Retail/Ecommerce',
+  'Education/EdTech',
+  'Logistics/Supply chain',
+  'Automobile',
+  'Construction/Real estate',
+  'Media/Entertainment',
+  'Telecom',
+  'Energy/Utilities',
+  'Hospitality/Travel',
+  'Agriculture/Agri-tech',
+  'Government/Public sector',
+  'Other',
+];
+
 class _BasicsStep extends StatelessWidget {
   const _BasicsStep({
     required this.title,
     required this.description,
     required this.field,
     required this.onField,
+    required this.industry,
+    required this.onIndustry,
     required this.errors,
     required this.isDark,
   });
@@ -391,6 +435,8 @@ class _BasicsStep extends StatelessWidget {
   final TextEditingController description;
   final JobField? field;
   final ValueChanged<JobField> onField;
+  final String? industry;
+  final ValueChanged<String?> onIndustry;
   final Map<String, String?> errors;
   final bool isDark;
 
@@ -434,6 +480,42 @@ class _BasicsStep extends StatelessWidget {
           ],
         ),
         if (errors['field'] != null) _ErrorText(errors['field']!),
+        const SizedBox(height: 14),
+        _LabelText('Select Industry'),
+        const SizedBox(height: 6),
+        DropdownButtonFormField<String>(
+          initialValue: industry,
+          isExpanded: true,
+          icon: Icon(Icons.expand_more_rounded, size: 18, color: isDark ? Colors.white.withValues(alpha: 0.55) : const Color(0xFF71717A)),
+          hint: Text(
+            'Select industry…',
+            style: TextStyle(fontSize: 13, color: isDark ? Colors.white.withValues(alpha: 0.35) : const Color(0xFFA1A1AA)),
+          ),
+          style: TextStyle(fontSize: 13.5, color: isDark ? Colors.white : const Color(0xFF09090B)),
+          dropdownColor: isDark ? const Color(0xFF18181B) : Colors.white,
+          decoration: InputDecoration(
+            isDense: true,
+            filled: true,
+            fillColor: isDark ? const Color(0xFF09090B) : Colors.white,
+            contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(14),
+              borderSide: BorderSide(color: isDark ? Colors.white.withValues(alpha: 0.12) : const Color(0xFFE4E4E7)),
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(14),
+              borderSide: BorderSide(color: isDark ? Colors.white.withValues(alpha: 0.12) : const Color(0xFFE4E4E7)),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(14),
+              borderSide: const BorderSide(color: Color(0xFF0EA5E9), width: 1.5),
+            ),
+          ),
+          items: _industryOptions
+              .map((i) => DropdownMenuItem<String>(value: i, child: Text(i, overflow: TextOverflow.ellipsis)))
+              .toList(),
+          onChanged: onIndustry,
+        ),
       ],
     );
   }
@@ -798,12 +880,14 @@ class _LocationStep extends StatelessWidget {
     required this.place,
     required this.onPlace,
     required this.contactEmail,
+    required this.contactMobile,
     required this.errors,
     required this.isDark,
   });
   final PlaceRef place;
   final ValueChanged<PlaceRef> onPlace;
   final TextEditingController contactEmail;
+  final TextEditingController contactMobile;
   final Map<String, String?> errors;
   final bool isDark;
 
@@ -823,6 +907,40 @@ class _LocationStep extends StatelessWidget {
         LocationPickerWidget(value: place, onChange: onPlace),
         if (errors['location'] != null) _ErrorText(errors['location']!),
         const SizedBox(height: 18),
+        _LabelText('Contact Number (Mobile)'),
+        const SizedBox(height: 6),
+        TextFormField(
+          controller: contactMobile,
+          keyboardType: TextInputType.phone,
+          maxLength: 10,
+          inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+          style: TextStyle(fontSize: 13, color: isDark ? Colors.white : const Color(0xFF09090B)),
+          decoration: InputDecoration(
+            counterText: '',
+            hintText: '10-digit mobile',
+            hintStyle: TextStyle(fontSize: 12.5, color: isDark ? Colors.white.withValues(alpha: 0.3) : const Color(0xFFA1A1AA)),
+            prefixIcon: Icon(Icons.phone_iphone_rounded, size: 16, color: isDark ? Colors.white.withValues(alpha: 0.5) : const Color(0xFFA1A1AA)),
+            isDense: true,
+            filled: true,
+            fillColor: isDark ? const Color(0xFF09090B) : Colors.white,
+            contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(14),
+              borderSide: BorderSide(color: isDark ? Colors.white.withValues(alpha: 0.12) : const Color(0xFFE4E4E7)),
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(14),
+              borderSide: BorderSide(color: isDark ? Colors.white.withValues(alpha: 0.12) : const Color(0xFFE4E4E7)),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(14),
+              borderSide: const BorderSide(color: Color(0xFFF97316), width: 1.5),
+            ),
+          ),
+          validator: (v) => (v == null || v.trim().isEmpty) ? 'Required' : null,
+        ),
+        if (errors['contactMobile'] != null) _ErrorText(errors['contactMobile']!),
+        const SizedBox(height: 14),
         _LabelText('Contact email (optional)'),
         const SizedBox(height: 6),
         TextField(
