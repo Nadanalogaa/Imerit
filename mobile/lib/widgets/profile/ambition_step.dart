@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../store/theme_provider.dart';
+import '../../utils/sanitize.dart';
 
 const _maxLen = 220;
 
@@ -152,6 +153,7 @@ class _AmbField extends StatelessWidget {
               controller: ctrl,
               maxLines: 3,
               maxLength: _maxLen,
+              inputFormatters: [SanitizingInputFormatter()],
               onChanged: (_) => onChange(),
               style: TextStyle(
                 fontSize: 13,

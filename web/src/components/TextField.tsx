@@ -1,3 +1,5 @@
+import { handlePasteSanitized } from "../lib/sanitizePaste";
+
 interface Props {
   label: string;
   value: string;
@@ -39,6 +41,11 @@ export function TextField({
         maxLength={maxLength}
         disabled={disabled}
         onChange={(e) => onChange(e.target.value)}
+        // Sanitise pasted content — strip bullets / ticks / smart
+        // quotes / zero-width chars that ride along from Word, Google
+        // Docs, WhatsApp, PDFs, etc. Skipped for password / hidden
+        // fields where the value is opaque to us anyway.
+        onPaste={type === "password" ? undefined : (e) => handlePasteSanitized(e, onChange)}
         className={[
           "h-11 rounded-lg border bg-white px-3.5 text-sm text-zinc-900 placeholder:text-zinc-400 transition focus:outline-none focus:ring-2 dark:bg-zinc-950 dark:text-zinc-100 dark:placeholder:text-zinc-500",
           error

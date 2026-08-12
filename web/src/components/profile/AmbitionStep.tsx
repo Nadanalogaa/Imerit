@@ -1,4 +1,5 @@
 import { Sparkles, Target, Compass } from "lucide-react";
+import { handlePasteSanitized } from "../../lib/sanitizePaste";
 
 interface Props {
  shortTerm: string;
@@ -86,6 +87,7 @@ function Field({
  <textarea
  value={value}
  onChange={(e) => onChange(e.target.value.slice(0, max))}
+ onPaste={(e) => handlePasteSanitized(e, (v) => onChange(v.slice(0, max)))}
  placeholder={placeholder}
  rows={3}
  className={[

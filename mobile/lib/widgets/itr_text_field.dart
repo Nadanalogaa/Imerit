@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../store/theme_provider.dart';
+import '../utils/sanitize.dart';
 
 class ItrTextField extends ConsumerWidget {
   const ItrTextField({
@@ -56,7 +57,11 @@ class ItrTextField extends ConsumerWidget {
           controller: controller,
           autofocus: autofocus,
           keyboardType: keyboardType,
-          inputFormatters: formatters,
+          // Always prepend the paste sanitiser so bullet/tick/smart-
+          // quote noise gets scrubbed no matter which page mounts this
+          // widget. Caller-supplied formatters (digitsOnly, etc.) run
+          // AFTER, and can therefore filter the already-cleaned string.
+          inputFormatters: [SanitizingInputFormatter(), ...?formatters],
           maxLength: maxLength,
           style: TextStyle(
             fontSize: 14,

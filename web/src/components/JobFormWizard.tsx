@@ -32,6 +32,7 @@ import {
 } from "lucide-react";
 import { TextField } from "./TextField";
 import { ChipInput } from "./profile/ChipInput";
+import { handlePasteSanitized } from "../lib/sanitizePaste";
 import { LocationPicker } from "./LocationPicker";
 import { StepIndicator } from "./profile/StepIndicator";
 import { StepShell } from "./profile/StepShell";
@@ -452,6 +453,7 @@ function BasicsStep(props: {
         <textarea
           value={props.description}
           onChange={(e) => props.setDescription(e.target.value)}
+          onPaste={(e) => handlePasteSanitized(e, props.setDescription)}
           rows={5}
           placeholder="Roles & Responsibilities , Required Skills and Educational Qualification "
           className="w-full resize-none rounded-lg bg-white px-4 py-3 text-sm text-zinc-900 placeholder:text-zinc-400 focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500/20 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-100 border border-zinc-200 dark:border-zinc-800"

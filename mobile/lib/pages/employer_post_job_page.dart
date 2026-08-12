@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import '../utils/sanitize.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../api/api_client.dart';
@@ -1101,6 +1102,9 @@ class _MultilineField extends StatelessWidget {
           controller: controller,
           maxLines: 6,
           maxLength: maxLength,
+          // Sanitise pasted content — strip bullets / ticks / smart
+          // quotes that ride along from Word / Docs / WhatsApp.
+          inputFormatters: [SanitizingInputFormatter()],
           style: TextStyle(fontSize: 13.5, color: isDark ? Colors.white : const Color(0xFF09090B), height: 1.5),
           decoration: InputDecoration(
             hintText: hint,

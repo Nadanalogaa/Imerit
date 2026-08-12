@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import '../utils/sanitize.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../api/api_client.dart';
@@ -394,6 +395,7 @@ class _Multiline extends StatelessWidget {
           controller: controller,
           maxLines: 5,
           maxLength: 1500,
+          inputFormatters: [SanitizingInputFormatter()],
           style: const TextStyle(fontSize: 13.5, color: Color(0xFF09090B), height: 1.5),
           decoration: InputDecoration(
             counterText: '',

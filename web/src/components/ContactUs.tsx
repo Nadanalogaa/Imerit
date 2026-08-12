@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Mail, MapPin, Send, Sparkles, Lightbulb, Phone } from "lucide-react";
 import { get, set } from "../lib/storage";
+import { handlePasteSanitized } from "../lib/sanitizePaste";
 
 interface Contact {
  id: string;
@@ -131,6 +132,7 @@ export function ContactUs() {
  <textarea
  value={form.message}
  onChange={update("message")}
+ onPaste={(e) => handlePasteSanitized(e, (v) => setForm({ ...form, message: v }))}
  rows={5}
  required
  placeholder="Share your questions, feedback, or suggestions here..."

@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Plus, Trash2, ChevronDown, ChevronUp, Link2, Briefcase } from "lucide-react";
+import { handlePasteSanitized } from "../../lib/sanitizePaste";
 import type { Experience, ExperienceProject } from "../../store/profile";
 import { Checkbox } from "../Checkbox";
 import { ChipInput } from "./ChipInput";
@@ -234,6 +235,7 @@ function ProjectList({
  <textarea
  value={proj.description ?? ""}
  onChange={(e) => update(i, { description: e.target.value })}
+ onPaste={(e) => handlePasteSanitized(e, (v) => update(i, { description: v }))}
  rows={2}
  placeholder="What problem it solved, your role, impact…"
  className="w-full resize-none rounded-lg border border-zinc-300 bg-white px-3.5 py-2.5 text-sm focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500/15 dark:border-zinc-700 dark:bg-zinc-950"

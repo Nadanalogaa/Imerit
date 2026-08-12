@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { X, Plus } from "lucide-react";
+import { sanitizePlainText } from "../../lib/sanitizePaste";
 
 interface Props {
  value: string[];
@@ -62,6 +63,36 @@ export function ChipInput({ value, onChange, placeholder, suggestions = [], max,
  <input
  value={draft}
  onChange={(e) => setDraft(e.target.value)}
+ // Skills often get pasted as a bulleted / comma-separated list.
+ // Sanitise first, then split into individual chips instead of
+ // dumping a bullet-riddled blob into the single draft field.
+ onPaste={(e) => {
+ const raw = e.clipboardData.getData("text/plain");
+ if (!raw) return;
+ e.preventDefault();
+ const cleaned = sanitizePlainText(raw);
+ // Split on commas AND newlines AND leading dashes so both
+ // "React, Node, MongoDB" and "- React\n- Node\n- MongoDB"
+ // become three individual chips.
+ const parts = cleaned
+ .split(/[,\n]+/)
+ .map((p) => p.replace(/^\s*-\s*/, "").trim())
+ .filter(Boolean);
+ if (parts.length === 0) return;
+ if (parts.length === 1 && !cleaned.includes("\n") && !cleaned.includes(",")) {
+ setDraft(parts[0]!);
+ return;
+ }
+ // Multi-item paste: add each as its own chip, respecting `max`.
+ let next = [...value];
+ for (const p of parts) {
+ if (next.includes(p)) continue;
+ if (max != null && next.length >= max) break;
+ next.push(p);
+ }
+ onChange(next);
+ setDraft("");
+ }}
  onKeyDown={(e) => {
  if (e.key === "Enter" || e.key === ",") {
  e.preventDefault();

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../store/theme_provider.dart';
+import '../../utils/sanitize.dart';
 
 class ChipInput extends ConsumerStatefulWidget {
   const ChipInput({
@@ -91,6 +92,7 @@ class _ChipInputState extends ConsumerState<ChipInput> {
                     focusNode: _focus,
                     enabled: !atMax,
                     onSubmitted: _add,
+                    inputFormatters: [SanitizingInputFormatter()],
                     style: TextStyle(
                       fontSize: 13,
                       color: isDark ? Colors.white : const Color(0xFF09090B),
