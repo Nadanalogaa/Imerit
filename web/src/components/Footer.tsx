@@ -14,7 +14,7 @@ export function Footer() {
  <div className="relative grid gap-10 md:grid-cols-[1.6fr_1fr_1fr_1fr_1fr]">
  {/* Brand block */}
  <div>
- <Brand size="lg" forceTheme="dark" />
+ <Brand size="lg" />
  <p className="mt-5 max-w-md text-sm leading-relaxed text-zinc-400">
  Tamil Nadu's modern recruitment platform — connecting students and professionals across every field with the right opportunities, near home.
  </p>

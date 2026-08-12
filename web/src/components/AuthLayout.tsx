@@ -49,7 +49,7 @@ export function AuthLayout({
  <div className="absolute inset-0 -z-10 bg-[radial-gradient(circle_at_15%_20%,rgba(249,115,22,0.22),transparent_26%),radial-gradient(circle_at_85%_15%,rgba(14,165,233,0.18),transparent_24%),radial-gradient(circle_at_80%_85%,rgba(255,255,255,0.08),transparent_22%)]" />
 
  <header className="relative z-10 flex items-center justify-between px-4 py-4 sm:px-6 lg:px-8">
- <Brand to="/" size="md" forceTheme="dark" />
+ <Brand to="/" size="md" />
  <div className="flex items-center gap-2">
  {/* Explicit Home button — the logo already links to /, but users
      who logged out or landed here from a shared link expect a

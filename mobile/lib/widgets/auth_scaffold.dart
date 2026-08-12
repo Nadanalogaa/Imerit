@@ -50,14 +50,8 @@ class AuthScaffold extends ConsumerWidget {
                       InkWell(
                         onTap: () => context.go('/'),
                         borderRadius: BorderRadius.circular(10),
-                        child: BrandLogo(
-                          size: BrandLogoSize.small,
-                          // Auth surfaces flip to a solid dark tint when the
-                          // app is in dark mode — force the white-ink logo
-                          // there so the wordmark stays legible. Light mode
-                          // uses the default dark-ink art.
-                          forceTheme: isDark ? Brightness.dark : null,
-                        ),
+                        // Same logo everywhere — auth, landing, footer.
+                        child: const BrandLogo(size: BrandLogoSize.small),
                       ),
                       const Spacer(),
                       // Home button — mirrors the web AuthLayout header
