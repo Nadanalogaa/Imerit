@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { AnimatePresence } from "framer-motion";
 import { Navbar } from "../components/Navbar";
@@ -118,6 +118,7 @@ export function CandidateProfileForm() {
  const [templateId, setTemplateId] = useState<TemplateId | undefined>(profile.selectedTemplateId);
 
  const [errors, setErrors] = useState<Record<string, string>>({});
+ const topRef = useRef<HTMLElement | null>(null);
 
  const liveProfile = {
  ...profile,
@@ -149,11 +150,11 @@ export function CandidateProfileForm() {
  // Scroll back to the page header after each step change. We blur the
  // active input first so the browser doesn't keep the old field pinned
  // in view and fight the reset.
- useEffect(() => {
+ useLayoutEffect(() => {
  const active = document.activeElement;
  if (active instanceof HTMLElement) active.blur();
  const frame = window.requestAnimationFrame(() => {
- window.scrollTo({ top: 0, behavior: "smooth" });
+ topRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
  });
  return () => window.cancelAnimationFrame(frame);
  }, [step]);
@@ -464,7 +465,7 @@ export function CandidateProfileForm() {
  <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950">
  <Navbar />
  <main className="mx-auto max-w-6xl px-5 py-6 md:py-6 md:py-10">
- <header className="mb-5">
+ <header ref={topRef} className="mb-5">
  <span className="text-[11px] font-bold uppercase tracking-widest text-brand-600 dark:text-brand-400">
  Build your profile
  </span>

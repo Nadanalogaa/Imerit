@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, type ReactNode } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { AnimatePresence } from "framer-motion";
 import {
   Building2,
@@ -213,15 +213,16 @@ export function JobFormWizard({
   const [contactEmail, setContactEmail] = useState(initialValues?.contactEmail ?? "");
   const [logoUrl, setLogoUrl] = useState<string | null>(initialValues?.logoUrl ?? null);
   const [logoDirty, setLogoDirty] = useState(false);
+  const topRef = useRef<HTMLDivElement>(null);
 
   // Reset scroll after each step so the page header is visible again.
   // Blur first so the focused field doesn't keep the viewport anchored
   // somewhere in the middle of the old step.
-  useEffect(() => {
+  useLayoutEffect(() => {
     const active = document.activeElement;
     if (active instanceof HTMLElement) active.blur();
     const frame = window.requestAnimationFrame(() => {
-      window.scrollTo({ top: 0, behavior: "smooth" });
+      topRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
     });
     return () => window.cancelAnimationFrame(frame);
   }, [step]);
@@ -331,6 +332,7 @@ export function JobFormWizard({
 
   return (
     <div className="mx-auto max-w-6xl">
+      <div ref={topRef} />
       {topSection}
 
       <div className="mb-6">
