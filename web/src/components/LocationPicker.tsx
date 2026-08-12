@@ -192,7 +192,7 @@ export function LocationPicker({
  {allowStreet && (
  <div>
  <label className="mb-1.5 block text-[12px] font-semibold text-zinc-700 dark:text-zinc-300">
- Street / landmark <span className="font-normal text-zinc-500">(optional · kept private)</span>
+ Address <span className="font-normal text-zinc-500">(optional · kept private)</span>
  </label>
  <div className="relative">
  <Pin size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-zinc-400" />

@@ -32,10 +32,10 @@ export function SubscriptionPlans() {
  Candidate subscription
  </p>
  <h1 className="mt-2 text-2xl font-semibold tracking-tight md:text-3xl">
- One simple plan to apply
+One Affordable Plan to Apply for Relevant Jobs
  </h1>
  <p className="mt-2 text-sm text-zinc-600 dark:text-zinc-400">
- Posting your profile is always free. Subscribe only when you're ready to apply to jobs.
+ Posting your profile is always free. Subscribe only when you're ready to apply to jobs
  </p>
  </header>
 

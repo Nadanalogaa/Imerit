@@ -50,27 +50,28 @@ export function EmployerRegister() {
 
  return (
  <AuthLayout
- title="Create your employer account"
- subtitle="Job posting is free. Subscribe only when you're ready to search candidates."
+ title="Create Your Employer Account"
+ subtitle="Post Jobs for Free. Subscribe Only When Candidates Apply."
  tone="sky"
  bgImage="/images/background-02.jpg"
- panelTitle="Build a hiring pipeline faster"
- panelCopy="Set up your employer account, verify your email, and post openings without fighting a crowded form."
+ panelTitle="Discover the Right Skilled Talent! Recruit Smarter. Recruit Faster."
+ panelCopy="Register as an Employer and Verify Your Email to Get Started."
  highlights={[
- "Free job posting with simple OTP sign-in",
- "Search-ready profile for hiring workflows",
- "Built for quick setup and minimal friction",
+ "Post Jobs at Zero Cost.",
+ "This Platform is built to simplify the Recruitment Process.",
+ "We Take Responsibility for Sourcing the Right Candidates",
+ "We Promote Your Job Openings to Reach More Candidates"
  ]}
  stats={[
- { value: "Free", label: "job posting" },
- { value: "1 OTP", label: "to get started" },
+ { value: "Free", label: "Job Posting" },
+ { value: "1 OTP", label: "To Get Started" },
  ]}
  >
  <form onSubmit={submit} className="flex flex-col gap-4">
- <TextField label="Your name" value={name} onChange={setName} placeholder="e.g. Priya Iyer" error={errors.name} autoFocus />
- <TextField label="Company name" value={company} onChange={setCompany} placeholder="e.g. Zoho Corporation" error={errors.company} />
+<TextField label="Employer / Company Name" value={company} onChange={setCompany} placeholder="e.g. Zoho Corporation" error={errors.company} />
+ <TextField label="Your Name" value={name} onChange={setName} placeholder="e.g. Priya Iyer" error={errors.name} autoFocus />
  <TextField
- label="Mobile number"
+ label="Company Contact Number"
  value={mobile}
  onChange={(v) => setMobile(v.replace(/\D/g, "").slice(0, 10))}
  placeholder="9876543210"
@@ -79,14 +80,14 @@ export function EmployerRegister() {
  error={errors.mobile}
  />
  <TextField
- label="Work email"
+ label="Company Email-ID"
  type="email"
  value={email}
  onChange={setEmail}
  placeholder="you@company.com"
  inputMode="email"
  error={errors.email}
- hint="We'll send a 6-digit code to verify."
+ hint="We’ll Send a 6-Digit OTP to Verify Your Account"
  />
 
  {errors.general && (
@@ -107,7 +108,7 @@ export function EmployerRegister() {
  </button>
 
  <p className="text-center text-xs text-zinc-500 dark:text-zinc-400">
- Already have an account?{" "}
+ Already have an Account?{" "}
  <Link to="/employer/login" className="font-semibold text-sky-600 hover:underline dark:text-sky-400">
  Sign in
  </Link>

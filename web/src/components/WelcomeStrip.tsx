@@ -6,77 +6,7 @@ import { useAuth } from "../store/auth";
 const KEY = "itr.welcomeDismissed";
 
 export function WelcomeStrip() {
- const [hidden, setHidden] = useState(true);
- const [closing, setClosing] = useState(false);
- const user = useAuth((s) => s.currentUser);
-
- useEffect(() => {
- if (user) {
- setHidden(true);
- return;
- }
- setHidden(get<boolean>(KEY, false));
- }, [user]);
-
- const dismiss = () => {
- setClosing(true);
- setTimeout(() => {
- set(KEY, true);
- setHidden(true);
- }, 250);
- };
-
- if (hidden) return null;
-
- return (
- <div
- className={[
- "relative z-[60] overflow-hidden transition-all duration-300",
- closing ? "max-h-0 opacity-0" : "max-h-[400px] opacity-100",
- ].join(" ")}
- >
- <div className="bg-gradient-to-r from-brand-600 via-brand-500 to-sky-600 text-white">
- <div className="mx-auto flex max-w-7xl flex-col items-stretch gap-3 px-5 py-3 md:flex-row md:items-center md:justify-between md:px-8">
- <div className="flex items-center gap-2">
- <span className="text-lg" aria-hidden>
- 👋
- </span>
- <span className="text-sm font-medium">
- New here? Tell us who you are
- </span>
- </div>
-
- <div className="flex flex-col gap-2 md:flex-row md:items-center md:gap-3">
- <RoleBlock
- label="Looking for a job?"
- icon={<UserIcon />}
- loginTo="/candidate/login"
- registerTo="/candidate/register"
- accent="bg-white text-brand-700 hover:bg-zinc-50"
- />
- <span className="hidden h-7 w-px bg-white/30 md:block" />
- <RoleBlock
- label="Looking for talent?"
- icon={<BriefcaseIcon />}
- loginTo="/employer/login"
- registerTo="/employer/register"
- accent="bg-white text-sky-700 hover:bg-zinc-50"
- />
- </div>
-
- <button
- aria-label="Dismiss"
- onClick={dismiss}
- className="absolute right-3 top-3 inline-flex h-7 w-7 items-center justify-center rounded-full text-white/80 transition hover:bg-white/15 hover:text-white md:relative md:right-0 md:top-0"
- >
- <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
- <path d="M6 6l12 12M18 6l-12 12" />
- </svg>
- </button>
- </div>
- </div>
- </div>
- );
+ return null;
 }
 
 function RoleBlock({

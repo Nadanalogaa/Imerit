@@ -24,7 +24,7 @@ export function AmbitionStep({
  <div className="flex items-start gap-3 rounded-2xl border border-violet-200 bg-gradient-to-br from-violet-50 to-fuchsia-50 px-4 py-3 dark:border-violet-500/20 dark:from-violet-500/10 dark:to-fuchsia-500/5">
  <Sparkles size={18} className="mt-0.5 shrink-0 text-violet-600 dark:text-violet-400" />
  <p className="text-xs leading-relaxed text-zinc-700 dark:text-zinc-300">
- Our team uses your ambitions to match you with relevant industries and roles. Be honest and specific — short and long term.
+  Be honest and specific — short and long term. Tell us your Career Aspiration — Short Term and Long Term goals”. and short time and long time only view to admin, staff and super admin not view in employer.
  </p>
  </div>
 

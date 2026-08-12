@@ -91,11 +91,11 @@ export function CandidateLogin() {
 
   return (
     <AuthLayout
-      title="Welcome back"
+      title="Welcome Back"
       subtitle={mode === "otp" ? "Sign in with a one-time email code — no password required." : "Sign in with your password."}
       tone="brand"
       bgImage="/images/background-04.jpg"
-      panelTitle="Continue your job search"
+      panelTitle="Continue Your Job Search"
       panelCopy="Jump back into your saved jobs, applications, and profile."
       highlights={[
         "One-click OTP or password sign-in",

@@ -93,20 +93,20 @@ export function EmployerLogin() {
 
  return (
  <AuthLayout
- title="Welcome back"
+ title="Welcome Back"
  subtitle="Sign in to your employer account with a one-time email code."
  tone="sky"
  bgImage="/images/background-02.jpg"
- panelTitle="Manage live jobs and applicants"
- panelCopy="Return to your hiring dashboard, keep openings updated, and review applicants from one place."
+ panelTitle="Continue your Job Search"
+ panelCopy="Quickly access your Saved Jobs, Applications, and Profile."
  highlights={[
- "Simple OTP-based sign-in",
- "Manage posted jobs quickly",
- "Return to applicants and subscriptions",
+ "One-Click Sign-In with OTP or Password",
+ "Access Your Saved Jobs and Applications",
+ "One Account Across All Your Devices",
  ]}
  stats={[
- { value: "Quick", label: "access" },
- { value: "Zero", label: "passwords" },
+ { value: "Fast ", label: "Sign-In" },
+ { value: "Secure", label: "Email-OTP" },
  ]}
 >
  <form onSubmit={submit} className="flex flex-col gap-4">

@@ -46,10 +46,7 @@ export function ContactUs() {
  <div className="relative grid gap-10 px-5 md:px-10 lg:gap-12 lg:px-14 xl:px-20">
  {/* Header */}
  <div className="text-center">
- <span className="inline-flex items-center gap-2 rounded-full border border-white/30 bg-white/10 px-4 py-1.5 text-[12px] font-bold uppercase tracking-[0.22em] text-white backdrop-blur-md">
- <MessageCircle size={12} /> Contact us
- </span>
- <h2 className="mt-4 text-3xl font-semibold tracking-tight text-white drop-shadow md:text-4xl lg:text-5xl">
+ <h2 className="text-3xl font-semibold tracking-tight text-white drop-shadow md:text-4xl lg:text-5xl">
  Contact{" "}
  <span className="bg-gradient-to-r from-brand-400 to-amber-300 bg-clip-text text-transparent">
  Us

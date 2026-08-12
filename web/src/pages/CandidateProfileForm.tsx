@@ -317,7 +317,7 @@ export function CandidateProfileForm() {
  <StepShell
  key="edu"
  title="Education"
- subtitle="Tick every level you have and fill in the details."
+ subtitle="Select your Education qualifications and fill in the required details."
  onBack={handleBack}
  onNext={handleNext}
  >
@@ -334,8 +334,7 @@ export function CandidateProfileForm() {
  return (
  <StepShell
  key="amb"
- title="Your ambition"
- subtitle="Tell us where you're heading — short and long term."
+ title="Your Ambition"
  onBack={handleBack}
  onNext={handleNext}
  >

@@ -144,6 +144,17 @@ const JOB_TYPE_OPTIONS: { id: JobType; label: string; icon: LucideIcon; tone: To
   { id: "freelancer", label: "Freelancer", icon: Laptop, tone: "teal" },
 ];
 
+const FIELD_OPTIONS: { id: JobField; label: string; icon: LucideIcon; tone: Tone }[] = [
+  { id: "it", label: "IT", icon: Laptop, tone: "sky" },
+  { id: "non_it", label: "Non-IT", icon: Building2, tone: "amber" },
+];
+
+const EXPERIENCE_OPTIONS: { id: JobExperience; label: string; icon: LucideIcon; tone: Tone }[] = [
+  { id: "fresher", label: "Fresher", icon: Sparkles, tone: "emerald" },
+  { id: "experienced", label: "Experienced", icon: UserCheck, tone: "violet" },
+  { id: "any", label: "Any", icon: UsersRound, tone: "rose" },
+];
+
 const BENEFIT_META: Record<JobBenefit, { icon: LucideIcon; tone: Tone }> = {
   PF: { icon: Landmark, tone: "violet" },
   ESI: { icon: Shield, tone: "sky" },
@@ -304,7 +315,7 @@ export function JobFormWizard({
         <p className="mt-2 text-sm text-zinc-600 dark:text-zinc-400">{defaultSubheading}</p>
       </div>
 
-      <StepIndicator steps={steps} current={step} />
+      <StepIndicator steps={steps} current={step} onStepClick={mode === "edit" ? setStep : undefined} />
 
       <AnimatePresence mode="wait">
         {step === 0 && (
@@ -422,28 +433,71 @@ function BasicsStep(props: {
       </div>
       <div className="grid gap-4 sm:grid-cols-2">
         <div>
-          <p className="mb-1.5 text-[11px] font-bold uppercase tracking-wider text-zinc-700 dark:text-zinc-300"> select the Field</p>
-          <SegmentedToggle
-            value={props.field}
-            onChange={(v) => props.setField(v as JobField)}
-            options={[
-              { id: "it", label: "IT", icon: <Laptop size={14} className="text-sky-500" /> },
-              { id: "non_it", label: "Non-IT", icon: <Building2 size={14} className="text-amber-500" /> },
-            ]}
-          />
+          <p className="mb-1.5 text-[11px] font-bold uppercase tracking-wider text-zinc-700 dark:text-zinc-300">Select the Field</p>
+          <div className="grid grid-cols-2 gap-2">
+            {FIELD_OPTIONS.map(({ id, label, icon: Icon, tone }) => {
+              const active = props.field === id;
+              return (
+                <button
+                  key={id}
+                  type="button"
+                  onClick={() => props.setField(id)}
+                  className={[
+                    "group flex flex-col items-center gap-1.5 rounded-xl border px-3 py-3 text-center text-[12px] font-semibold transition",
+                    active
+                      ? "border-brand-500 bg-brand-50 text-brand-700 shadow-sm dark:border-brand-500/60 dark:bg-brand-500/10 dark:text-brand-300"
+                      : "border-zinc-200 bg-white text-zinc-700 hover:-translate-y-0.5 hover:border-brand-300 hover:text-zinc-900 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300 dark:hover:border-brand-500/40",
+                  ].join(" ")}
+                >
+                  <span
+                    className={[
+                      "inline-flex h-9 w-9 items-center justify-center rounded-lg transition",
+                      active
+                        ? "bg-gradient-to-br from-brand-500 to-brand-600 text-white shadow-md shadow-brand-500/40"
+                        : TONE[tone],
+                    ].join(" ")}
+                  >
+                    <Icon size={16} />
+                  </span>
+                  {label}
+                </button>
+              );
+            })}
+          </div>
           {props.errors.field && <p className="mt-1 text-[11px] text-rose-600">{props.errors.field}</p>}
         </div>
         <div>
           <p className="mb-1.5 text-[11px] font-bold uppercase tracking-wider text-zinc-700 dark:text-zinc-300">Experience</p>
-          <SegmentedToggle
-            value={props.experience}
-            onChange={(v) => props.setExperience(v as JobExperience)}
-            options={[
-              { id: "fresher", label: "Fresher", icon: <Sparkles size={14} className="text-emerald-500" /> },
-              { id: "experienced", label: "Experienced", icon: <UserCheck size={14} className="text-violet-500" /> },
-              { id: "any", label: "Any", icon: <UsersRound size={14} className="text-rose-500" /> },
-            ]}
-          />
+          <div className="grid grid-cols-3 gap-2">
+            {EXPERIENCE_OPTIONS.map(({ id, label, icon: Icon, tone }) => {
+              const active = props.experience === id;
+              return (
+                <button
+                  key={id}
+                  type="button"
+                  onClick={() => props.setExperience(id)}
+                  className={[
+                    "group flex flex-col items-center gap-1.5 rounded-xl border px-3 py-3 text-center text-[12px] font-semibold transition",
+                    active
+                      ? "border-brand-500 bg-brand-50 text-brand-700 shadow-sm dark:border-brand-500/60 dark:bg-brand-500/10 dark:text-brand-300"
+                      : "border-zinc-200 bg-white text-zinc-700 hover:-translate-y-0.5 hover:border-brand-300 hover:text-zinc-900 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300 dark:hover:border-brand-500/40",
+                  ].join(" ")}
+                >
+                  <span
+                    className={[
+                      "inline-flex h-9 w-9 items-center justify-center rounded-lg transition",
+                      active
+                        ? "bg-gradient-to-br from-brand-500 to-brand-600 text-white shadow-md shadow-brand-500/40"
+                        : TONE[tone],
+                    ].join(" ")}
+                  >
+                    <Icon size={16} />
+                  </span>
+                  {label}
+                </button>
+              );
+            })}
+          </div>
           {props.errors.experience && <p className="mt-1 text-[11px] text-rose-600">{props.errors.experience}</p>}
         </div>
       </div>

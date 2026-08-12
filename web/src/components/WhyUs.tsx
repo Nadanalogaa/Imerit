@@ -127,8 +127,8 @@ export function WhyUs() {
  >
  <div className="h-6 w-6">{it.icon}</div>
  </div>
- <h3 className="text-lg font-bold tracking-tight text-brand-600 dark:text-brand-400">
- {it.title}
+<h3 className="text-lg font-bold tracking-tight text-zinc-900 dark:text-white">
+     {it.title}
  </h3>
  <p className="mt-2 text-sm leading-relaxed text-zinc-600 dark:text-zinc-400">
  {it.desc}

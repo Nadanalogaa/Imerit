@@ -20,6 +20,13 @@ export function StepShell({
  nextLabel = "Continue",
  isLast = false,
 }: Props) {
+ const handleNavigation = (callback: () => void) => {
+   callback();
+   setTimeout(() => {
+     window.scrollTo({ top: 0, behavior: "smooth" });
+   }, 0);
+ };
+
  return (
  <motion.div
  initial={{ opacity: 0, y: 20 }}
@@ -37,13 +44,14 @@ export function StepShell({
 
  <div className="mt-8 flex items-center justify-between gap-3">
  {onBack ? (
- <button
+ <motion.button
+ whileTap={{ scale: 0.97 }}
  type="button"
- onClick={onBack}
- className="inline-flex items-center gap-2 rounded-full px-5 py-2.5 text-sm font-semibold text-zinc-700 transition hover:bg-zinc-50 dark:border-zinc-700 dark:text-zinc-200 dark:hover:bg-zinc-800"
+ onClick={() => handleNavigation(onBack)}
+ className="inline-flex items-center gap-2 rounded-full bg-zinc-900 px-6 py-2.5 text-sm font-semibold text-white shadow-md shadow-zinc-900/30 transition hover:shadow-lg hover:shadow-zinc-900/40 dark:bg-zinc-700 dark:shadow-zinc-700/30 dark:hover:shadow-zinc-700/40"
  >
  <ArrowLeft size={16} /> Back
- </button>
+ </motion.button>
  ) : (
  <span />
  )}
@@ -51,7 +59,7 @@ export function StepShell({
  <motion.button
  whileTap={{ scale: 0.97 }}
  type="button"
- onClick={onNext}
+ onClick={() => handleNavigation(onNext)}
  className="inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-brand-500 to-brand-600 px-6 py-2.5 text-sm font-semibold text-white shadow-md shadow-brand-500/30 transition hover:shadow-lg hover:shadow-brand-500/40"
  >
  {nextLabel}

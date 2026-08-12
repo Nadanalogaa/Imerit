@@ -9,9 +9,10 @@ interface Step {
 interface Props {
  steps: Step[];
  current: number;
+ onStepClick?: (stepIndex: number) => void;
 }
 
-export function StepIndicator({ steps, current }: Props) {
+export function StepIndicator({ steps, current, onStepClick }: Props) {
  const pct = steps.length <= 1 ? 100 : (current / (steps.length - 1)) * 100;
 
  return (
@@ -27,18 +28,24 @@ export function StepIndicator({ steps, current }: Props) {
  />
  {steps.map((s, i) => (
  <div key={s.id} className="relative z-10 flex flex-col items-center gap-2">
- <motion.div
+ <motion.button
+ type="button"
+ onClick={() => onStepClick?.(i)}
+ disabled={!onStepClick}
  initial={false}
  animate={{
  backgroundColor: i <= current ? "#f97316" : "#e4e4e7",
  color: i <= current ? "#ffffff" : "#71717a",
  scale: i === current ? 1.08 : 1,
  }}
- className="flex h-10 w-10 items-center justify-center rounded-full text-xs font-bold shadow-sm dark:bg-zinc-800"
+ className={[
+ "flex h-10 w-10 items-center justify-center rounded-full text-xs font-bold shadow-sm dark:bg-zinc-800 transition",
+ onStepClick ? "cursor-pointer hover:scale-110" : "cursor-default",
+ ].join(" ")}
  style={i <= current ? { boxShadow: "0 8px 22px -6px rgba(249,115,22,0.55)" } : {}}
  >
  {i < current ? <Check size={16} strokeWidth={3} /> : i + 1}
- </motion.div>
+ </motion.button>
  <span
  className={[
  "text-xs font-medium tracking-tight transition",

@@ -187,74 +187,13 @@ export function CandidateDashboard() {
  to="/candidate/profile/build"
  className="group inline-flex items-center justify-center gap-2 rounded-lg bg-gradient-to-r from-brand-500 to-brand-600 px-5 py-2.5 text-[13px] font-semibold text-white shadow-md shadow-brand-500/30 transition hover:shadow-lg"
  >
- Build my profile
+ Build My Profile
  <ArrowRight size={14} className="transition group-hover:translate-x-0.5" />
  </Link>
  )}
  </div>
  </div>
  </motion.div>
-
- {/* Top matches — only when profile exists */}
- {hasResume && (
- <motion.section
- variants={itemVariants}
- className="relative overflow-hidden rounded-2xl bg-white p-5 shadow-[0_4px_16px_rgba(15,23,42,0.06)] dark:shadow-[0_4px_16px_rgba(0,0,0,0.35)] dark:bg-zinc-900 md:p-6"
- >
- <div className="relative">
- {/* Compact section header — eyebrow + count inline, View all
- anchored right on every breakpoint. */}
- <div className="flex flex-wrap items-center justify-between gap-3">
- <div className="flex items-center gap-2.5">
- <span className="inline-flex h-7 w-7 items-center justify-center rounded-lg bg-gradient-to-br from-brand-500 to-brand-600 text-white shadow-sm shadow-brand-500/30">
- <Target size={14} />
- </span>
- <div>
- <h2 className="text-base font-semibold tracking-tight md:text-lg">
- Matched for you
- </h2>
- <p className="text-[12px] text-zinc-500 dark:text-zinc-400">
- {topMatches.length > 0
- ? `${topMatches.length} ranked by skills, location, and experience fit.`
- : "Keep your profile updated — we'll surface jobs as employers post them."}
- </p>
- </div>
- </div>
- {topMatches.length > 0 && (
- <Link
- to="/candidate/jobs"
- className="inline-flex shrink-0 items-center gap-1 rounded-lg border border-zinc-200 bg-white px-3 py-1.5 text-[12px] font-semibold text-zinc-700 transition hover:border-brand-300 hover:bg-brand-50 hover:text-brand-700 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200 dark:hover:bg-brand-500/10"
- >
- View all <ArrowRight size={12} />
- </Link>
- )}
- </div>
-
- {topMatches.length > 0 ? (
- <ul className="mt-4 grid gap-3 md:grid-cols-2 lg:grid-cols-3">
- {topMatches.map(({ job, result, distance }) => (
- <li key={job.id}>
- <MatchedJobCard job={job} score={result.score} band={result.band} distance={distance} />
- </li>
- ))}
- </ul>
- ) : (
- <div className="mt-4 rounded-xl border border-dashed border-zinc-300 bg-zinc-50 px-5 py-5 text-center dark:border-zinc-700 dark:bg-zinc-950/50">
- <Briefcase size={20} className="mx-auto text-zinc-400" />
- <p className="mt-2 text-[13px] text-zinc-600 dark:text-zinc-400">
- No strong matches yet. Browse all openings and your scores will refine as employers post.
- </p>
- <Link
- to="/candidate/jobs"
- className="mt-3 inline-flex items-center gap-1 rounded-lg bg-gradient-to-r from-brand-500 to-brand-600 px-4 py-1.5 text-[12px] font-semibold text-white shadow-sm"
- >
- Browse all jobs <ArrowRight size={12} />
- </Link>
- </div>
- )}
- </div>
- </motion.section>
- )}
 
  {/* Quick actions grid — every tile is a real, working destination.
  The profile tile flips between Build / Update based on hasResume;
@@ -265,34 +204,34 @@ export function CandidateDashboard() {
  variants={itemVariants}
  icon={hasResume ? <Edit3 size={20} /> : <ScrollText size={20} />}
  gradient="from-brand-500 to-amber-500"
- title={hasResume ? "Update Your profile" : "Build your profile"}
+ title={hasResume ? "Update Your profile" : "Update your Profile"}
  desc={hasResume
- ? "Refresh your details, add new experience, or switch templates."
- : "Add your education, skills, and ambitions. No CV needed."}
+ ? "Keep your profile updated — we’ll highlight new jobs as employers post them."
+ : "Edit your details, Add new experience, or switch templates"}
  to="/candidate/profile/build"
  />
  <ActionCard
  variants={itemVariants}
  icon={<Briefcase size={20} />}
  gradient="from-sky-500 to-cyan-500"
- title="Browse jobs"
- desc="Discover openings across Tamil Nadu — IT and non-IT."
+ title="Browse Jobs Now"
+ desc="Discover the new Job Openings"
  to="/candidate/jobs"
  />
  <ActionCard
  variants={itemVariants}
  icon={<Heart size={20} />}
  gradient="from-rose-500 to-pink-500"
- title="Saved jobs"
- desc="Bookmark roles to revisit and apply later."
+ title="Saved Jobs"
+ desc="Your Bookmarked Jobs — Revisit and Apply"
  to="/candidate/saved"
  />
  <ActionCard
  variants={itemVariants}
  icon={<Briefcase size={20} />}
  gradient="from-amber-500 to-orange-500"
- title="My applications"
- desc="See all the roles you've applied for."
+ title="My Applications"
+ desc="View the Applied Jobs"
  to="/candidate/applications"
  />
  <ActionCard
@@ -302,21 +241,21 @@ export function CandidateDashboard() {
  title={activeSub ? "Manage subscription" : "Subscription"}
  desc={activeSub
  ? `Active plan · expires ${new Date(activeSub.expiresAt).toLocaleDateString()}`
- : "Apply for Jobs with a ₹333 / 45-days plan."}
+ : "Apply for Jobs with a plan of Rs.333 / 45 days / Unlimited Access"}
  to="/candidate/subscribe"
  />
  <ActionCard
  variants={itemVariants}
  icon={<Sparkles size={20} />}
  gradient="from-indigo-500 to-purple-500"
- title="Get matched"
- desc="Our team will reach out with relevant openings."
+ title="Recruiter’s Task"
+ desc="Upon Subscription, Our Recruiters Will Start Searching for Suitable Jobs for You and Contact You Soon."
  soon
  />
  </motion.div>
 
  <motion.p variants={itemVariants} className="text-center text-xs text-zinc-500 dark:text-zinc-400">
- Subscribe to apply to any of these jobs · Job browsing is always free.
+ Job search is always free. Subscribe only when you find a suitable job from the available vacancies
  </motion.p>
  </motion.div>
  </main>

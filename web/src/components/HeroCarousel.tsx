@@ -314,7 +314,7 @@ function RoleCard({ icon, title, tagline, bullets, ctaTo, ctaLabel, signInTo, to
  </Link>
  <Link
  to={signInTo}
- className="text-[12px] font-semibold text-zinc-600 hover:underline dark:text-zinc-400"
+ className="text-sm font-semibold text-zinc-600 hover:underline dark:text-zinc-400 px-2 py-1"
  >
  Already a member? <span className="text-zinc-900 dark:text-zinc-100">Sign in</span>
  </Link>

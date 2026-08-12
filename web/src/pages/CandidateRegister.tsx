@@ -53,20 +53,20 @@ export function CandidateRegister() {
 
  return (
  <AuthLayout
- title="Create your candidate account"
+ title="Create Your Candidate Account"
  subtitle="Profile posting is free. It takes less than a minute."
  tone="brand"
  bgImage="/images/background-03.jpg"
- panelTitle="Find jobs closer to home"
- panelCopy="Create a profile once, verify with OTP, and start getting matched to openings by skills, location, and experience."
+ panelTitle="Find Jobs Closer to Home"
+ panelCopy="Create a profile once, verify with OTP, and Discover Relevant Jobs Based on Your Skills, Location, and Experience."
  highlights={[
- "Free profile creation with one-time email verification",
- "Jobs matched by location, role, and field",
- "Short form, clean onboarding, no clutter",
+ "Start today!! Profile creation is free with one-time email verification.",
+ "Find Suitable Jobs in Your Industry.",
+ "Easy-to-Fill Forms. Clutter-Free.",
  ]}
  stats={[
- { value: "1 OTP", label: "to verify" },
- { value: "Free", label: "to post profile" },
+ { value: "1 OTP", label: "to Email to verify" },
+ { value: "Absolutely Free", label: "to post your profile" },
  ]}
  >
  <form onSubmit={submit} className="flex flex-col gap-4">

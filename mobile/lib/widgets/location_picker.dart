@@ -207,7 +207,7 @@ class _LocationPickerWidgetState extends ConsumerState<LocationPickerWidget> {
         ),
         if (widget.allowStreet) ...[
           const SizedBox(height: 12),
-          _label('Street / landmark (optional · private)', isDark),
+          _label('Address (optional · private)', isDark),
           const SizedBox(height: 6),
           TextField(
             controller: _street,
