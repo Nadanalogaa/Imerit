@@ -95,7 +95,7 @@ class StaffDashboardPage extends ConsumerWidget {
             const SizedBox(height: 22),
             _ActionCard(
               icon: Icons.add_rounded,
-              title: 'Post a job',
+              title: 'Post a Job',
               body: 'Pick an employer from the master (or create one on the fly) and publish a role.',
               tone: const [Color(0xFFF97316), Color(0xFFEA580C)],
               onTap: () => context.go('/staff/jobs/new'),

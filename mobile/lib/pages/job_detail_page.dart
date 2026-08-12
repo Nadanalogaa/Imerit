@@ -134,7 +134,7 @@ class _JobDetailPageState extends ConsumerState<JobDetailPage> {
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                         elevation: 0,
                       ),
-                      child: const Text('My applications', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700)),
+                      child: const Text('My Applications', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700)),
                     ),
                   ),
                 ],

@@ -51,7 +51,7 @@ class _StaffJobsPageState extends ConsumerState<StaffJobsPage> {
     final expiredCount = mine.length - activeCount;
 
     return StaffScaffold(
-      title: 'My jobs',
+      title: 'My Jobs',
       action: IconButton(
         icon: const Icon(Icons.add_rounded, size: 22),
         color: const Color(0xFFF97316),
@@ -130,7 +130,7 @@ class _StaffJobsPageState extends ConsumerState<StaffJobsPage> {
                           ),
                           const SizedBox(height: 4),
                           const Text(
-                            'Post a job on behalf of an employer to see it here.',
+                            'Post a Job on behalf of an employer to see it here.',
                             textAlign: TextAlign.center,
                             style: TextStyle(fontSize: 12, color: Color(0xFF71717A)),
                           ),
@@ -138,7 +138,7 @@ class _StaffJobsPageState extends ConsumerState<StaffJobsPage> {
                           ElevatedButton.icon(
                             onPressed: () => context.go('/staff/jobs/new'),
                             icon: const Icon(Icons.add_rounded, size: 14),
-                            label: const Text('Post your first job', style: TextStyle(fontWeight: FontWeight.w700)),
+                            label: const Text('Post Your First Job', style: TextStyle(fontWeight: FontWeight.w700)),
                             style: ElevatedButton.styleFrom(
                               backgroundColor: const Color(0xFFF97316),
                               foregroundColor: Colors.white,

@@ -181,7 +181,7 @@ class _EmployerPostJobPageState extends ConsumerState<EmployerPostJobPage> {
           icon: const Icon(Icons.arrow_back_rounded),
           onPressed: () => _step > 0 ? _back() : context.go('/employer/dashboard'),
         ),
-        title: const Text('Post a job', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700)),
+        title: const Text('Post a Job', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700)),
         actions: const [ThemeToggle(), SizedBox(width: 12)],
       ),
       body: SafeArea(
@@ -986,7 +986,7 @@ class _PreviewStep extends ConsumerWidget {
               SizedBox(width: 8),
               Expanded(
                 child: Text(
-                  'This job stays live for 45 days. You can repost it from "My jobs" any time.',
+                  'This job stays live for 45 days. You can repost it from "My Jobs" any time.',
                   style: TextStyle(fontSize: 11.5, height: 1.4, color: Color(0xFF7C2D12), fontWeight: FontWeight.w600),
                 ),
               ),

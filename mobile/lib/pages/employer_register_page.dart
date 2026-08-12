@@ -53,18 +53,18 @@ class _EmployerRegisterPageState extends ConsumerState<EmployerRegisterPage> {
   @override
   Widget build(BuildContext context) {
     return AuthScaffold(
-      title: 'Create your employer account',
-      subtitle: "Job posting is free. Subscribe only when you're ready to search candidates.",
+      title: 'Create Your Employer Account',
+      subtitle: "Post Jobs for Free. Subscribe Only When Candidates Apply.",
       bgImage: 'assets/images/background-02.jpg',
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          ItrTextField(label: 'Your name', controller: _name, placeholder: 'e.g. Priya Iyer', error: _errors['name'], autofocus: true),
+          ItrTextField(label: 'Your Name', controller: _name, placeholder: 'e.g. Priya Iyer', error: _errors['name'], autofocus: true),
           const SizedBox(height: 14),
-          ItrTextField(label: 'Company name', controller: _company, placeholder: 'e.g. Zoho Corporation', error: _errors['company']),
+          ItrTextField(label: 'Employer / Company Name', controller: _company, placeholder: 'e.g. Zoho Corporation', error: _errors['company']),
           const SizedBox(height: 14),
           ItrTextField(
-            label: 'Mobile number',
+            label: 'Company Contact Number',
             controller: _mobile,
             placeholder: '9876543210',
             keyboardType: TextInputType.number,
@@ -74,12 +74,12 @@ class _EmployerRegisterPageState extends ConsumerState<EmployerRegisterPage> {
           ),
           const SizedBox(height: 14),
           ItrTextField(
-            label: 'Work email',
+            label: 'Company Email-ID',
             controller: _email,
             placeholder: 'you@company.com',
             keyboardType: TextInputType.emailAddress,
             error: _errors['email'],
-            hint: "We'll send a 6-digit code to verify.",
+            hint: "We'll send a 6-digit OTP to verify your account.",
           ),
           const SizedBox(height: 20),
           ElevatedButton(
@@ -106,7 +106,7 @@ class _EmployerRegisterPageState extends ConsumerState<EmployerRegisterPage> {
             child: Wrap(
               alignment: WrapAlignment.center,
               children: [
-                const Text('Already have an account? ', style: TextStyle(fontSize: 12)),
+                const Text('Already have an Account? ', style: TextStyle(fontSize: 12)),
                 GestureDetector(
                   onTap: () => context.go('/employer/login'),
                   child: const Text(

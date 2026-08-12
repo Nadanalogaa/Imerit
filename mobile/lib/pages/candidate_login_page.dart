@@ -43,7 +43,7 @@ class _CandidateLoginPageState extends ConsumerState<CandidateLoginPage> {
   @override
   Widget build(BuildContext context) {
     return AuthScaffold(
-      title: 'Welcome back',
+      title: 'Welcome Back',
       subtitle:
           'Sign in to your candidate account with a one-time email code.',
       child: Column(

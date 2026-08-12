@@ -80,7 +80,7 @@ class _EmployerLoginPageState extends ConsumerState<EmployerLoginPage> {
   @override
   Widget build(BuildContext context) {
     return AuthScaffold(
-      title: 'Welcome back',
+      title: 'Welcome Back',
       subtitle: _mode == _Mode.otp
           ? 'Sign in to your employer account with a one-time email code.'
           : 'Sign in with the credentials your recruiter shared.',

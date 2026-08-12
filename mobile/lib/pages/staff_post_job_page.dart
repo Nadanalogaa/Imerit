@@ -198,7 +198,7 @@ class _StaffPostJobPageState extends ConsumerState<StaffPostJobPage> {
   @override
   Widget build(BuildContext context) {
     return StaffScaffold(
-      title: 'Post a job',
+      title: 'Post a Job',
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(20),
         child: Column(

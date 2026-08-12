@@ -35,7 +35,7 @@ class MyApplicationsPage extends ConsumerWidget {
           icon: const Icon(Icons.arrow_back_rounded),
           onPressed: () => context.go('/candidate/dashboard'),
         ),
-        title: const Text('My applications', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700)),
+        title: const Text('My Applications', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700)),
         actions: const [ThemeToggle(), SizedBox(width: 12)],
       ),
       body: SingleChildScrollView(
@@ -119,7 +119,7 @@ class _EmptyState extends StatelessWidget {
                 padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(999)),
               ),
-              child: const Text('Browse jobs', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700)),
+              child: const Text('Browse Jobs', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700)),
             ),
           ],
         ),

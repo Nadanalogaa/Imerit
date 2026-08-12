@@ -134,7 +134,7 @@ class _EmptyState extends StatelessWidget {
             ElevatedButton.icon(
               onPressed: () => Navigator.of(context).pushNamed('/employer/jobs/new'),
               icon: const Icon(Icons.add_rounded, size: 14),
-              label: const Text('Post your first job', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700)),
+              label: const Text('Post Your First Job', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700)),
               style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF0EA5E9), foregroundColor: Colors.white, padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(999))),
             ),
           ],

@@ -174,7 +174,7 @@ class _JobBrowsePageState extends ConsumerState<JobBrowsePage> {
           icon: const Icon(Icons.arrow_back_rounded),
           onPressed: () => context.go('/candidate/dashboard'),
         ),
-        title: const Text('Browse jobs', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700)),
+        title: const Text('Browse Jobs', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700)),
         actions: const [ThemeToggle(), SizedBox(width: 12)],
       ),
       body: RefreshIndicator(

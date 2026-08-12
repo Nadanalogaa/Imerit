@@ -164,7 +164,7 @@ class EmployerDashboardPage extends ConsumerWidget {
               childAspectRatio: 1.05,
               children: [
                 _action(isDark, Icons.search_rounded, const [Color(0xFF0EA5E9), Color(0xFF06B6D4)], 'Search candidates', sub != null ? 'Browse + view full CVs.' : 'Browse profiles. Subscribe to view CVs.', () => context.go('/employer/candidates')),
-                _action(isDark, Icons.work_rounded, const [Color(0xFF8B5CF6), Color(0xFFD946EF)], 'Post a job', 'Free. List a new role in 2 mins.', () => context.go('/employer/jobs/new')),
+                _action(isDark, Icons.work_rounded, const [Color(0xFF8B5CF6), Color(0xFFD946EF)], 'Post a Job', 'Free. List a new role in 2 mins.', () => context.go('/employer/jobs/new')),
                 _action(isDark, Icons.shield_rounded, const [Color(0xFFF97316), Color(0xFFD97706)], 'My posted jobs', 'Track posts + ranked applicants.', () => context.go('/employer/my-jobs')),
                 _action(isDark, Icons.credit_card_rounded, const [Color(0xFF10B981), Color(0xFF14B8A6)], 'Subscription', sub != null ? 'Active · expires ${_formatDate(DateTime.parse(sub.expiresAt))}' : 'Pick an SME or Enterprise plan.', () => context.go('/employer/subscribe')),
               ],

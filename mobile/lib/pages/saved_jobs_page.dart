@@ -81,7 +81,7 @@ class SavedJobsPage extends ConsumerWidget {
                           padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
                           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(999)),
                         ),
-                        child: const Text('Browse jobs', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700)),
+                        child: const Text('Browse Jobs', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700)),
                       ),
                     ],
                   ),

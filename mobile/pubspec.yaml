@@ -54,6 +54,11 @@ dependencies:
   # runs in our backend (/subscriptions/verify).
   razorpay_flutter: ^1.4.0
 
+  # Google Fonts — used to bring Lato into the app (matches the web
+  # site's font). Loads at runtime from fonts.google.com the first
+  # time an app launches, then caches locally.
+  google_fonts: ^6.2.1
+
 dev_dependencies:
   flutter_test:
     sdk: flutter

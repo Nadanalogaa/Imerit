@@ -67,7 +67,7 @@ class _CandidateRegisterPageState extends ConsumerState<CandidateRegisterPage> {
   @override
   Widget build(BuildContext context) {
     return AuthScaffold(
-      title: 'Create your candidate account',
+      title: 'Create Your Candidate Account',
       subtitle: 'Profile posting is free. Takes less than a minute.',
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -124,7 +124,7 @@ class _CandidateRegisterPageState extends ConsumerState<CandidateRegisterPage> {
             child: Wrap(
               alignment: WrapAlignment.center,
               children: [
-                const Text('Already have an account? ', style: TextStyle(fontSize: 12)),
+                const Text('Already have an Account? ', style: TextStyle(fontSize: 12)),
                 GestureDetector(
                   onTap: () => context.go('/candidate/login'),
                   child: const Text(
