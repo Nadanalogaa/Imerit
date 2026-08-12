@@ -146,12 +146,16 @@ export function CandidateProfileForm() {
  if (photo !== profile.photoDataUrl) patch(user.id, { photoDataUrl: photo });
  }, [photo, profile.photoDataUrl, patch, user.id]);
 
- // Scroll to the top of the page whenever the wizard step changes so the
- // reader sees the page title + step indicator + fresh step from its
- // beginning — instead of landing mid-form where the previous step's
- // footer used to be.
+ // Scroll back to the page header after each step change. We blur the
+ // active input first so the browser doesn't keep the old field pinned
+ // in view and fight the reset.
  useEffect(() => {
+ const active = document.activeElement;
+ if (active instanceof HTMLElement) active.blur();
+ const frame = window.requestAnimationFrame(() => {
  window.scrollTo({ top: 0, behavior: "smooth" });
+ });
+ return () => window.cancelAnimationFrame(frame);
  }, [step]);
 
  const handleNext = () => {
@@ -478,4 +482,3 @@ export function CandidateProfileForm() {
  </div>
  );
 }
-

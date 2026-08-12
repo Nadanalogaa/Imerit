@@ -50,6 +50,7 @@ class _CandidateProfileFormPageState
     // hasClients: the controller might not be attached yet (very first
     // render). animateTo throws in that case, so guard.
     if (!_scroll.hasClients) return;
+    FocusManager.instance.primaryFocus?.unfocus();
     _scroll.animateTo(
       0,
       duration: const Duration(milliseconds: 300),
@@ -767,4 +768,3 @@ class _LocationSection extends StatelessWidget {
     );
   }
 }
-

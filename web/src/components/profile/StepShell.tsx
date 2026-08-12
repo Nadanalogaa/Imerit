@@ -17,14 +17,16 @@ export function StepShell({
  children,
  onBack,
  onNext,
- nextLabel = "Continue",
- isLast = false,
+  nextLabel = "Continue",
+  isLast = false,
 }: Props) {
  const handleNavigation = (callback: () => void) => {
+   const active = document.activeElement;
+   if (active instanceof HTMLElement) active.blur();
    callback();
-   setTimeout(() => {
+   requestAnimationFrame(() => {
      window.scrollTo({ top: 0, behavior: "smooth" });
-   }, 0);
+   });
  };
 
  return (

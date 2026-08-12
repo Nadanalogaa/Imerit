@@ -214,6 +214,18 @@ export function JobFormWizard({
   const [logoUrl, setLogoUrl] = useState<string | null>(initialValues?.logoUrl ?? null);
   const [logoDirty, setLogoDirty] = useState(false);
 
+  // Reset scroll after each step so the page header is visible again.
+  // Blur first so the focused field doesn't keep the viewport anchored
+  // somewhere in the middle of the old step.
+  useEffect(() => {
+    const active = document.activeElement;
+    if (active instanceof HTMLElement) active.blur();
+    const frame = window.requestAnimationFrame(() => {
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    });
+    return () => window.cancelAnimationFrame(frame);
+  }, [step]);
+
   // Re-seed when initialValues arrive asynchronously (e.g. edit page waits
   // for the job fetch, then hands over the values). Keeps the wizard from
   // rendering blank while the parent loads.

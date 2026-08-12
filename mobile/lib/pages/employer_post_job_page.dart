@@ -40,6 +40,7 @@ class EmployerPostJobPage extends ConsumerStatefulWidget {
 class _EmployerPostJobPageState extends ConsumerState<EmployerPostJobPage> {
   int _step = 0;
   final _pager = PageController();
+  late final List<ScrollController> _scrolls;
 
   // Step 1 — Basics
   final _title = TextEditingController();
@@ -64,11 +65,20 @@ class _EmployerPostJobPageState extends ConsumerState<EmployerPostJobPage> {
   Map<String, String?> _errors = {};
 
   @override
+  void initState() {
+    super.initState();
+    _scrolls = List.generate(_wizardSteps.length, (_) => ScrollController());
+  }
+
+  @override
   void dispose() {
     _title.dispose();
     _description.dispose();
     _contactEmail.dispose();
     _pager.dispose();
+    for (final controller in _scrolls) {
+      controller.dispose();
+    }
     super.dispose();
   }
 
@@ -111,6 +121,7 @@ class _EmployerPostJobPageState extends ConsumerState<EmployerPostJobPage> {
       return;
     }
     HapticFeedback.lightImpact();
+    FocusManager.instance.primaryFocus?.unfocus();
     if (_step < _wizardSteps.length - 1) {
       setState(() => _step += 1);
       _pager.animateToPage(_step, duration: const Duration(milliseconds: 260), curve: Curves.easeOutCubic);
@@ -122,6 +133,7 @@ class _EmployerPostJobPageState extends ConsumerState<EmployerPostJobPage> {
   void _back() {
     if (_step == 0) return;
     HapticFeedback.selectionClick();
+    FocusManager.instance.primaryFocus?.unfocus();
     setState(() => _step -= 1);
     _pager.animateToPage(_step, duration: const Duration(milliseconds: 260), curve: Curves.easeOutCubic);
   }
@@ -197,9 +209,20 @@ class _EmployerPostJobPageState extends ConsumerState<EmployerPostJobPage> {
                 // Steps are gated by validation — swipe would let users skip
                 // required fields, so we lock it to programmatic control.
                 physics: const NeverScrollableScrollPhysics(),
-                onPageChanged: (i) => setState(() => _step = i),
+                onPageChanged: (i) {
+                  setState(() => _step = i);
+                  WidgetsBinding.instance.addPostFrameCallback((_) {
+                    final controller = _scrolls[i];
+                    if (!controller.hasClients) return;
+                    controller.animateTo(
+                      0,
+                      duration: const Duration(milliseconds: 260),
+                      curve: Curves.easeOutCubic,
+                    );
+                  });
+                },
                 children: [
-                  _StepScroll(child: _BasicsStep(
+                  _StepScroll(controller: _scrolls[0], child: _BasicsStep(
                     title: _title,
                     description: _description,
                     field: _field,
@@ -207,7 +230,7 @@ class _EmployerPostJobPageState extends ConsumerState<EmployerPostJobPage> {
                     errors: _errors,
                     isDark: isDark,
                   )),
-                  _StepScroll(child: _RoleStep(
+                  _StepScroll(controller: _scrolls[1], child: _RoleStep(
                     type: _type,
                     onType: (v) {
                       HapticFeedback.selectionClick();
@@ -224,7 +247,7 @@ class _EmployerPostJobPageState extends ConsumerState<EmployerPostJobPage> {
                     errors: _errors,
                     isDark: isDark,
                   )),
-                  _StepScroll(child: _SkillsStep(
+                  _StepScroll(controller: _scrolls[2], child: _SkillsStep(
                     field: _field ?? JobField.it,
                     skills: _skills,
                     onSkills: (v) => setState(() => _skills = v),
@@ -233,14 +256,14 @@ class _EmployerPostJobPageState extends ConsumerState<EmployerPostJobPage> {
                     errors: _errors,
                     isDark: isDark,
                   )),
-                  _StepScroll(child: _LocationStep(
+                  _StepScroll(controller: _scrolls[3], child: _LocationStep(
                     place: _place,
                     onPlace: (p) => setState(() => _place = p),
                     contactEmail: _contactEmail,
                     errors: _errors,
                     isDark: isDark,
                   )),
-                  _StepScroll(child: _PreviewStep(
+                  _StepScroll(controller: _scrolls[4], child: _PreviewStep(
                     title: _title.text.trim(),
                     description: _description.text.trim(),
                     field: _field,
@@ -276,12 +299,14 @@ class _EmployerPostJobPageState extends ConsumerState<EmployerPostJobPage> {
 // ---------------------------------------------------------------------------
 
 class _StepScroll extends StatelessWidget {
-  const _StepScroll({required this.child});
+  const _StepScroll({required this.controller, required this.child});
+  final ScrollController controller;
   final Widget child;
 
   @override
   Widget build(BuildContext context) {
     return SingleChildScrollView(
+      controller: controller,
       padding: const EdgeInsets.fromLTRB(20, 12, 20, 24),
       child: child,
     );
