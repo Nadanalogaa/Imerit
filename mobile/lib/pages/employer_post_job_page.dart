@@ -8,12 +8,14 @@ import '../store/auth_provider.dart';
 import '../store/jobs_provider.dart';
 import '../store/locations_provider.dart';
 import '../store/theme_provider.dart';
+import '../utils/industry_taxonomy.dart';
 import '../widgets/itr_text_field.dart';
 import '../widgets/location_picker.dart';
 import '../widgets/post_job/benefit_picker.dart';
 import '../widgets/post_job/job_type_grid.dart';
 import '../widgets/post_job/salary_range_sheet.dart';
 import '../widgets/post_job/skill_chip_input.dart';
+import '../widgets/profile/industry_department_picker.dart';
 import '../widgets/profile/segmented_toggle.dart';
 import '../widgets/profile/step_indicator.dart';
 import '../widgets/theme_toggle.dart';
@@ -47,11 +49,12 @@ class _EmployerPostJobPageState extends ConsumerState<EmployerPostJobPage> {
   final _title = TextEditingController();
   final _description = TextEditingController();
   JobField? _field;
-  // Optional industry tag — mirrors the "Select Industry" dropdown web
-  // added to the Basics step. Sent through to the API as `industry`
-  // when set; skipped from the payload when the user leaves it on the
-  // default placeholder.
+  // Optional industry + department tags — mirror the paired dropdowns
+  // web added to the Basics step. Sent through to the API as `industry`
+  // and `department` when set; skipped from the payload when the user
+  // leaves them on the default placeholder.
   String? _industry;
+  String? _department;
 
   // Step 2 — Role
   JobType? _type;
@@ -183,6 +186,7 @@ class _EmployerPostJobPageState extends ConsumerState<EmployerPostJobPage> {
             contactEmail: _contactEmail.text.trim().isEmpty ? null : _contactEmail.text.trim(),
             contactMobile: _contactMobile.text.trim().isEmpty ? null : _contactMobile.text.trim(),
             industry: _industry,
+            department: _department,
           );
     } catch (err) {
       if (mounted) {
@@ -243,9 +247,17 @@ class _EmployerPostJobPageState extends ConsumerState<EmployerPostJobPage> {
                     title: _title,
                     description: _description,
                     field: _field,
-                    onField: (v) => setState(() => _field = v),
+                    onField: (v) => setState(() {
+                      _field = v;
+                      // Field drives the industry dropdown scope — clear any
+                      // stale industry that no longer fits.
+                      final scoped = industriesForField(v == JobField.it ? 'IT' : 'NON_IT');
+                      if (_industry != null && !scoped.contains(_industry)) _industry = null;
+                    }),
                     industry: _industry,
                     onIndustry: (v) => setState(() => _industry = v),
+                    department: _department,
+                    onDepartment: (v) => setState(() => _department = v),
                     errors: _errors,
                     isDark: isDark,
                   )),
@@ -397,29 +409,6 @@ class _WizardFooter extends StatelessWidget {
 // Step 1 — Basics: title, description, field
 // ---------------------------------------------------------------------------
 
-/// Curated 17-entry industry list — mirrors the "Select Industry"
-/// dropdown web added to the Basics step. Optional; sent through as
-/// `industry` on the API payload when set.
-const _industryOptions = <String>[
-  'Software/IT services',
-  'BPO/KPO/ITES',
-  'Healthcare/Pharma',
-  'Banking/Finance/Insurance',
-  'Manufacturing',
-  'Retail/Ecommerce',
-  'Education/EdTech',
-  'Logistics/Supply chain',
-  'Automobile',
-  'Construction/Real estate',
-  'Media/Entertainment',
-  'Telecom',
-  'Energy/Utilities',
-  'Hospitality/Travel',
-  'Agriculture/Agri-tech',
-  'Government/Public sector',
-  'Other',
-];
-
 class _BasicsStep extends StatelessWidget {
   const _BasicsStep({
     required this.title,
@@ -428,6 +417,8 @@ class _BasicsStep extends StatelessWidget {
     required this.onField,
     required this.industry,
     required this.onIndustry,
+    required this.department,
+    required this.onDepartment,
     required this.errors,
     required this.isDark,
   });
@@ -437,6 +428,8 @@ class _BasicsStep extends StatelessWidget {
   final ValueChanged<JobField> onField;
   final String? industry;
   final ValueChanged<String?> onIndustry;
+  final String? department;
+  final ValueChanged<String?> onDepartment;
   final Map<String, String?> errors;
   final bool isDark;
 
@@ -481,40 +474,18 @@ class _BasicsStep extends StatelessWidget {
         ),
         if (errors['field'] != null) _ErrorText(errors['field']!),
         const SizedBox(height: 14),
-        _LabelText('Select Industry'),
-        const SizedBox(height: 6),
-        DropdownButtonFormField<String>(
-          initialValue: industry,
-          isExpanded: true,
-          icon: Icon(Icons.expand_more_rounded, size: 18, color: isDark ? Colors.white.withValues(alpha: 0.55) : const Color(0xFF71717A)),
-          hint: Text(
-            'Select industry…',
-            style: TextStyle(fontSize: 13, color: isDark ? Colors.white.withValues(alpha: 0.35) : const Color(0xFFA1A1AA)),
-          ),
-          style: TextStyle(fontSize: 13.5, color: isDark ? Colors.white : const Color(0xFF09090B)),
-          dropdownColor: isDark ? const Color(0xFF18181B) : Colors.white,
-          decoration: InputDecoration(
-            isDense: true,
-            filled: true,
-            fillColor: isDark ? const Color(0xFF09090B) : Colors.white,
-            contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(14),
-              borderSide: BorderSide(color: isDark ? Colors.white.withValues(alpha: 0.12) : const Color(0xFFE4E4E7)),
-            ),
-            enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(14),
-              borderSide: BorderSide(color: isDark ? Colors.white.withValues(alpha: 0.12) : const Color(0xFFE4E4E7)),
-            ),
-            focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(14),
-              borderSide: const BorderSide(color: Color(0xFF0EA5E9), width: 1.5),
-            ),
-          ),
-          items: _industryOptions
-              .map((i) => DropdownMenuItem<String>(value: i, child: Text(i, overflow: TextOverflow.ellipsis)))
-              .toList(),
-          onChanged: onIndustry,
+        // Industry + Department pair — mirrors the 2026-08 web change to
+        // the Basics step. Backend already accepts both fields.
+        IndustryDepartmentPicker(
+          industry: industry,
+          department: department,
+          onIndustry: onIndustry,
+          onDepartment: onDepartment,
+          field: field == JobField.it
+              ? 'IT'
+              : field == JobField.nonIt
+                  ? 'NON_IT'
+                  : null,
         ),
       ],
     );

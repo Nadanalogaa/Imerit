@@ -1,15 +1,17 @@
 import 'api_client.dart';
 
-/// Wrapper over /profiles/me + /profiles/:userId + related PATCH
-/// endpoints. Same lazy-on-first-hit shape as the web app.
+/// Wrapper over the candidate + employer profile endpoints. Mirrors
+/// `web/src/lib/api/profile.ts`. Paths follow the backend router in
+/// `backend/src/routes/profile.routes.ts` (`/candidate/profile*` for
+/// the caller's own row, `/profiles/:userId` for someone else's).
 class ProfileApi {
   ProfileApi._();
   static final ProfileApi instance = ProfileApi._();
   final _c = ApiClient.instance;
 
-  /// Own profile — server returns { profile, user }.
+  /// Own candidate profile — server returns { profile }.
   Future<Map<String, dynamic>> getMine() async {
-    final res = await _c.get<Map<String, dynamic>>('/profiles/me');
+    final res = await _c.get<Map<String, dynamic>>('/candidate/profile');
     return res;
   }
 
@@ -21,32 +23,48 @@ class ProfileApi {
     return res['profile'] as Map<String, dynamic>;
   }
 
-  /// PATCH /profiles/me with a partial update. `data` uses the
+  /// PATCH /candidate/profile with a partial update. `data` uses the
   /// backend's field names + enum casing. Server merges into the
   /// existing row and returns the full profile.
   Future<Map<String, dynamic>> patchMine(Map<String, dynamic> data) async {
-    final res = await _c.patch<Map<String, dynamic>>('/profiles/me', data);
+    final res = await _c.patch<Map<String, dynamic>>('/candidate/profile', data);
     return res['profile'] as Map<String, dynamic>;
   }
 
-  /// PUT /profiles/me/education with the full desired list. Server
-  /// wipes + re-inserts so the frontend can just send the whole
-  /// education state on each save.
+  /// PUT /candidate/profile/education with the full desired list.
+  /// Server wipes + re-inserts so the client can send the whole
+  /// education state on each save. Backend expects `{education: [...]}`.
   Future<void> replaceEducation(List<Map<String, dynamic>> rows) =>
-      _c.request<void>('/profiles/me/education', RequestOpts(method: 'PUT', json: {'rows': rows}));
+      _c.request<void>('/candidate/profile/education',
+          RequestOpts(method: 'PUT', json: {'education': rows}));
 
-  /// PUT /profiles/me/experiences — same replace pattern.
+  /// PUT /candidate/profile/experiences — same replace pattern. Body
+  /// shape is `{experiences: [...]}`.
   Future<void> replaceExperiences(List<Map<String, dynamic>> rows) =>
-      _c.request<void>('/profiles/me/experiences', RequestOpts(method: 'PUT', json: {'rows': rows}));
+      _c.request<void>('/candidate/profile/experiences',
+          RequestOpts(method: 'PUT', json: {'experiences': rows}));
 
-  /// GET /employer/profile/me — own employer profile.
+  /// PUT /candidate/profile/projects — standalone / personal projects
+  /// (distinct from Experience.projects which are role-scoped). Body
+  /// shape is `{projects: [...]}`.
+  Future<void> replaceProjects(List<Map<String, dynamic>> rows) =>
+      _c.request<void>('/candidate/profile/projects',
+          RequestOpts(method: 'PUT', json: {'projects': rows}));
+
+  /// PUT /candidate/profile/certifications. Body shape is
+  /// `{certifications: [...]}`.
+  Future<void> replaceCertifications(List<Map<String, dynamic>> rows) =>
+      _c.request<void>('/candidate/profile/certifications',
+          RequestOpts(method: 'PUT', json: {'certifications': rows}));
+
+  /// GET /employer/profile — own employer profile.
   Future<Map<String, dynamic>> getMyEmployerProfile() async {
-    final res = await _c.get<Map<String, dynamic>>('/employer/profile/me');
+    final res = await _c.get<Map<String, dynamic>>('/employer/profile');
     return res['profile'] as Map<String, dynamic>;
   }
 
   Future<Map<String, dynamic>> patchMyEmployerProfile(Map<String, dynamic> data) async {
-    final res = await _c.patch<Map<String, dynamic>>('/employer/profile/me', data);
+    final res = await _c.patch<Map<String, dynamic>>('/employer/profile', data);
     return res['profile'] as Map<String, dynamic>;
   }
 }

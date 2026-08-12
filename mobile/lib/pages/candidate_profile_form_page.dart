@@ -11,6 +11,7 @@ import '../widgets/location_picker.dart';
 import '../widgets/profile/step_indicator.dart';
 import '../widgets/profile/step_shell.dart';
 import '../widgets/profile/photo_upload.dart';
+import '../widgets/profile/cv_upload.dart';
 import '../widgets/profile/education_step.dart';
 import '../widgets/profile/ambition_step.dart';
 import '../widgets/profile/about_you_step.dart';
@@ -87,6 +88,14 @@ class _CandidateProfileFormPageState
   // Portfolio / social links — LinkedIn, GitHub, Behance, custom "Other".
   List<ProfileLink> _links = const [];
 
+  // Naukri-style tags + CV attachment. Optional but rank-boosting.
+  String? _industry;
+  String? _department;
+  String? _cvUrl;
+  String? _cvFileName;
+  List<CandidateProject> _projects = const [];
+  List<Certification> _certifications = const [];
+
   // Template
   String? _templateId;
 
@@ -121,6 +130,12 @@ class _CandidateProfileFormPageState
     );
     _preferredDistrictIds = profile.preferredDistrictIds;
     _links = profile.links;
+    _industry = profile.industry;
+    _department = profile.department;
+    _cvUrl = profile.cvUrl;
+    _cvFileName = profile.cvFileName;
+    _projects = profile.projects;
+    _certifications = profile.certifications;
     _templateId = profile.selectedTemplateId;
   }
 
@@ -166,6 +181,12 @@ class _CandidateProfileFormPageState
       preferredDistrictIds:
           _preferredDistrictIds.isNotEmpty ? _preferredDistrictIds : current.preferredDistrictIds,
       links: _links.isNotEmpty ? _links : current.links,
+      industry: _industry ?? current.industry,
+      department: _department ?? current.department,
+      cvUrl: _cvUrl ?? current.cvUrl,
+      cvFileName: _cvFileName ?? current.cvFileName,
+      projects: _projects.isNotEmpty ? _projects : current.projects,
+      certifications: _certifications.isNotEmpty ? _certifications : current.certifications,
       preferredLocation:
           _derivedPreferredLabel(ref.read(locationsProvider), current) ?? current.preferredLocation,
     );
@@ -209,6 +230,12 @@ class _CandidateProfileFormPageState
           !RegExp(r'^[6-9]\d{9}$').hasMatch(_altMobile.text.trim())) {
         errs['altMobile'] = 'Enter a valid 10-digit number or leave blank';
       }
+      // "Where you live" is now required — parity with the 2026-08 web
+      // change. Employers use current-district for local-hire ranking, so
+      // an unset value dropped candidates out of the near-me lists.
+      if (_currentPlace.districtId == null) {
+        errs['currentPlace'] = 'Pick the district where you live';
+      }
       setState(() => _errors = errs);
       if (errs.isNotEmpty) return;
       final locData = ref.read(locationsProvider);
@@ -225,6 +252,8 @@ class _CandidateProfileFormPageState
           currentStreet: _currentPlace.street,
           preferredDistrictIds: _preferredDistrictIds,
           links: _links,
+          cvUrl: _cvUrl,
+          cvFileName: _cvFileName,
           // Keep the legacy display label in sync with the district picker so
           // cards/lists that read `preferredLocation` keep working.
           preferredLocation: _derivedPreferredLabel(locData, current),
@@ -279,6 +308,10 @@ class _CandidateProfileFormPageState
         }
       }
       if (_type == CandidateType.experienced) {
+        // Field selector is now required for experienced too — mirrors
+        // the 2026-08 web change. Industry taxonomy needs a field to
+        // scope the dropdown.
+        if (_field == null) errs['field'] = 'Pick IT or Non-IT';
         if (_years == null || _years! <= 0) errs['years'] = 'Enter years of experience';
         if (_topSkills.isEmpty) errs['topSkills'] = 'Add at least one skill';
         if (_experiences.isEmpty) {
@@ -295,7 +328,9 @@ class _CandidateProfileFormPageState
         current.copyWith(
           type: _type,
           internOrJob: _type == CandidateType.fresher ? _internOrJob : null,
-          field: _type == CandidateType.fresher ? _field : null,
+          // Field is now stored for both types — it drives the industry
+          // dropdown scope everywhere.
+          field: _field,
           itSpecialization:
               _type == CandidateType.fresher && _field == FieldKind.it ? _itSpec : null,
           itLanguages:
@@ -306,8 +341,15 @@ class _CandidateProfileFormPageState
           yearsOfExperience: _type == CandidateType.experienced ? _years : null,
           topSkills: _type == CandidateType.experienced ? _topSkills : null,
           experiences: _type == CandidateType.experienced ? _experiences : null,
+          industry: _industry,
+          department: _department,
         ),
       );
+      // Standalone projects + certifications persist through their own
+      // PUT endpoints — hand them to the notifier which fires-and-forgets
+      // the network call and updates local state immediately.
+      notifier.setProjects(user.id, _projects);
+      notifier.setCertifications(user.id, _certifications);
     }
 
     if (_step == _steps.length - 1) {
@@ -348,6 +390,12 @@ class _CandidateProfileFormPageState
           onPreferredDistrictIds: (v) => setState(() => _preferredDistrictIds = v),
           links: _links,
           onLinks: (v) => setState(() => _links = v),
+          cvUrl: _cvUrl,
+          cvFileName: _cvFileName,
+          onCv: (url, name) => setState(() {
+            _cvUrl = url;
+            _cvFileName = name;
+          }),
           errors: _errors,
         );
       case 1:
@@ -395,7 +443,13 @@ class _CandidateProfileFormPageState
           internOrJob: _internOrJob,
           onInternOrJob: (v) => setState(() => _internOrJob = v),
           field: _field,
-          onField: (v) => setState(() => _field = v),
+          onField: (v) => setState(() {
+            _field = v;
+            // Clear the industry when the field changes so we don't leave a
+            // stale IT industry sticking around on a Non-IT profile (or vice
+            // versa) — the taxonomy dropdown scopes by field.
+            _industry = null;
+          }),
           itSpec: _itSpec,
           onItSpec: (v) => setState(() => _itSpec = v),
           itLanguages: _itLanguages,
@@ -408,6 +462,14 @@ class _CandidateProfileFormPageState
           onTopSkills: (v) => setState(() => _topSkills = v),
           experiences: _experiences,
           onExperiences: (v) => setState(() => _experiences = v),
+          industry: _industry,
+          onIndustry: (v) => setState(() => _industry = v),
+          department: _department,
+          onDepartment: (v) => setState(() => _department = v),
+          projects: _projects,
+          onProjects: (v) => setState(() => _projects = v),
+          certifications: _certifications,
+          onCertifications: (v) => setState(() => _certifications = v),
           errors: _errors,
         );
       case 4:
@@ -560,6 +622,9 @@ class _PersonalStep extends StatelessWidget {
     required this.onPreferredDistrictIds,
     required this.links,
     required this.onLinks,
+    required this.cvUrl,
+    required this.cvFileName,
+    required this.onCv,
     required this.errors,
   });
 
@@ -575,6 +640,9 @@ class _PersonalStep extends StatelessWidget {
   final ValueChanged<List<String>> onPreferredDistrictIds;
   final List<ProfileLink> links;
   final ValueChanged<List<ProfileLink>> onLinks;
+  final String? cvUrl;
+  final String? cvFileName;
+  final void Function(String? dataUrl, String? fileName) onCv;
   final Map<String, String?> errors;
 
   @override
@@ -636,9 +704,11 @@ class _PersonalStep extends StatelessWidget {
         const SizedBox(height: 16),
         _LocationSection(
           title: 'Where you live',
-          subtitle: 'Optional — helps us show jobs near home.',
+          subtitle: 'Required — helps us show jobs near home and lets employers filter by district.',
           value: currentPlace,
           onChange: onCurrentPlace,
+          required: true,
+          error: errors['currentPlace'],
         ),
         const SizedBox(height: 12),
         _SectionShell(
@@ -648,6 +718,17 @@ class _PersonalStep extends StatelessWidget {
           child: DistrictMultiSelect(
             value: preferredDistrictIds,
             onChange: onPreferredDistrictIds,
+          ),
+        ),
+        const SizedBox(height: 12),
+        _SectionShell(
+          title: 'CV / Resume',
+          subtitle: 'PDF, DOC or DOCX up to 5 MB. Employers, admins, and staff can download it.',
+          icon: Icons.description_rounded,
+          child: CvUpload(
+            value: cvUrl,
+            fileName: cvFileName,
+            onChange: onCv,
           ),
         ),
         const SizedBox(height: 12),
@@ -725,6 +806,8 @@ class _LocationSection extends StatelessWidget {
     required this.value,
     required this.onChange,
     this.allowStreet = true,
+    this.required = false,
+    this.error,
   });
 
   final String title;
@@ -732,6 +815,8 @@ class _LocationSection extends StatelessWidget {
   final PlaceRef value;
   final ValueChanged<PlaceRef> onChange;
   final bool allowStreet;
+  final bool required;
+  final String? error;
 
   @override
   Widget build(BuildContext context) {
@@ -740,7 +825,7 @@ class _LocationSection extends StatelessWidget {
       decoration: BoxDecoration(
         color: const Color(0xFFFAFAFA),
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: const Color(0xFFE4E4E7)),
+        border: Border.all(color: error != null ? const Color(0xFFFCA5A5) : const Color(0xFFE4E4E7)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -752,7 +837,14 @@ class _LocationSection extends StatelessWidget {
                 style: const TextStyle(fontSize: 13.5, fontWeight: FontWeight.w700, color: Color(0xFF18181B)),
               ),
               const SizedBox(width: 6),
-              const Text('(optional)', style: TextStyle(fontSize: 11, color: Color(0xFFA1A1AA))),
+              Text(
+                required ? '(required)' : '(optional)',
+                style: TextStyle(
+                  fontSize: 11,
+                  color: required ? const Color(0xFFE11D48) : const Color(0xFFA1A1AA),
+                  fontWeight: required ? FontWeight.w700 : FontWeight.w400,
+                ),
+              ),
             ],
           ),
           const SizedBox(height: 4),
@@ -763,6 +855,13 @@ class _LocationSection extends StatelessWidget {
             onChange: onChange,
             allowStreet: allowStreet,
           ),
+          if (error != null) ...[
+            const SizedBox(height: 8),
+            Text(
+              error!,
+              style: const TextStyle(fontSize: 11.5, color: Color(0xFFB91C1C), fontWeight: FontWeight.w600),
+            ),
+          ],
         ],
       ),
     );

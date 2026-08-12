@@ -239,6 +239,8 @@ class Job {
     this.skills = const [],
     this.benefits = const [],
     this.contactEmail,
+    this.industry,
+    this.department,
     required this.postedAt,
     required this.expiresAt,
   });
@@ -264,6 +266,11 @@ class Job {
   final List<String> skills;
   final List<JobBenefit> benefits;
   final String? contactEmail;
+  /// Naukri-style industry tag on the job. Nullable; set from the
+  /// Basics step of the post-job wizard.
+  final String? industry;
+  /// Naukri-style department tag on the job. Nullable.
+  final String? department;
   final String postedAt;
   final String expiresAt;
 
@@ -296,6 +303,8 @@ class Job {
         'skills': skills,
         'benefits': benefits.map(benefitKey).toList(),
         if (contactEmail != null) 'contactEmail': contactEmail,
+        if (industry != null) 'industry': industry,
+        if (department != null) 'department': department,
         'postedAt': postedAt,
         'expiresAt': expiresAt,
       };
@@ -334,6 +343,8 @@ class Job {
           .whereType<JobBenefit>()
           .toList(),
       contactEmail: j['contactEmail'] as String?,
+      industry: j['industry'] as String?,
+      department: j['department'] as String?,
       postedAt: postedAt,
       expiresAt: expiresAt,
     );
@@ -358,6 +369,8 @@ class Job {
     List<String>? skills,
     List<JobBenefit>? benefits,
     String? contactEmail,
+    String? industry,
+    String? department,
     String? postedAt,
     String? expiresAt,
   }) =>
@@ -383,6 +396,8 @@ class Job {
         skills: skills ?? this.skills,
         benefits: benefits ?? this.benefits,
         contactEmail: contactEmail ?? this.contactEmail,
+        industry: industry ?? this.industry,
+        department: department ?? this.department,
         postedAt: postedAt ?? this.postedAt,
         expiresAt: expiresAt ?? this.expiresAt,
       );
@@ -668,6 +683,8 @@ class JobsNotifier extends Notifier<List<Job>> {
           .whereType<JobBenefit>()
           .toList(),
       contactEmail: j['contactEmail'] as String?,
+      industry: j['industry'] as String?,
+      department: j['department'] as String?,
       postedAt: j['postedAt'] as String,
       expiresAt: j['expiresAt'] as String,
     );
@@ -715,6 +732,7 @@ class JobsNotifier extends Notifier<List<Job>> {
     String? contactEmail,
     String? contactMobile,
     String? industry,
+    String? department,
   }) async {
     if (!apiEnabled) {
       return addJob(
@@ -732,7 +750,8 @@ class JobsNotifier extends Notifier<List<Job>> {
       pincode: pincode, street: street, field: field, type: type,
       experience: experience, yearsMin: yearsMin, yearsMax: yearsMax,
       salaryRange: salaryRange, skills: skills, benefits: benefits,
-      contactEmail: contactEmail, contactMobile: contactMobile, industry: industry,
+      contactEmail: contactEmail, contactMobile: contactMobile,
+      industry: industry, department: department,
     );
     final row = await JobsApi.instance.employerCreate(input);
     final job = _fromApi(row);
@@ -826,6 +845,7 @@ class JobsNotifier extends Notifier<List<Job>> {
     String? contactEmail,
     String? contactMobile,
     String? industry,
+    String? department,
   }) {
     final typeStr = _typeKey(type).toUpperCase();
     return {
@@ -850,6 +870,7 @@ class JobsNotifier extends Notifier<List<Job>> {
       if (contactEmail != null) 'contactEmail': contactEmail,
       if (contactMobile != null && contactMobile.isNotEmpty) 'contactMobile': contactMobile,
       if (industry != null && industry.isNotEmpty) 'industry': industry,
+      if (department != null && department.isNotEmpty) 'department': department,
     };
   }
 

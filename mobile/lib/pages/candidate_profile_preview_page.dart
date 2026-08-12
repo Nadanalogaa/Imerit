@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import '../store/auth_provider.dart';
 import '../store/profile_provider.dart';
 import '../store/theme_provider.dart';
+import '../widgets/profile/cv_download_button.dart';
 import '../widgets/templates/template_data.dart';
 import '../widgets/templates/render_template.dart';
 import '../widgets/theme_toggle.dart';
@@ -15,6 +16,72 @@ const _templateLabels = {
   'corporate': 'Corporate Sidebar',
   'tech_mono': 'Tech / Dark Mono',
 };
+
+class _InfoStrip extends StatelessWidget {
+  const _InfoStrip({required this.profile, required this.isDark});
+  final CandidateProfile profile;
+  final bool isDark;
+
+  @override
+  Widget build(BuildContext context) {
+    final bits = <Widget>[];
+    if ((profile.preferredLocation ?? '').isNotEmpty) {
+      bits.add(_infoPill(Icons.place_rounded, profile.preferredLocation!));
+    }
+    if ((profile.industry ?? '').isNotEmpty) {
+      bits.add(_infoPill(Icons.factory_rounded, profile.industry!));
+    }
+    if ((profile.department ?? '').isNotEmpty) {
+      bits.add(_infoPill(Icons.workspaces_rounded, profile.department!));
+    }
+    if (bits.isEmpty && (profile.cvUrl ?? '').isEmpty) return const SizedBox.shrink();
+    return Container(
+      margin: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      decoration: BoxDecoration(
+        color: isDark ? Colors.white.withValues(alpha: 0.05) : const Color(0xFFFAFAFA),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: isDark ? Colors.white.withValues(alpha: 0.08) : const Color(0xFFE4E4E7)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          if (bits.isNotEmpty)
+            Wrap(spacing: 6, runSpacing: 6, children: bits),
+          if ((profile.cvUrl ?? '').isNotEmpty) ...[
+            if (bits.isNotEmpty) const SizedBox(height: 8),
+            Align(
+              alignment: Alignment.centerLeft,
+              child: CvDownloadButton(
+                dataUrl: profile.cvUrl!,
+                fileName: profile.cvFileName,
+                compact: true,
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _infoPill(IconData icon, String text) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF97316).withValues(alpha: 0.10),
+        borderRadius: BorderRadius.circular(999),
+      ),
+      child: Row(mainAxisSize: MainAxisSize.min, children: [
+        Icon(icon, size: 11, color: const Color(0xFFC2410C)),
+        const SizedBox(width: 4),
+        ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 220),
+          child: Text(text, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: Color(0xFFC2410C))),
+        ),
+      ]),
+    );
+  }
+}
 
 class CandidateProfilePreviewPage extends ConsumerWidget {
   const CandidateProfilePreviewPage({super.key});
@@ -121,6 +188,10 @@ class CandidateProfilePreviewPage extends ConsumerWidget {
       ),
       body: Column(
         children: [
+          // Info strip — mirrors the small strip web added below the header
+          // on the profile preview. Shows preferred location, industry,
+          // department, and a CV download when one's attached.
+          _InfoStrip(profile: profile, isDark: isDark),
           // Live preview area
           Expanded(
             child: Padding(

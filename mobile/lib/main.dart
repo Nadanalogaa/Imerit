@@ -29,8 +29,8 @@ Future<void> main() async {
   // show up here too.
   final user = container.read(authProvider);
   if (user?.role == Role.candidate) {
-    unawaited(container.read(profileProvider.notifier).fetchMine());
-    unawaited(container.read(applicationsProvider.notifier).fetchMine(user!.id));
+    unawaited(container.read(profileProvider.notifier).fetchMine(user!.id));
+    unawaited(container.read(applicationsProvider.notifier).fetchMine(user.id));
   }
   runApp(
     UncontrolledProviderScope(

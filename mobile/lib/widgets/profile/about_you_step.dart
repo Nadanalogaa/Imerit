@@ -2,9 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../store/profile_provider.dart';
 import '../../store/theme_provider.dart';
-import 'segmented_toggle.dart';
+import 'certifications_editor.dart';
 import 'chip_input.dart';
 import 'experience_list.dart';
+import 'industry_department_picker.dart';
+import 'projects_editor.dart';
+import 'segmented_toggle.dart';
 
 const _itSpecs = [
   'Artificial Intelligence',
@@ -56,6 +59,14 @@ class AboutYouStepWidget extends ConsumerWidget {
     required this.onTopSkills,
     required this.experiences,
     required this.onExperiences,
+    required this.industry,
+    required this.onIndustry,
+    required this.department,
+    required this.onDepartment,
+    required this.projects,
+    required this.onProjects,
+    required this.certifications,
+    required this.onCertifications,
     required this.errors,
   });
 
@@ -77,6 +88,14 @@ class AboutYouStepWidget extends ConsumerWidget {
   final ValueChanged<List<String>> onTopSkills;
   final List<WorkExperience> experiences;
   final ValueChanged<List<WorkExperience>> onExperiences;
+  final String? industry;
+  final ValueChanged<String?> onIndustry;
+  final String? department;
+  final ValueChanged<String?> onDepartment;
+  final List<CandidateProject> projects;
+  final ValueChanged<List<CandidateProject>> onProjects;
+  final List<Certification> certifications;
+  final ValueChanged<List<Certification>> onCertifications;
   final Map<String, String?> errors;
 
   @override
@@ -151,6 +170,8 @@ class AboutYouStepWidget extends ConsumerWidget {
                   : _ExperiencedBranch(
                       key: const ValueKey('exp'),
                       isDark: isDark,
+                      field: field,
+                      onField: onField,
                       years: years,
                       onYears: onYears,
                       topSkills: topSkills,
@@ -163,6 +184,43 @@ class AboutYouStepWidget extends ConsumerWidget {
         if (errors['type'] != null && errors['type']!.isNotEmpty) ...[
           const SizedBox(height: 10),
           _ErrorBanner(errors['type']!),
+        ],
+        if (type != null) ...[
+          const SizedBox(height: 18),
+          _Group(
+            isDark: isDark,
+            icon: Icons.factory_rounded,
+            iconColor: const Color(0xFFEA580C),
+            label: 'Industry & department',
+            child: IndustryDepartmentPicker(
+              industry: industry,
+              department: department,
+              onIndustry: onIndustry,
+              onDepartment: onDepartment,
+              field: field == FieldKind.it
+                  ? 'IT'
+                  : field == FieldKind.nonIt
+                      ? 'NON_IT'
+                      : null,
+              dense: true,
+            ),
+          ),
+          const SizedBox(height: 18),
+          _Group(
+            isDark: isDark,
+            icon: Icons.rocket_launch_rounded,
+            iconColor: const Color(0xFFEA580C),
+            label: 'Personal projects',
+            child: ProjectsEditor(value: projects, onChange: onProjects),
+          ),
+          const SizedBox(height: 18),
+          _Group(
+            isDark: isDark,
+            icon: Icons.workspace_premium_rounded,
+            iconColor: const Color(0xFFEA580C),
+            label: 'Certifications',
+            child: CertificationsEditor(value: certifications, onChange: onCertifications),
+          ),
         ],
       ],
     );
@@ -302,6 +360,8 @@ class _ExperiencedBranch extends StatefulWidget {
   const _ExperiencedBranch({
     super.key,
     required this.isDark,
+    required this.field,
+    required this.onField,
     required this.years,
     required this.onYears,
     required this.topSkills,
@@ -312,6 +372,8 @@ class _ExperiencedBranch extends StatefulWidget {
   });
 
   final bool isDark;
+  final FieldKind? field;
+  final ValueChanged<FieldKind> onField;
   final int? years;
   final ValueChanged<int?> onYears;
   final List<String> topSkills;
@@ -344,6 +406,25 @@ class _ExperiencedBranchState extends State<_ExperiencedBranch> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
+        _Group(
+          isDark: widget.isDark,
+          icon: Icons.auto_awesome_rounded,
+          iconColor: const Color(0xFF7C3AED),
+          label: 'Which field do you work in?',
+          child: SegmentedToggle<FieldKind>(
+            value: widget.field,
+            onChange: widget.onField,
+            options: const [
+              SegOption(id: FieldKind.it, label: 'IT', icon: Icons.code_rounded),
+              SegOption(id: FieldKind.nonIt, label: 'Non-IT', icon: Icons.business_center_rounded),
+            ],
+          ),
+        ),
+        if (widget.errors['field'] != null) ...[
+          const SizedBox(height: 6),
+          _ErrorBanner(widget.errors['field']!),
+        ],
+        const SizedBox(height: 16),
         _Group(
           isDark: widget.isDark,
           icon: Icons.work_rounded,

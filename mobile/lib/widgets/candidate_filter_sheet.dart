@@ -8,6 +8,7 @@ import '../store/profile_provider.dart';
 import '../store/theme_provider.dart';
 import '../utils/distance.dart';
 import '../utils/skill_synonyms.dart';
+import 'profile/industry_department_picker.dart';
 
 /// How the candidate list is ordered. Skill-match sort ranks candidates by
 /// what fraction of the employer's required-skill set they have; falls back
@@ -28,6 +29,8 @@ class CandidateFilterState {
     this.skills = const [],
     this.nearJobId,
     this.maxDistanceKm,
+    this.industry,
+    this.department,
     this.sort = CandidateSort.skillMatch,
   });
 
@@ -59,6 +62,12 @@ class CandidateFilterState {
   final String? nearJobId;
   final double? maxDistanceKm;
 
+  /// Naukri-style industry / department facets. Filter is strict: the
+  /// candidate's profile.industry / profile.department must match. Nulls
+  /// mean "any".
+  final String? industry;
+  final String? department;
+
   final CandidateSort sort;
 
   bool get isDefault =>
@@ -69,7 +78,9 @@ class CandidateFilterState {
       yearsMax == null &&
       educationLevels.isEmpty &&
       skills.isEmpty &&
-      nearJobId == null;
+      nearJobId == null &&
+      industry == null &&
+      department == null;
 
   int get activeCount =>
       (districtIds.isNotEmpty ? 1 : 0) +
@@ -78,7 +89,9 @@ class CandidateFilterState {
       ((yearsMin != null || yearsMax != null) ? 1 : 0) +
       (educationLevels.isNotEmpty ? 1 : 0) +
       (skills.isNotEmpty ? 1 : 0) +
-      (nearJobId != null ? 1 : 0);
+      (nearJobId != null ? 1 : 0) +
+      (industry != null ? 1 : 0) +
+      (department != null ? 1 : 0);
 
   CandidateFilterState copyWith({
     List<String>? districtIds,
@@ -90,6 +103,8 @@ class CandidateFilterState {
     List<String>? skills,
     String? Function()? nearJobId,
     double? Function()? maxDistanceKm,
+    String? Function()? industry,
+    String? Function()? department,
     CandidateSort? sort,
   }) =>
       CandidateFilterState(
@@ -104,6 +119,8 @@ class CandidateFilterState {
         nearJobId: nearJobId != null ? nearJobId() : this.nearJobId,
         maxDistanceKm:
             maxDistanceKm != null ? maxDistanceKm() : this.maxDistanceKm,
+        industry: industry != null ? industry() : this.industry,
+        department: department != null ? department() : this.department,
         sort: sort ?? this.sort,
       );
 
@@ -119,6 +136,8 @@ class CandidateFilterState {
         'skills': skills,
         if (nearJobId != null) 'nearJobId': nearJobId,
         if (maxDistanceKm != null) 'maxDistanceKm': maxDistanceKm,
+        if (industry != null) 'industry': industry,
+        if (department != null) 'department': department,
         'sort': sort.name,
       };
 
@@ -143,6 +162,8 @@ class CandidateFilterState {
       skills: ((j['skills'] as List<dynamic>?) ?? const []).cast<String>(),
       nearJobId: j['nearJobId'] as String?,
       maxDistanceKm: (j['maxDistanceKm'] as num?)?.toDouble(),
+      industry: j['industry'] as String?,
+      department: j['department'] as String?,
       sort: CandidateSort.values.firstWhere(
         (s) => s.name == j['sort'],
         orElse: () => CandidateSort.skillMatch,
@@ -174,6 +195,8 @@ class CandidateFilterState {
       final has = p.education.any((e) => e.enabled && educationLevels.contains(e.level));
       if (!has) return false;
     }
+    if (industry != null && p.industry != industry) return false;
+    if (department != null && p.department != department) return false;
     // Skills are ranking-only now (see skillMatchScore). Previously an
     // AND-strict filter — a 2-of-3 candidate for a 3-skill requirement
     // would be hidden entirely. Now partial matches survive into the pool
@@ -567,6 +590,29 @@ class _CandidateFilterSheetState extends ConsumerState<CandidateFilterSheet> {
                         },
                       );
                     }).toList(),
+                  ),
+                  const SizedBox(height: 22),
+                  _FacetLabel('Industry & department'),
+                  const SizedBox(height: 8),
+                  IndustryDepartmentPicker(
+                    industry: _state.industry,
+                    department: _state.department,
+                    onIndustry: (v) {
+                      HapticFeedback.selectionClick();
+                      setState(() => _state = _state.copyWith(industry: () => v));
+                    },
+                    onDepartment: (v) {
+                      HapticFeedback.selectionClick();
+                      setState(() => _state = _state.copyWith(department: () => v));
+                    },
+                    field: _state.field == JobField.it
+                        ? 'IT'
+                        : _state.field == JobField.nonIt
+                            ? 'NON_IT'
+                            : null,
+                    industryHint: 'Any industry',
+                    departmentHint: 'Any department',
+                    dense: true,
                   ),
                   const SizedBox(height: 22),
                   _FacetLabel('Skills required'),

@@ -74,6 +74,81 @@ export function CreativeTemplate({ user, profile }: TemplateProps) {
  <p className="text-[10px] font-bold text-fuchsia-600">{formatPeriod(e.fromDate, e.toDate)}</p>
  </div>
  <p className="text-orange-600">{e.company || "Company"}</p>
+ {(e.projects ?? []).length > 0 && (
+ <div className="mt-2 space-y-1.5">
+ {(e.projects ?? []).map((p, pi) => (
+ <div key={pi} className="text-[11px]">
+ <p>
+ <span className="font-semibold text-fuchsia-700">{p.name}</span>
+ {p.description && <span className="text-zinc-600"> — {p.description}</span>}
+ </p>
+ {p.skills && p.skills.length > 0 && (
+ <div className="mt-1 flex flex-wrap gap-1">
+ {p.skills.map((s) => (
+ <span key={s} className="rounded-full bg-fuchsia-100 px-2 py-0.5 text-[9.5px] font-semibold text-fuchsia-700">
+ {s}
+ </span>
+ ))}
+ </div>
+ )}
+ </div>
+ ))}
+ </div>
+ )}
+ </div>
+ ))}
+ </div>
+ </CreativeSection>
+ )}
+
+ {profile.projects && profile.projects.length > 0 && (
+ <CreativeSection title="Projects" color="from-violet-500 to-fuchsia-500">
+ <div className="flex flex-col gap-3">
+ {profile.projects.map((p, i) => (
+ <div key={i} className="rounded-xl bg-white p-3 shadow-sm">
+ <div className="flex items-baseline justify-between">
+ <p className="font-semibold">{p.name}</p>
+ {(p.startedAt || p.endedAt) && (
+ <p className="text-[10px] font-bold text-violet-600">
+ {[p.startedAt, p.endedAt].filter(Boolean).join(" – ")}
+ </p>
+ )}
+ </div>
+ {p.role && <p className="text-[11px] text-violet-600">{p.role}</p>}
+ {p.description && <p className="mt-0.5 text-[11px] text-zinc-600">{p.description}</p>}
+ {p.skills && p.skills.length > 0 && (
+ <div className="mt-1.5 flex flex-wrap gap-1">
+ {p.skills.map((s) => (
+ <span
+ key={s}
+ className="rounded-full bg-gradient-to-r from-violet-100 to-fuchsia-100 px-2 py-0.5 text-[10px] font-semibold text-violet-700"
+ >
+ {s}
+ </span>
+ ))}
+ </div>
+ )}
+ {p.showcaseUrl && (
+ <p className="mt-1 text-[10px] text-fuchsia-600">↗ {p.showcaseUrl}</p>
+ )}
+ </div>
+ ))}
+ </div>
+ </CreativeSection>
+ )}
+
+ {profile.certifications && profile.certifications.length > 0 && (
+ <CreativeSection title="Certifications" color="from-emerald-500 to-cyan-500">
+ <div className="flex flex-col gap-2">
+ {profile.certifications.map((c, i) => (
+ <div key={i} className="flex items-baseline justify-between rounded-xl bg-white p-3 shadow-sm">
+ <div>
+ <p className="font-semibold">{c.name}</p>
+ {c.issuer && <p className="text-[11px] text-zinc-600">{c.issuer}</p>}
+ </div>
+ <p className="text-[10px] font-bold text-emerald-600">
+ {[c.issuedYear, c.expiryYear ? `→ ${c.expiryYear}` : ""].filter(Boolean).join(" ")}
+ </p>
  </div>
  ))}
  </div>
@@ -127,6 +202,25 @@ export function CreativeTemplate({ user, profile }: TemplateProps) {
  {profile.alternateMobile && (
  <CreativeSection title="Alt Contact" color="from-emerald-500 to-teal-500" compact>
  <p>+91 {profile.alternateMobile}</p>
+ </CreativeSection>
+ )}
+
+ {(profile.industry || profile.department) && (
+ <CreativeSection title="Industry" color="from-amber-500 to-orange-500" compact>
+ {profile.industry && <p className="font-semibold text-orange-700">{profile.industry}</p>}
+ {profile.department && <p className="text-[11px] text-zinc-600">{profile.department}</p>}
+ </CreativeSection>
+ )}
+
+ {profile.links && profile.links.length > 0 && (
+ <CreativeSection title="Links" color="from-sky-500 to-cyan-500" compact>
+ <ul className="space-y-1 text-[11px]">
+ {profile.links.map((l, i) => (
+ <li key={i} className="truncate">
+ <span className="font-semibold text-cyan-700">{l.label}:</span> {l.url}
+ </li>
+ ))}
+ </ul>
  </CreativeSection>
  )}
  </aside>

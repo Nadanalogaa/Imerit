@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../store/jobs_provider.dart';
 import '../store/locations_provider.dart';
 import '../store/theme_provider.dart';
+import 'profile/industry_department_picker.dart';
 
 /// Full-featured filter state. `null` on any list means "no filter for this
 /// facet" — mirrors the web `FilterPanel` semantics.
@@ -14,6 +15,8 @@ class JobFilterState {
     this.types = const [],
     this.experience,
     this.postedWithinDays,
+    this.industry,
+    this.department,
     this.hideExpired = true,
   });
 
@@ -25,6 +28,12 @@ class JobFilterState {
   /// null → "any time"; 1 / 7 / 30 → posted within N days.
   final int? postedWithinDays;
 
+  /// Naukri-style industry / department facets — mirror the 2026-08
+  /// web change. Sent to the backend as `industry` / `department`
+  /// query params, and compared case-sensitively against Job values.
+  final String? industry;
+  final String? department;
+
   /// Hide jobs past their 45-day validity by default. Employers may still
   /// want to see expired jobs (e.g. to repost) but candidates should never
   /// see them.
@@ -35,14 +44,18 @@ class JobFilterState {
       field == null &&
       types.isEmpty &&
       experience == null &&
-      postedWithinDays == null;
+      postedWithinDays == null &&
+      industry == null &&
+      department == null;
 
   int get activeCount =>
       (districtIds.isNotEmpty ? 1 : 0) +
       (field != null ? 1 : 0) +
       (types.isNotEmpty ? 1 : 0) +
       (experience != null ? 1 : 0) +
-      (postedWithinDays != null ? 1 : 0);
+      (postedWithinDays != null ? 1 : 0) +
+      (industry != null ? 1 : 0) +
+      (department != null ? 1 : 0);
 
   JobFilterState copyWith({
     List<String>? districtIds,
@@ -50,6 +63,8 @@ class JobFilterState {
     List<JobType>? types,
     JobExperience? Function()? experience,
     int? Function()? postedWithinDays,
+    String? Function()? industry,
+    String? Function()? department,
     bool? hideExpired,
   }) =>
       JobFilterState(
@@ -58,6 +73,8 @@ class JobFilterState {
         types: types ?? this.types,
         experience: experience != null ? experience() : this.experience,
         postedWithinDays: postedWithinDays != null ? postedWithinDays() : this.postedWithinDays,
+        industry: industry != null ? industry() : this.industry,
+        department: department != null ? department() : this.department,
         hideExpired: hideExpired ?? this.hideExpired,
       );
 
@@ -74,6 +91,8 @@ class JobFilterState {
       if (posted == null) return false;
       if (DateTime.now().difference(posted).inDays > postedWithinDays!) return false;
     }
+    if (industry != null && job.industry != industry) return false;
+    if (department != null && job.department != department) return false;
     return true;
   }
 }
@@ -275,6 +294,31 @@ class _JobFilterSheetState extends ConsumerState<JobFilterSheet> {
                       if (e.$1 != JobExperience.any) const SizedBox(width: 6),
                     ],
                   ]),
+                  const SizedBox(height: 22),
+                  _FacetLabel('Industry & department'),
+                  const SizedBox(height: 8),
+                  IndustryDepartmentPicker(
+                    industry: _state.industry,
+                    department: _state.department,
+                    onIndustry: (v) {
+                      HapticFeedback.selectionClick();
+                      setState(() => _state = _state.copyWith(industry: () => v));
+                    },
+                    onDepartment: (v) {
+                      HapticFeedback.selectionClick();
+                      setState(() => _state = _state.copyWith(department: () => v));
+                    },
+                    field: _state.field == JobField.it
+                        ? 'IT'
+                        : _state.field == JobField.nonIt
+                            ? 'NON_IT'
+                            : null,
+                    industryLabel: 'Industry',
+                    departmentLabel: 'Department',
+                    industryHint: 'Any industry',
+                    departmentHint: 'Any department',
+                    dense: true,
+                  ),
                   const SizedBox(height: 22),
                   _FacetLabel('Posted within'),
                   const SizedBox(height: 8),

@@ -6,6 +6,7 @@ import '../store/employer_prefs_provider.dart';
 import '../store/profile_provider.dart';
 import '../store/subscriptions_provider.dart';
 import '../store/theme_provider.dart';
+import '../widgets/profile/cv_download_button.dart';
 import '../widgets/templates/render_template.dart';
 import '../widgets/templates/template_data.dart';
 import '../widgets/theme_toggle.dart';
@@ -132,6 +133,15 @@ class EmployerCandidateDetailPage extends ConsumerWidget {
         leading: IconButton(icon: const Icon(Icons.arrow_back_rounded), onPressed: () => context.go('/employer/candidates')),
         title: const Text('Candidate', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700)),
         actions: [
+          if ((profile.cvUrl ?? '').isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 8),
+              child: CvDownloadButton(
+                dataUrl: profile.cvUrl!,
+                fileName: profile.cvFileName,
+                compact: true,
+              ),
+            ),
           if (candidate.email.isNotEmpty)
             IconButton(icon: const Icon(Icons.mail_outline_rounded), tooltip: 'Email', onPressed: () {}),
           if (candidate.mobile != null)

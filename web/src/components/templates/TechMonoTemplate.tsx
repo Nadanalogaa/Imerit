@@ -72,6 +72,68 @@ export function TechMonoTemplate({ user, profile }: TemplateProps) {
  </p>
  <p className="text-[10px] text-zinc-500">{formatPeriod(e.fromDate, e.toDate)}</p>
  </div>
+ {(e.projects ?? []).length > 0 && (
+ <ul className="mt-1 ml-3 space-y-0.5 text-[11px]">
+ {(e.projects ?? []).map((p, pi) => (
+ <li key={pi}>
+ <span className="text-emerald-400">-</span>{" "}
+ <span className="text-cyan-300">{p.name}</span>
+ {p.description && <span className="text-zinc-400"> // {p.description}</span>}
+ {p.showcaseUrl && <span className="text-emerald-400"> → {p.showcaseUrl}</span>}
+ </li>
+ ))}
+ </ul>
+ )}
+ </div>
+ ))}
+ </div>
+ </TechSection>
+ )}
+
+ {profile.projects && profile.projects.length > 0 && (
+ <TechSection title="projects/">
+ <div className="space-y-3">
+ {profile.projects.map((p, i) => (
+ <div key={i}>
+ <div className="flex items-baseline justify-between">
+ <p>
+ <span className="text-emerald-400">$</span>{" "}
+ <span className="text-cyan-300">{p.name}</span>
+ {p.role && <span className="text-zinc-500"> ({p.role})</span>}
+ </p>
+ {(p.startedAt || p.endedAt) && (
+ <p className="text-[10px] text-zinc-500">
+ {[p.startedAt, p.endedAt].filter(Boolean).join(" → ")}
+ </p>
+ )}
+ </div>
+ {p.description && <p className="text-[11px] text-zinc-400">{p.description}</p>}
+ {p.skills && p.skills.length > 0 && (
+ <p className="text-[10.5px] text-emerald-300/80">
+ [{p.skills.join(", ")}]
+ </p>
+ )}
+ {p.showcaseUrl && (
+ <p className="text-[10.5px] text-emerald-400">→ {p.showcaseUrl}</p>
+ )}
+ </div>
+ ))}
+ </div>
+ </TechSection>
+ )}
+
+ {profile.certifications && profile.certifications.length > 0 && (
+ <TechSection title="certifications.log">
+ <div className="space-y-1.5">
+ {profile.certifications.map((c, i) => (
+ <div key={i} className="flex items-baseline justify-between">
+ <p>
+ <span className="text-cyan-300">{c.name}</span>
+ {c.issuer && <span className="text-zinc-500"> @ {c.issuer}</span>}
+ </p>
+ <p className="text-[10px] text-emerald-400">
+ {[c.issuedYear, c.expiryYear ? `→ ${c.expiryYear}` : ""].filter(Boolean).join(" ")}
+ </p>
  </div>
  ))}
  </div>
@@ -123,6 +185,26 @@ export function TechMonoTemplate({ user, profile }: TemplateProps) {
  {profile.alternateMobile && (
  <TechSection title="alt">
  <p className="text-zinc-400">+91 {profile.alternateMobile}</p>
+ </TechSection>
+ )}
+
+ {(profile.industry || profile.department) && (
+ <TechSection title="domain">
+ {profile.industry && <p className="text-cyan-300">{profile.industry}</p>}
+ {profile.department && <p className="text-zinc-400">{profile.department}</p>}
+ </TechSection>
+ )}
+
+ {profile.links && profile.links.length > 0 && (
+ <TechSection title="links.txt">
+ <ul className="space-y-1 text-[11px]">
+ {profile.links.map((l, i) => (
+ <li key={i} className="truncate">
+ <span className="text-emerald-400">{l.label}:</span>{" "}
+ <span className="text-zinc-300">{l.url}</span>
+ </li>
+ ))}
+ </ul>
  </TechSection>
  )}
  </aside>

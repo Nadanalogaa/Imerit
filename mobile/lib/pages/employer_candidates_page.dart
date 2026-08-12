@@ -728,6 +728,20 @@ class _FilterRow extends StatelessWidget {
             ),
             const SizedBox(width: 6),
           ],
+          if (filters.industry != null) ...[
+            _ActiveChip(
+              label: filters.industry!,
+              onRemove: () => onClearFacet(filters.copyWith(industry: () => null)),
+            ),
+            const SizedBox(width: 6),
+          ],
+          if (filters.department != null) ...[
+            _ActiveChip(
+              label: filters.department!,
+              onRemove: () => onClearFacet(filters.copyWith(department: () => null)),
+            ),
+            const SizedBox(width: 6),
+          ],
         ],
       ),
     );

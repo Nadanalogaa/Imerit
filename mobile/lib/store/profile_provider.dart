@@ -234,6 +234,89 @@ class WorkExperience {
       );
 }
 
+/// Standalone / personal project on the candidate profile — distinct from
+/// [ExperienceProject] which is scoped to a specific WorkExperience row.
+/// Mirrors `ApiCandidateProject` on the backend (2026-08 migration).
+@immutable
+class CandidateProject {
+  const CandidateProject({
+    required this.name,
+    this.description,
+    this.skills = const [],
+    this.role,
+    this.showcaseUrl,
+    this.startedAt,
+    this.endedAt,
+  });
+
+  final String name;
+  final String? description;
+  final List<String> skills;
+  final String? role;
+  final String? showcaseUrl;
+  final String? startedAt;
+  final String? endedAt;
+
+  Map<String, dynamic> toJson() => {
+        'name': name,
+        if (description != null) 'description': description,
+        'skills': skills,
+        if (role != null) 'role': role,
+        if (showcaseUrl != null) 'showcaseUrl': showcaseUrl,
+        if (startedAt != null) 'startedAt': startedAt,
+        if (endedAt != null) 'endedAt': endedAt,
+      };
+
+  static CandidateProject fromJson(Map<String, dynamic> j) => CandidateProject(
+        name: j['name'] as String,
+        description: j['description'] as String?,
+        skills: (j['skills'] as List<dynamic>? ?? const []).cast<String>(),
+        role: j['role'] as String?,
+        showcaseUrl: j['showcaseUrl'] as String?,
+        startedAt: j['startedAt'] as String?,
+        endedAt: j['endedAt'] as String?,
+      );
+}
+
+/// Certification / credential the candidate wants to advertise. Mirrors
+/// `ApiCertification` on the backend.
+@immutable
+class Certification {
+  const Certification({
+    required this.name,
+    this.issuer,
+    this.issuedYear,
+    this.expiryYear,
+    this.credentialId,
+    this.credentialUrl,
+  });
+
+  final String name;
+  final String? issuer;
+  final int? issuedYear;
+  final int? expiryYear;
+  final String? credentialId;
+  final String? credentialUrl;
+
+  Map<String, dynamic> toJson() => {
+        'name': name,
+        if (issuer != null) 'issuer': issuer,
+        if (issuedYear != null) 'issuedYear': issuedYear,
+        if (expiryYear != null) 'expiryYear': expiryYear,
+        if (credentialId != null) 'credentialId': credentialId,
+        if (credentialUrl != null) 'credentialUrl': credentialUrl,
+      };
+
+  static Certification fromJson(Map<String, dynamic> j) => Certification(
+        name: j['name'] as String,
+        issuer: j['issuer'] as String?,
+        issuedYear: (j['issuedYear'] as num?)?.toInt(),
+        expiryYear: (j['expiryYear'] as num?)?.toInt(),
+        credentialId: j['credentialId'] as String?,
+        credentialUrl: j['credentialUrl'] as String?,
+      );
+}
+
 @immutable
 class CandidateProfile {
   const CandidateProfile({
@@ -261,6 +344,12 @@ class CandidateProfile {
     this.experiences,
     this.education = const [],
     this.links = const [],
+    this.projects = const [],
+    this.certifications = const [],
+    this.industry,
+    this.department,
+    this.cvUrl,
+    this.cvFileName,
     this.selectedTemplateId,
     this.moderationStatus,
     this.moderationNotes,
@@ -297,6 +386,22 @@ class CandidateProfile {
   // Portfolio / social links (LinkedIn, GitHub, Behance, custom "Other").
   // Free-form list keyed on `[[profile-links]]` in web.
   final List<ProfileLink> links;
+  /// Standalone personal projects (freshers + experienced) — distinct from
+  /// [WorkExperience.projects] which are role-scoped.
+  final List<CandidateProject> projects;
+  /// Certifications the candidate wants to advertise.
+  final List<Certification> certifications;
+  /// Naukri-style industry tag (kIndustriesIt / kIndustriesNonIt).
+  /// See `utils/industry_taxonomy.dart`. Nullable — candidates who
+  /// haven't set one yet see the placeholder.
+  final String? industry;
+  /// Naukri-style department tag (kDepartments). Nullable.
+  final String? department;
+  /// Base64 data URL of the uploaded CV (PDF / DOC / DOCX, ≤5 MB).
+  /// `data:application/pdf;base64,...` — same shape web writes.
+  final String? cvUrl;
+  /// Original filename so the download button shows something readable.
+  final String? cvFileName;
   final String? selectedTemplateId;
   /// Server-set moderation state: PENDING (default when profile is
   /// first submitted), APPROVED (visible to employers), REJECTED
@@ -330,7 +435,14 @@ class CandidateProfile {
     List<WorkExperience>? experiences,
     List<Education>? education,
     List<ProfileLink>? links,
+    List<CandidateProject>? projects,
+    List<Certification>? certifications,
+    String? industry,
+    String? department,
+    String? cvUrl,
+    String? cvFileName,
     String? selectedTemplateId,
+    bool clearCv = false,
   }) =>
       CandidateProfile(
         userId: userId,
@@ -357,6 +469,12 @@ class CandidateProfile {
         experiences: experiences ?? this.experiences,
         education: education ?? this.education,
         links: links ?? this.links,
+        projects: projects ?? this.projects,
+        certifications: certifications ?? this.certifications,
+        industry: industry ?? this.industry,
+        department: department ?? this.department,
+        cvUrl: clearCv ? null : (cvUrl ?? this.cvUrl),
+        cvFileName: clearCv ? null : (cvFileName ?? this.cvFileName),
         selectedTemplateId: selectedTemplateId ?? this.selectedTemplateId,
         updatedAt: DateTime.now().toIso8601String(),
       );
@@ -386,6 +504,12 @@ class CandidateProfile {
         'experiences': experiences?.map((e) => e.toJson()).toList(),
         'education': education.map((e) => e.toJson()).toList(),
         'links': links.map((l) => l.toJson()).toList(),
+        'projects': projects.map((p) => p.toJson()).toList(),
+        'certifications': certifications.map((c) => c.toJson()).toList(),
+        if (industry != null) 'industry': industry,
+        if (department != null) 'department': department,
+        if (cvUrl != null) 'cvUrl': cvUrl,
+        if (cvFileName != null) 'cvFileName': cvFileName,
         'selectedTemplateId': selectedTemplateId,
         'updatedAt': updatedAt,
       };
@@ -438,6 +562,16 @@ class CandidateProfile {
       links: (j['links'] as List<dynamic>? ?? const [])
           .map((e) => ProfileLink.fromJson(e as Map<String, dynamic>))
           .toList(),
+      projects: (j['projects'] as List<dynamic>? ?? const [])
+          .map((e) => CandidateProject.fromJson(e as Map<String, dynamic>))
+          .toList(),
+      certifications: (j['certifications'] as List<dynamic>? ?? const [])
+          .map((e) => Certification.fromJson(e as Map<String, dynamic>))
+          .toList(),
+      industry: j['industry'] as String?,
+      department: j['department'] as String?,
+      cvUrl: j['cvUrl'] as String?,
+      cvFileName: j['cvFileName'] as String?,
       selectedTemplateId: j['selectedTemplateId'] as String?,
       updatedAt: j['updatedAt'] as String? ?? DateTime.now().toIso8601String(),
     );
@@ -505,6 +639,16 @@ class ProfileNotifier extends Notifier<Map<String, CandidateProfile>> {
       nonItDepartments: (api['nonItDepartments'] as List?)?.cast<String>(),
       yearsOfExperience: api['yearsOfExperience'] as int?,
       topSkills: (api['topSkills'] as List?)?.cast<String>(),
+      industry: api['industry'] as String?,
+      department: api['department'] as String?,
+      cvUrl: api['cvUrl'] as String?,
+      cvFileName: api['cvFileName'] as String?,
+      projects: ((api['projects'] as List?) ?? const [])
+          .map((e) => CandidateProject.fromJson(e as Map<String, dynamic>))
+          .toList(),
+      certifications: ((api['certifications'] as List?) ?? const [])
+          .map((e) => Certification.fromJson(e as Map<String, dynamic>))
+          .toList(),
       selectedTemplateId: (api['selectedTemplateId'] as String?)?.toLowerCase(),
       moderationStatus: api['moderationStatus'] as String?,
       moderationNotes: api['moderationNotes'] as String?,
@@ -512,14 +656,15 @@ class ProfileNotifier extends Notifier<Map<String, CandidateProfile>> {
     );
   }
 
-  /// Pull /profiles/me from the server + hydrate local state so the
-  /// candidate dashboard shows the moderation pill + up-to-date fields.
-  /// Silent no-op offline. Call this on CandidateDashboardPage mount.
-  Future<void> fetchMine() async {
+  /// Pull /candidate/profile from the server + hydrate local state so
+  /// the candidate dashboard shows the moderation pill + up-to-date
+  /// fields. Silent no-op offline. Call this on CandidateDashboardPage
+  /// mount. Backend returns `{ profile }` only — the userId is passed
+  /// by the caller from the auth provider.
+  Future<void> fetchMine(String userId) async {
     if (!_apiOn) return;
     try {
       final res = await _api.getMine();
-      final userId = (res['user'] as Map)['id'] as String;
       final profile = _fromApi(userId, res['profile'] as Map<String, dynamic>);
       final next = {...state, userId: profile};
       state = next;
@@ -561,6 +706,30 @@ class ProfileNotifier extends Notifier<Map<String, CandidateProfile>> {
       _persist(next);
     } catch (_) {
       // Keep local cache; next fetchMine() reconciles.
+    }
+  }
+
+  /// Replace the standalone-projects list locally + PUT the full list
+  /// to the server. Mirrors web's `setProjects`. Local update wins; the
+  /// server call is fire-and-forget so the UI never blocks on network.
+  void setProjects(String userId, List<CandidateProject> projects) {
+    final current = of(userId);
+    update(userId, current.copyWith(projects: projects));
+    if (_apiOn) {
+      _api
+          .replaceProjects(projects.map((p) => p.toJson()).toList())
+          .catchError((Object _) {});
+    }
+  }
+
+  /// Same shape as [setProjects] but for the certifications list.
+  void setCertifications(String userId, List<Certification> certifications) {
+    final current = of(userId);
+    update(userId, current.copyWith(certifications: certifications));
+    if (_apiOn) {
+      _api
+          .replaceCertifications(certifications.map((c) => c.toJson()).toList())
+          .catchError((Object _) {});
     }
   }
 

@@ -441,6 +441,20 @@ class _FilterRow extends StatelessWidget {
             ),
             const SizedBox(width: 6),
           ],
+          if (filters.industry != null) ...[
+            _ActiveChip(
+              label: filters.industry!,
+              onRemove: () => onClearFacet(filters.copyWith(industry: () => null)),
+            ),
+            const SizedBox(width: 6),
+          ],
+          if (filters.department != null) ...[
+            _ActiveChip(
+              label: filters.department!,
+              onRemove: () => onClearFacet(filters.copyWith(department: () => null)),
+            ),
+            const SizedBox(width: 6),
+          ],
         ],
       ),
     );
@@ -649,13 +663,26 @@ class _JobCard extends StatelessWidget {
                   ),
                   const SizedBox(width: 12),
                   Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(job.title, maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: isDark ? Colors.white : const Color(0xFF09090B))),
-                        const SizedBox(height: 2),
-                        Text(job.employerName, maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(fontSize: 11.5, color: isDark ? Colors.white.withValues(alpha: 0.6) : const Color(0xFF52525B))),
-                      ],
+                    // Title + employer name are now inline on one row —
+                    // matches the 2026-08 web change that pulled the company
+                    // out of a separate line for a denser scan.
+                    child: RichText(
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      text: TextSpan(
+                        style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: isDark ? Colors.white : const Color(0xFF09090B)),
+                        children: [
+                          TextSpan(text: job.title),
+                          TextSpan(
+                            text: '  ·  ${job.employerName}',
+                            style: TextStyle(
+                              fontSize: 11.5,
+                              fontWeight: FontWeight.w600,
+                              color: isDark ? Colors.white.withValues(alpha: 0.6) : const Color(0xFF52525B),
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                   ),
                   SaveJobButton(jobId: job.id, jobTitle: job.title, size: SaveJobButtonSize.small),

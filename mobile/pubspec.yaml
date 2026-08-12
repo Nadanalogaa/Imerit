@@ -59,6 +59,16 @@ dependencies:
   # time an app launches, then caches locally.
   google_fonts: ^6.2.1
 
+  # File picker for CV upload (PDF / DOC / DOCX). Photos still use
+  # image_picker; this is for documents only.
+  file_picker: ^8.1.4
+
+  # share_plus is used to hand a decoded CV file off to the OS share
+  # sheet so employers / admins can save or forward it. Web has a
+  # simple <a href=data:> download; mobile needs a real file.
+  share_plus: ^10.1.2
+  path_provider: ^2.1.5
+
 dev_dependencies:
   flutter_test:
     sdk: flutter

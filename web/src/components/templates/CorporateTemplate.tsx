@@ -67,6 +67,26 @@ export function CorporateTemplate({ user, profile }: TemplateProps) {
  </p>
  </SidebarSection>
  )}
+
+ {(profile.industry || profile.department) && (
+ <SidebarSection title="Industry / Dept">
+ {profile.industry && <p className="text-slate-300">{profile.industry}</p>}
+ {profile.department && <p className="text-slate-400">{profile.department}</p>}
+ </SidebarSection>
+ )}
+
+ {profile.links && profile.links.length > 0 && (
+ <SidebarSection title="Links">
+ <ul className="space-y-1">
+ {profile.links.map((l, i) => (
+ <li key={i} className="truncate">
+ <span className="font-semibold text-emerald-400">{l.label}:</span>{" "}
+ <span className="text-slate-300">{l.url}</span>
+ </li>
+ ))}
+ </ul>
+ </SidebarSection>
+ )}
  </div>
  </aside>
 
@@ -89,6 +109,61 @@ export function CorporateTemplate({ user, profile }: TemplateProps) {
  <p className="text-[10px] text-slate-500">{formatPeriod(e.fromDate, e.toDate)}</p>
  </div>
  <p className="text-emerald-700">{e.company || "Company"}</p>
+ {(e.projects ?? []).length > 0 && (
+ <ul className="mt-1.5 ml-4 list-disc space-y-0.5 text-[11px] text-slate-600">
+ {(e.projects ?? []).map((p, pi) => (
+ <li key={pi}>
+ <span className="font-semibold text-slate-800">{p.name}</span>
+ {p.description && <> — {p.description}</>}
+ </li>
+ ))}
+ </ul>
+ )}
+ </div>
+ ))}
+ </div>
+ </Section>
+ )}
+
+ {profile.projects && profile.projects.length > 0 && (
+ <Section title="Projects" color="emerald">
+ <div className="space-y-2.5">
+ {profile.projects.map((p, i) => (
+ <div key={i} className="border-l-2 border-emerald-500 pl-3">
+ <div className="flex items-baseline justify-between">
+ <p className="font-semibold">{p.name}</p>
+ {(p.startedAt || p.endedAt) && (
+ <p className="text-[10px] text-slate-500">
+ {[p.startedAt, p.endedAt].filter(Boolean).join(" – ")}
+ </p>
+ )}
+ </div>
+ {p.role && <p className="text-emerald-700">{p.role}</p>}
+ {p.description && <p className="text-[11px] text-slate-600">{p.description}</p>}
+ {p.skills && p.skills.length > 0 && (
+ <p className="text-[10.5px] italic text-slate-500">Stack: {p.skills.join(", ")}</p>
+ )}
+ {p.showcaseUrl && (
+ <p className="text-[10.5px] text-emerald-700">↗ {p.showcaseUrl}</p>
+ )}
+ </div>
+ ))}
+ </div>
+ </Section>
+ )}
+
+ {profile.certifications && profile.certifications.length > 0 && (
+ <Section title="Certifications" color="emerald">
+ <div className="space-y-1.5">
+ {profile.certifications.map((c, i) => (
+ <div key={i} className="flex items-baseline justify-between border-l-2 border-slate-300 pl-3">
+ <div>
+ <p className="font-semibold">{c.name}</p>
+ {c.issuer && <p className="text-[11px] text-slate-600">{c.issuer}</p>}
+ </div>
+ <p className="text-[10px] text-slate-500">
+ {[c.issuedYear, c.expiryYear ? `→ ${c.expiryYear}` : ""].filter(Boolean).join(" ")}
+ </p>
  </div>
  ))}
  </div>
