@@ -109,7 +109,7 @@ export function CandidateFilterPanel({
           </div>
           <div>
             <h2 className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">Filters</h2>
-            <p className="text-[11px] font-semibold text-sky-600 dark:text-sky-400">{matchCount} candidates match</p>
+            <p className="text-[11px] font-semibold text-sky-600 dark:text-sky-400">{matchCount} candidates Suitable</p>
           </div>
         </div>
         <div className="flex items-center gap-2">
@@ -136,6 +136,20 @@ export function CandidateFilterPanel({
       </header>
 
       <div className="flex-1 space-y-1 overflow-y-auto px-4 py-3">
+          <Facet
+          icon={<Sparkles size={14} className="text-indigo-500" />}
+          title="Skills required"
+          open={openSections.skills}
+          onToggle={() => toggleSection("skills")}
+        >
+          <SkillsInput
+            skills={state.skills}
+            onChange={(skills) => onChange({ ...state, skills })}
+          />
+          <p className="mt-1 text-[10px] text-zinc-500 dark:text-zinc-400">
+            Candidates must have ALL of these. Case-insensitive fuzzy match.
+          </p>
+        </Facet>
         <Facet
           icon={<ArrowDownWideNarrow size={14} className="text-sky-500" />}
           title="Sort by"
@@ -392,20 +406,7 @@ export function CandidateFilterPanel({
           </div>
         </Facet>
 
-        <Facet
-          icon={<Sparkles size={14} className="text-indigo-500" />}
-          title="Skills required"
-          open={openSections.skills}
-          onToggle={() => toggleSection("skills")}
-        >
-          <SkillsInput
-            skills={state.skills}
-            onChange={(skills) => onChange({ ...state, skills })}
-          />
-          <p className="mt-1 text-[10px] text-zinc-500 dark:text-zinc-400">
-            Candidates must have ALL of these. Case-insensitive fuzzy match.
-          </p>
-        </Facet>
+      
       </div>
 
       {onSave && !isDefaultFilter(state) && (

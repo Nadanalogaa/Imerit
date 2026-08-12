@@ -254,9 +254,9 @@ export function JobDetail() {
  </>
  ) : (
  <>
- <p className="text-sm font-semibold">Ready to apply?</p>
+ <p className="text-sm font-semibold">Interested in this Job? </p>
  <p className="text-xs text-zinc-600 dark:text-zinc-400">
- Apply unlocks with the ₹333 / 45-day plan.
+Subscribe Now.  — Unlock with ₹333/45 days/Unlimited Jobs
  </p>
  </>
  )}

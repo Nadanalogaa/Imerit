@@ -457,7 +457,7 @@ export function CandidateProfileForm() {
  Build your profile
  </span>
  <h1 className="mt-1 text-2xl font-semibold tracking-tight md:text-3xl">
- Let's build something employers will love
+ Most employers review academic records starting from the 10th Standard onwards
  </h1>
  <p className="mt-1 text-[13px] text-zinc-600 dark:text-zinc-400">
  Five short steps. We auto-save as you go — leave any time and come back.

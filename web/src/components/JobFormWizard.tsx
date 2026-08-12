@@ -236,8 +236,15 @@ export function JobFormWizard({
       if (!field) errs.field = "Pick IT or Non-IT";
       if (!type) errs.type = "Pick a job type";
       if (!experience) errs.experience = "Pick an experience level";
-    } else if (i === 1) {
+  } else if (i === 1) {
       if (skills.length === 0) errs.skills = "Add at least one required skill";
+      if (yearsMin && yearsMax && Number(yearsMin) > Number(yearsMax)) {
+        errs.years = "Min years can't be greater than Max years";
+      }
+      const parsedSalary = parseLpaRange(salary);
+      if (parsedSalary?.min != null && parsedSalary?.max != null && parsedSalary.min > parsedSalary.max) {
+        errs.salary = "Min salary can't be greater than Max salary";
+      }
     } else if (i === 2) {
       if (!place.districtId || !place.talukId) errs.location = "Pick district and taluk";
     } else if (i === brandStepIndex && !brandStepLogoOnly) {
@@ -609,9 +616,15 @@ function SkillsStep(props: {
             </div>
             <span className="text-xs text-zinc-500 dark:text-zinc-400">years</span>
           </div>
-          <p className="mt-1 text-[11px] text-zinc-500 dark:text-zinc-400">
-            Leave both blank if you're open to any experience level.
-          </p>
+          {props.yearsMin && props.yearsMax && Number(props.yearsMin) > Number(props.yearsMax) ? (
+            <p className="mt-1 text-[11px] font-semibold text-rose-600 dark:text-rose-400">
+              Min years can't be greater than Max years.
+            </p>
+          ) : (
+            <p className="mt-1 text-[11px] text-zinc-500 dark:text-zinc-400">
+              Leave both blank if you're open to any experience level.
+            </p>
+          )}
         </div>
       )}
       <div>
@@ -694,7 +707,11 @@ function SalaryRangePicker({ value, onChange }: { value: string; onChange: (v: s
           </button>
         ))}
       </div>
-      {value && (
+     {min && max && Number(min) > Number(max) ? (
+        <p className="mt-2 text-[11px] font-semibold text-rose-600 dark:text-rose-400">
+          Min salary can't be greater than Max salary.
+        </p>
+      ) : value && (
         <p className="mt-2 text-[11px] text-emerald-600 dark:text-emerald-400">
           Preview: <strong>{value}</strong>
         </p>
