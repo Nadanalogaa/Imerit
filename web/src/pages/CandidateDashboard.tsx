@@ -1,4 +1,3 @@
-import { useMemo } from "react";
 import { Link } from "react-router-dom";
 import { motion, type Variants } from "framer-motion";
 import {
@@ -13,54 +12,31 @@ import {
  Eye,
  Edit3,
  FileCheck2,
- MapPin,
- Navigation,
- Target,
- Bookmark,
  AlertTriangle,
  ShieldCheck,
 } from "lucide-react";
 import { useAuth } from "../store/auth";
 import { useProfile, profileCompletion } from "../store/profile";
-import { useJobs, FIELD_LABEL, type Job } from "../store/jobs";
 import { useSubscriptions } from "../store/subscriptions";
-import { useApplications } from "../store/applications";
-import { matchScore, jobDistanceKm, BAND_COLORS } from "../lib/matcher";
-import { formatDistance } from "../lib/distance";
 import { Navbar } from "../components/Navbar";
 import { TEMPLATE_META } from "../components/templates/types";
 
-const MIN_MATCH_SCORE = 30;
-const MAX_MATCHES = 5;
+// Note: the previous "top matches" strip + <MatchedJobCard /> helper +
+// its supporting imports (useMemo, MapPin, Navigation, Bookmark, Job,
+// matcher, formatDistance, MIN/MAX_MATCH constants) were pulled out
+// during a UI refresh — the render section no longer references them.
+// Removed here so tsc's noUnusedLocals stops complaining after the
+// pull; git history has the old implementation if it needs to come
+// back.
 
 export function CandidateDashboard() {
  const user = useAuth((s) => s.currentUser)!;
  const profile = useProfile((s) => s.get)(user.id);
- const jobs = useJobs((s) => s.jobs);
  const hasResume = !!profile.selectedTemplateId;
  const completion = profileCompletion(profile);
  const templateMeta = TEMPLATE_META.find((t) => t.id === profile.selectedTemplateId);
  const firstName = user.name.split(" ")[0];
  const activeSub = useSubscriptions((s) => s.activeFor)(user.id, "candidate");
-
- // Top matches — same scoring engine as JobBrowse, ranked desc by score with
- // distance as a tiebreaker. Hidden below MIN_MATCH_SCORE so we never surface
- // irrelevant noise on what should feel like a personalized shortlist.
- const topMatches = useMemo(() => {
- if (!hasResume) return [];
- return jobs
- .map((job) => {
- const result = matchScore(job, profile);
- const distance = jobDistanceKm(job, profile);
- return { job, result, distance };
- })
- .filter((x) => x.result.score >= MIN_MATCH_SCORE)
- .sort((a, b) => {
- if (b.result.score !== a.result.score) return b.result.score - a.result.score;
- return (a.distance ?? Infinity) - (b.distance ?? Infinity);
- })
- .slice(0, MAX_MATCHES);
- }, [jobs, profile, hasResume]);
 
  const containerVariants: Variants = {
  hidden: { opacity: 0 },
@@ -263,124 +239,6 @@ export function CandidateDashboard() {
  );
 }
 
-function MatchedJobCard({
- job,
- score,
- band,
- distance,
-}: {
- job: Job;
- score: number;
- band: "high" | "medium" | "low";
- distance: number | null;
-}) {
- const initials = job.employerName
- .split(/\s+/)
- .slice(0, 2)
- .map((p) => p[0]?.toUpperCase() ?? "")
- .join("");
- const colors = BAND_COLORS[band];
- const user = useAuth((s) => s.currentUser);
- const isSaved = useApplications((s) =>
- user ? (s.saved[user.id] ?? []).includes(job.id) : false,
- );
- const toggleSaveAsync = useApplications((s) => s.toggleSaveAsync);
- const onToggleSave = (e: React.MouseEvent) => {
- e.preventDefault();
- e.stopPropagation();
- if (!user) return;
- void toggleSaveAsync(user.id, job.id).catch(() => { /* toast handled inside */ });
- };
-
- return (
- <div className="relative">
- <Link
- to={`/candidate/jobs/${job.id}`}
- className={[
- "group flex h-full flex-col rounded-xl border bg-white p-4 transition hover:-translate-y-0.5 hover:shadow-md dark:bg-zinc-950/40",
- isSaved
- ? "border-rose-300 hover:border-rose-400 hover:shadow-rose-500/10 dark:border-rose-500/40"
- : "border-zinc-200 hover:border-brand-300 hover:shadow-brand-500/10 dark:border-zinc-800 dark:hover:border-brand-500/40",
- ].join(" ")}
- >
- {/* Header — logo + title/employer + match badge */}
- <div className="flex items-start gap-3">
- <div
- className={[
- "flex h-11 w-11 shrink-0 items-center justify-center rounded-lg text-[13px] font-bold text-white shadow-sm",
- job.field === "it"
- ? "bg-gradient-to-br from-sky-500 to-sky-700"
- : "bg-gradient-to-br from-brand-500 to-brand-700",
- ].join(" ")}
- >
- {initials}
- </div>
- <div className="min-w-0 flex-1">
- <h3 className="truncate text-[14px] font-semibold tracking-tight text-zinc-900 dark:text-zinc-100">
- {job.title}
- </h3>
- <p className="truncate text-[12px] text-zinc-500 dark:text-zinc-400">
- {job.employerName}
- </p>
- </div>
- <div className={["inline-flex shrink-0 items-baseline gap-0.5 rounded-md px-2 py-1", colors.bg].join(" ")}>
- <span className={["text-[13px] font-bold leading-none", colors.text].join(" ")}>{score}</span>
- <span className={["text-[10px] font-bold leading-none", colors.text].join(" ")}>%</span>
- </div>
- </div>
-
- {/* Meta rail — location, field, distance. Bigger icons, neutral text. */}
- <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-1 text-[12px] text-zinc-600 dark:text-zinc-400">
- <span className="inline-flex items-center gap-1">
- <MapPin size={12} className="text-zinc-400" />
- <span className="truncate">{job.location}</span>
- </span>
- <span className="text-zinc-300 dark:text-zinc-700">·</span>
- <span className="inline-flex items-center gap-1 font-medium text-zinc-700 dark:text-zinc-300">
- {FIELD_LABEL[job.field]}
- </span>
- {distance != null && (
- <>
- <span className="text-zinc-300 dark:text-zinc-700">·</span>
- <span className="inline-flex items-center gap-1 font-semibold text-emerald-700 dark:text-emerald-400">
- <Navigation size={11} />
- {formatDistance(distance)}
- </span>
- </>
- )}
- </div>
-
- {/* Footer — salary (when present) + CTA */}
- <div className="mt-3 flex items-center justify-between gap-2 border-t border-zinc-100 pt-3 dark:border-zinc-800">
- <span className="truncate text-[12px] font-semibold text-zinc-700 dark:text-zinc-300">
- {job.salaryRange ?? "Salary not disclosed"}
- </span>
- <span className="inline-flex items-center gap-1 text-[12px] font-semibold text-brand-600 transition group-hover:gap-1.5 dark:text-brand-400">
- View
- <ArrowRight size={12} />
- </span>
- </div>
- </Link>
- {user && (
- <button
- type="button"
- onClick={onToggleSave}
- aria-pressed={isSaved}
- aria-label={isSaved ? "Remove from saved" : "Save this job"}
- title={isSaved ? "Click to remove from your saved list" : "Save this job for later"}
- className={[
- "absolute right-3 top-3 inline-flex h-7 w-7 items-center justify-center rounded-full transition-transform active:scale-90",
- isSaved
- ? "bg-rose-500 text-white shadow-sm shadow-rose-500/40 hover:bg-rose-600"
- : "bg-white text-zinc-500 ring-1 ring-zinc-200 hover:text-rose-500 dark:bg-zinc-900 dark:text-zinc-400 dark:ring-zinc-700",
- ].join(" ")}
- >
- <Bookmark size={12} fill={isSaved ? "currentColor" : "none"} strokeWidth={isSaved ? 2.5 : 2} />
- </button>
- )}
- </div>
- );
-}
 
 /**
  * Subscription chip in the hero card's top-right. Free tier shows a faded

@@ -32,7 +32,6 @@ import {
 } from "lucide-react";
 import { TextField } from "./TextField";
 import { ChipInput } from "./profile/ChipInput";
-import { SegmentedToggle } from "./profile/SegmentedToggle";
 import { LocationPicker } from "./LocationPicker";
 import { StepIndicator } from "./profile/StepIndicator";
 import { StepShell } from "./profile/StepShell";

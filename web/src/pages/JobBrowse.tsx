@@ -685,7 +685,10 @@ function JobCard({ job, matchResult, distance, delay }: { job: Job; matchResult?
  {job.employerName}
  </p>
  </div>
- <div className="flex flex-col items-end gap-1">
+ {/* pr-10 reserves ~40px on the right so the absolute-positioned
+     bookmark button (top-3 right-3, h-8 w-8) doesn't sit on top of
+     the match badge or distance chip. */}
+ <div className="flex flex-col items-end gap-1 pr-10">
  {matchResult && (
  <div className={["flex flex-col items-center rounded-xl px-2 py-1 ring-1", BAND_COLORS[matchResult.band].bg, BAND_COLORS[matchResult.band].ring].join(" ")}>
  <span className={["text-sm font-bold leading-none", BAND_COLORS[matchResult.band].text].join(" ")}>{matchResult.score}%</span>

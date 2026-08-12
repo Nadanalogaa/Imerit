@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Mail, MapPin, Send, MessageCircle, Sparkles, Lightbulb, Phone } from "lucide-react";
+import { Mail, MapPin, Send, Sparkles, Lightbulb, Phone } from "lucide-react";
 import { get, set } from "../lib/storage";
 
 interface Contact {
