@@ -133,6 +133,9 @@ export const staffApi = {
     skills: string[];
     benefits?: string[];
     contactEmail?: string;
+    contactMobile?: string;
+    industry?: string;
+    department?: string;
   }) =>
     api<{ job: ApiJob }>("/staff/jobs", { method: "POST", json: input }),
 };
