@@ -146,6 +146,14 @@ export function CandidateProfileForm() {
  if (photo !== profile.photoDataUrl) patch(user.id, { photoDataUrl: photo });
  }, [photo, profile.photoDataUrl, patch, user.id]);
 
+ // Scroll to the top of the page whenever the wizard step changes so the
+ // reader sees the page title + step indicator + fresh step from its
+ // beginning — instead of landing mid-form where the previous step's
+ // footer used to be.
+ useEffect(() => {
+ window.scrollTo({ top: 0, behavior: "smooth" });
+ }, [step]);
+
  const handleNext = () => {
  if (step === 0) {
  const next: Record<string, string> = {};

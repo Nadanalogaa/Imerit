@@ -189,6 +189,14 @@ export function JobFormWizard({
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
+  // Scroll to the top of the page whenever the wizard step changes so
+  // the reader sees the page title + step indicator + fresh step from
+  // its beginning — instead of landing mid-form where the previous
+  // step's footer button used to be.
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }, [step]);
+
   // Job fields — seeded from initialValues if present.
   const [title, setTitle] = useState(initialValues?.title ?? "");
   const [description, setDescription] = useState(initialValues?.description ?? "");

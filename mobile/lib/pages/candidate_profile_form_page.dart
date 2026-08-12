@@ -39,6 +39,24 @@ class CandidateProfileFormPage extends ConsumerStatefulWidget {
 class _CandidateProfileFormPageState
     extends ConsumerState<CandidateProfileFormPage> {
   int _step = 0;
+  // Attached to the outer SingleChildScrollView so we can jump back to
+  // the top of the page when the wizard advances / retreats a step.
+  // Otherwise the browser's scroll position sticks and users land in
+  // the middle of the new step, past the page header and step
+  // indicator.
+  final ScrollController _scroll = ScrollController();
+
+  void _scrollToTop() {
+    // hasClients: the controller might not be attached yet (very first
+    // render). animateTo throws in that case, so guard.
+    if (!_scroll.hasClients) return;
+    _scroll.animateTo(
+      0,
+      duration: const Duration(milliseconds: 300),
+      curve: Curves.easeOut,
+    );
+  }
+
   late final TextEditingController _name;
   late final TextEditingController _mobile;
   late final TextEditingController _altMobile;
@@ -171,6 +189,7 @@ class _CandidateProfileFormPageState
     _altMobile.dispose();
     _shortAmb.dispose();
     _longAmb.dispose();
+    _scroll.dispose();
     super.dispose();
   }
 
@@ -300,6 +319,7 @@ class _CandidateProfileFormPageState
       return;
     }
     setState(() => _step += 1);
+    _scrollToTop();
   }
 
   void _onBack() {
@@ -308,6 +328,7 @@ class _CandidateProfileFormPageState
       _errors = {};
       _step -= 1;
     });
+    _scrollToTop();
   }
 
   Widget _stepBody(int step) {
@@ -470,6 +491,7 @@ class _CandidateProfileFormPageState
         ],
       ),
       body: SingleChildScrollView(
+        controller: _scroll,
         padding: const EdgeInsets.fromLTRB(20, 24, 20, 32),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
