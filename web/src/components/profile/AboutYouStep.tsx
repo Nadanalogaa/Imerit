@@ -8,17 +8,26 @@ import {
  Link2,
  Plus,
  Trash2,
+ Building2,
+ LayoutGrid,
+ Rocket,
+ Award,
 } from "lucide-react";
 import { SegmentedToggle } from "./SegmentedToggle";
 import { ChipInput } from "./ChipInput";
 import { ExperienceList } from "./ExperienceList";
+import { ProjectsList } from "./ProjectsList";
+import { CertificationsList } from "./CertificationsList";
 import type {
  CandidateType,
  Field as FieldKind,
  Experience,
  ProfileLink,
+ CandidateProject,
+ Certification,
 } from "../../store/profile";
 import { suggestionsForField } from "../../lib/skillSuggestions";
+import { industriesForField, DEPARTMENTS } from "../../lib/industryTaxonomy";
 
 const IT_SPECIALIZATIONS = [
  "Artificial Intelligence",
@@ -76,190 +85,279 @@ interface Props {
  links: ProfileLink[];
  onLinks: (v: ProfileLink[]) => void;
 
+ // Naukri-style taxonomy — shared between fresher + experienced
+ industry?: string;
+ onIndustry: (v: string | undefined) => void;
+ department?: string;
+ onDepartment: (v: string | undefined) => void;
+
+ // Standalone projects + certifications — shared between fresher + experienced
+ projects: CandidateProject[];
+ onProjects: (rows: CandidateProject[]) => void;
+ certifications: Certification[];
+ onCertifications: (rows: Certification[]) => void;
+
  errors: Record<string, string>;
 }
 
 export function AboutYouStep(p: Props) {
+ // industriesForField expects "IT" | "NON_IT" — the store's FieldKind is
+ // lowercase, so uppercase it (undefined stays undefined → full list).
+ const industryOptions = industriesForField(
+  p.field === "it" ? "IT" : p.field === "non_it" ? "NON_IT" : undefined,
+ );
+
+ // The IT/Non-IT selector is now shared — render it whenever a type is
+ // picked, so experienced candidates also scope their skill suggestions
+ // and industry list.
+ const fieldSelector = p.type ? (
+  <Group label="Which field describes your work?" icon={<Sparkles size={16} className="text-violet-600 dark:text-violet-400" />}>
+   <SegmentedToggle<FieldKind>
+    value={p.field}
+    onChange={p.onField}
+    options={[
+     { id: "it", label: "IT", icon: <Code2 size={14} /> },
+     { id: "non_it", label: "Non-IT", icon: <Briefcase size={14} /> },
+    ]}
+   />
+   {p.errors.field && <ErrorBanner message={p.errors.field} />}
+  </Group>
+ ) : null;
+
+ // Industry + Department dropdowns — always shown once a type is picked.
+ const taxonomyRow = p.type ? (
+  <div className="grid gap-4 md:grid-cols-2">
+   <Group label="Industry" icon={<Building2 size={16} className="text-sky-600 dark:text-sky-400" />}>
+    <select
+     value={p.industry ?? ""}
+     onChange={(e) => p.onIndustry(e.target.value || undefined)}
+     className="h-11 w-full rounded-lg border border-zinc-300 bg-white px-3.5 text-sm focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500/15 dark:border-zinc-700 dark:bg-zinc-950"
+    >
+     <option value="">Select an industry</option>
+     {industryOptions.map((i) => (
+      <option key={i} value={i}>{i}</option>
+     ))}
+    </select>
+   </Group>
+   <Group label="Department" icon={<LayoutGrid size={16} className="text-amber-600 dark:text-amber-400" />}>
+    <select
+     value={p.department ?? ""}
+     onChange={(e) => p.onDepartment(e.target.value || undefined)}
+     className="h-11 w-full rounded-lg border border-zinc-300 bg-white px-3.5 text-sm focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500/15 dark:border-zinc-700 dark:bg-zinc-950"
+    >
+     <option value="">Select a department</option>
+     {DEPARTMENTS.map((d) => (
+      <option key={d} value={d}>{d}</option>
+     ))}
+    </select>
+   </Group>
+  </div>
+ ) : null;
+
+ // Always-on projects + certifications sections. Rendered under both
+ // branches once a type is picked.
+ const projectsAndCerts = p.type ? (
+  <>
+   <div>
+    <div className="mb-2 flex items-center gap-2">
+     <Rocket size={16} className="text-brand-600 dark:text-brand-400" />
+     <label className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">Projects</label>
+    </div>
+    <p className="mb-3 text-[12px] text-zinc-500 dark:text-zinc-400">
+     Add personal, college or side projects — helps employers see practical work.
+    </p>
+    <ProjectsList value={p.projects} onChange={p.onProjects} />
+   </div>
+
+   <div>
+    <div className="mb-2 flex items-center gap-2">
+     <Award size={16} className="text-emerald-600 dark:text-emerald-400" />
+     <label className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">Certifications</label>
+    </div>
+    <p className="mb-3 text-[12px] text-zinc-500 dark:text-zinc-400">
+     Add any relevant certifications (Coursera, AWS, PMP, GATE, …).
+    </p>
+    <CertificationsList value={p.certifications} onChange={p.onCertifications} />
+   </div>
+  </>
+ ) : null;
+
  return (
- <div className="flex flex-col gap-6">
- <SegmentedToggle<CandidateType>
- large
- value={p.type}
- onChange={p.onType}
- options={[
- { id: "fresher", label: "I'm a Fresher", icon: <GraduationCap size={18} /> },
- { id: "experienced", label: "I'm Experienced", icon: <Briefcase size={18} /> },
- ]}
- />
+  <div className="flex flex-col gap-6">
+   <SegmentedToggle<CandidateType>
+    large
+    value={p.type}
+    onChange={p.onType}
+    options={[
+     { id: "fresher", label: "I'm a Fresher", icon: <GraduationCap size={18} /> },
+     { id: "experienced", label: "I'm Experienced", icon: <Briefcase size={18} /> },
+    ]}
+   />
 
- <AnimatePresence mode="wait">
- {p.type === "fresher" && (
- <motion.div
- key="fresher"
- initial={{ opacity: 0, y: 14 }}
- animate={{ opacity: 1, y: 0 }}
- exit={{ opacity: 0, y: -14 }}
- transition={{ duration: 0.25, ease: "easeOut" }}
- className="flex flex-col gap-6"
- >
- <Group label="What are you looking for?" icon={<HandCoins size={16} className="text-emerald-600 dark:text-emerald-400" />}>
- <SegmentedToggle<"intern" | "job">
- value={p.internOrJob}
- onChange={p.onInternOrJob}
- options={[
- { id: "intern", label: "Internship / Training" },
- { id: "job", label: "Direct Job" },
- ]}
- />
- </Group>
+   {taxonomyRow}
 
- <Group label="Which field interests you?" icon={<Sparkles size={16} className="text-violet-600 dark:text-violet-400" />}>
- <SegmentedToggle<FieldKind>
- value={p.field}
- onChange={p.onField}
- options={[
- { id: "it", label: "IT", icon: <Code2 size={14} /> },
- { id: "non_it", label: "Non-IT", icon: <Briefcase size={14} /> },
- ]}
- />
- </Group>
+   {fieldSelector}
 
- <AnimatePresence mode="wait">
- {p.field === "it" && (
- <motion.div
- key="it"
- initial={{ opacity: 0, y: 12 }}
- animate={{ opacity: 1, y: 0 }}
- exit={{ opacity: 0, y: -12 }}
- transition={{ duration: 0.22 }}
- className="flex flex-col gap-5"
- >
- <Group label="Pick your IT specialization" icon={<Code2 size={16} className="text-sky-600 dark:text-sky-400" />}>
- <ChipInput
- value={p.itSpecialization ? [p.itSpecialization] : []}
- onChange={(arr) => p.onItSpec(arr[arr.length - 1])}
- max={1}
- placeholder="Pick one or type your own"
- suggestions={IT_SPECIALIZATIONS}
- hint="Choose the area you want to grow in."
- />
- {p.errors.itSpecialization && (
- <ErrorBanner message={p.errors.itSpecialization} />
- )}
- </Group>
+   <AnimatePresence mode="wait">
+    {p.type === "fresher" && (
+     <motion.div
+      key="fresher"
+      initial={{ opacity: 0, y: 14 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: -14 }}
+      transition={{ duration: 0.25, ease: "easeOut" }}
+      className="flex flex-col gap-6"
+     >
+      <Group label="What are you looking for?" icon={<HandCoins size={16} className="text-emerald-600 dark:text-emerald-400" />}>
+       <SegmentedToggle<"intern" | "job">
+        value={p.internOrJob}
+        onChange={p.onInternOrJob}
+        options={[
+         { id: "intern", label: "Internship / Training" },
+         { id: "job", label: "Direct Job" },
+        ]}
+       />
+      </Group>
 
- <Group label="Languages / tools you're skilled in" icon={<Code2 size={16} className="text-sky-600 dark:text-sky-400" />}>
- <ChipInput
- value={p.itLanguages}
- onChange={p.onItLanguages}
- max={5}
- placeholder="e.g. Python, React, SQL"
- suggestions={suggestionsForField("it")}
- hint="Pick from suggestions tuned for IT roles, or type your own."
- />
- {p.errors.itLanguages && <ErrorBanner message={p.errors.itLanguages} />}
- </Group>
- </motion.div>
- )}
+      <AnimatePresence mode="wait">
+       {p.field === "it" && (
+        <motion.div
+         key="it"
+         initial={{ opacity: 0, y: 12 }}
+         animate={{ opacity: 1, y: 0 }}
+         exit={{ opacity: 0, y: -12 }}
+         transition={{ duration: 0.22 }}
+         className="flex flex-col gap-5"
+        >
+         <Group label="Pick your IT specialization" icon={<Code2 size={16} className="text-sky-600 dark:text-sky-400" />}>
+          <ChipInput
+           value={p.itSpecialization ? [p.itSpecialization] : []}
+           onChange={(arr) => p.onItSpec(arr[arr.length - 1])}
+           max={1}
+           placeholder="Pick one or type your own"
+           suggestions={IT_SPECIALIZATIONS}
+           hint="Choose the area you want to grow in."
+          />
+          {p.errors.itSpecialization && (
+           <ErrorBanner message={p.errors.itSpecialization} />
+          )}
+         </Group>
 
- {p.field === "non_it" && (
- <motion.div
- key="non-it"
- initial={{ opacity: 0, y: 12 }}
- animate={{ opacity: 1, y: 0 }}
- exit={{ opacity: 0, y: -12 }}
- transition={{ duration: 0.22 }}
- >
- <Group label="Top 3 departments you'd like to work in" icon={<Briefcase size={16} className="text-amber-600 dark:text-amber-400" />}>
- <ChipInput
- value={p.nonItDepartments}
- onChange={p.onNonItDepartments}
- max={3}
- placeholder="Pick from suggestions or type your own"
- suggestions={NON_IT_DEPARTMENTS}
- hint="Pick the top 3 in order of priority."
- />
- {p.errors.nonItDepartments && (
- <ErrorBanner message={p.errors.nonItDepartments} />
- )}
- </Group>
- </motion.div>
- )}
- </AnimatePresence>
+         <Group label="Languages / tools you're skilled in" icon={<Code2 size={16} className="text-sky-600 dark:text-sky-400" />}>
+          <ChipInput
+           value={p.itLanguages}
+           onChange={p.onItLanguages}
+           max={5}
+           placeholder="e.g. Python, React, SQL"
+           suggestions={suggestionsForField("it")}
+           hint="Pick from suggestions tuned for IT roles, or type your own."
+          />
+          {p.errors.itLanguages && <ErrorBanner message={p.errors.itLanguages} />}
+         </Group>
+        </motion.div>
+       )}
 
- <Group label="Links & profiles" icon={<Link2 size={16} className="text-sky-600 dark:text-sky-400" />}>
- <LinksSection value={p.links} onChange={p.onLinks} />
- </Group>
- </motion.div>
- )}
+       {p.field === "non_it" && (
+        <motion.div
+         key="non-it"
+         initial={{ opacity: 0, y: 12 }}
+         animate={{ opacity: 1, y: 0 }}
+         exit={{ opacity: 0, y: -12 }}
+         transition={{ duration: 0.22 }}
+        >
+         <Group label="Top 3 departments you'd like to work in" icon={<Briefcase size={16} className="text-amber-600 dark:text-amber-400" />}>
+          <ChipInput
+           value={p.nonItDepartments}
+           onChange={p.onNonItDepartments}
+           max={3}
+           placeholder="Pick from suggestions or type your own"
+           suggestions={NON_IT_DEPARTMENTS}
+           hint="Pick the top 3 in order of priority."
+          />
+          {p.errors.nonItDepartments && (
+           <ErrorBanner message={p.errors.nonItDepartments} />
+          )}
+         </Group>
+        </motion.div>
+       )}
+      </AnimatePresence>
 
- {p.type === "experienced" && (
- <motion.div
- key="experienced"
- initial={{ opacity: 0, y: 14 }}
- animate={{ opacity: 1, y: 0 }}
- exit={{ opacity: 0, y: -14 }}
- transition={{ duration: 0.25, ease: "easeOut" }}
- className="flex flex-col gap-6"
- >
- <Group label="Years of experience" icon={<Briefcase size={16} className="text-brand-600 dark:text-brand-400" />}>
- <div className="flex items-center gap-2">
- <input
- type="number"
- min={0}
- max={50}
- value={p.yearsOfExperience ?? ""}
- onChange={(e) => p.onYears(e.target.value === "" ? undefined : Number(e.target.value))}
- placeholder="e.g. 4"
- className="h-11 w-32 rounded-lg border border-zinc-300 bg-white px-3.5 text-sm focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500/15 dark:border-zinc-700 dark:bg-zinc-950"
- />
- <span className="text-sm text-zinc-500 dark:text-zinc-400">years</span>
- </div>
- {p.errors.years && <ErrorBanner message={p.errors.years} />}
- </Group>
+      <Group label="Links & profiles" icon={<Link2 size={16} className="text-sky-600 dark:text-sky-400" />}>
+       <LinksSection value={p.links} onChange={p.onLinks} />
+      </Group>
 
- <Group label="Your top 5 skills" icon={<Sparkles size={16} className="text-violet-600 dark:text-violet-400" />}>
- <ChipInput
- value={p.topSkills}
- onChange={p.onTopSkills}
- max={5}
- placeholder="e.g. Backend, Node.js, AWS"
- // Same suggestion pool the employer sees on the job-post
- // form. `field` is only set for freshers, so experienced
- // candidates see the merged IT + Non-IT + Common list; they
- // can still type freely for anything outside the pool.
- suggestions={suggestionsForField(p.field)}
- hint={
- p.field === "it"
- ? "Suggestions tuned for IT roles. Add or type your own."
- : p.field === "non_it"
- ? "Suggestions tuned for Non-IT roles. Add or type your own."
- : "Pick from suggestions or type your own — up to 5 skills."
- }
- />
- {p.errors.topSkills && <ErrorBanner message={p.errors.topSkills} />}
- </Group>
+      {projectsAndCerts}
+     </motion.div>
+    )}
 
- <Group label="Companies & work periods" icon={<Briefcase size={16} className="text-sky-600 dark:text-sky-400" />}>
- <ExperienceList value={p.experiences} onChange={p.onExperiences} />
- {p.errors.experiences && <ErrorBanner message={p.errors.experiences} />}
- </Group>
+    {p.type === "experienced" && (
+     <motion.div
+      key="experienced"
+      initial={{ opacity: 0, y: 14 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: -14 }}
+      transition={{ duration: 0.25, ease: "easeOut" }}
+      className="flex flex-col gap-6"
+     >
+      <Group label="Years of experience" icon={<Briefcase size={16} className="text-brand-600 dark:text-brand-400" />}>
+       <div className="flex items-center gap-2">
+        <input
+         type="number"
+         min={0}
+         max={50}
+         value={p.yearsOfExperience ?? ""}
+         onChange={(e) => p.onYears(e.target.value === "" ? undefined : Number(e.target.value))}
+         placeholder="e.g. 4"
+         className="h-11 w-32 rounded-lg border border-zinc-300 bg-white px-3.5 text-sm focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500/15 dark:border-zinc-700 dark:bg-zinc-950"
+        />
+        <span className="text-sm text-zinc-500 dark:text-zinc-400">years</span>
+       </div>
+       {p.errors.years && <ErrorBanner message={p.errors.years} />}
+      </Group>
 
- <Group label="Links & profiles" icon={<Link2 size={16} className="text-sky-600 dark:text-sky-400" />}>
- <LinksSection value={p.links} onChange={p.onLinks} />
- </Group>
- </motion.div>
- )}
- </AnimatePresence>
+      <Group label="Your top 5 skills" icon={<Sparkles size={16} className="text-violet-600 dark:text-violet-400" />}>
+       <ChipInput
+        value={p.topSkills}
+        onChange={p.onTopSkills}
+        max={5}
+        placeholder="e.g. Backend, Node.js, AWS"
+        // Now that the field selector is shared, experienced
+        // candidates who pick IT/Non-IT get a scoped list too;
+        // anyone who leaves field blank still sees the merged pool.
+        suggestions={suggestionsForField(p.field)}
+        hint={
+         p.field === "it"
+          ? "Suggestions tuned for IT roles. Add or type your own."
+          : p.field === "non_it"
+           ? "Suggestions tuned for Non-IT roles. Add or type your own."
+           : "Pick from suggestions or type your own — up to 5 skills."
+        }
+       />
+       {p.errors.topSkills && <ErrorBanner message={p.errors.topSkills} />}
+      </Group>
 
- {!p.type && (
- <div className="rounded-2xl border border-dashed border-zinc-300 bg-zinc-50 px-4 py-6 text-center text-sm text-zinc-500 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-400">
- Pick Fresher or Experienced above to continue.
- </div>
- )}
+      <Group label="Companies & work periods" icon={<Briefcase size={16} className="text-sky-600 dark:text-sky-400" />}>
+       <ExperienceList value={p.experiences} onChange={p.onExperiences} />
+       {p.errors.experiences && <ErrorBanner message={p.errors.experiences} />}
+      </Group>
 
- {p.errors.type && <ErrorBanner message={p.errors.type} />}
- </div>
+      <Group label="Links & profiles" icon={<Link2 size={16} className="text-sky-600 dark:text-sky-400" />}>
+       <LinksSection value={p.links} onChange={p.onLinks} />
+      </Group>
+
+      {projectsAndCerts}
+     </motion.div>
+    )}
+   </AnimatePresence>
+
+   {!p.type && (
+    <div className="rounded-2xl border border-dashed border-zinc-300 bg-zinc-50 px-4 py-6 text-center text-sm text-zinc-500 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-400">
+     Pick Fresher or Experienced above to continue.
+    </div>
+   )}
+
+   {p.errors.type && <ErrorBanner message={p.errors.type} />}
+  </div>
  );
 }
 
@@ -273,21 +371,21 @@ function Group({
  children: React.ReactNode;
 }) {
  return (
- <div>
- <div className="mb-2 flex items-center gap-2">
- {icon}
- <label className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">{label}</label>
- </div>
- {children}
- </div>
+  <div>
+   <div className="mb-2 flex items-center gap-2">
+    {icon}
+    <label className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">{label}</label>
+   </div>
+   {children}
+  </div>
  );
 }
 
 function ErrorBanner({ message }: { message: string }) {
  return (
- <p className="mt-2 rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-xs text-rose-700 dark:border-rose-500/30 dark:bg-rose-500/10 dark:text-rose-400">
- {message}
- </p>
+  <p className="mt-2 rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-xs text-rose-700 dark:border-rose-500/30 dark:bg-rose-500/10 dark:text-rose-400">
+   {message}
+  </p>
  );
 }
 
@@ -296,57 +394,57 @@ const LINK_PRESETS = ["LinkedIn", "Portfolio", "GitHub", "Behance", "Dribbble", 
 function LinksSection({ value, onChange }: { value: ProfileLink[]; onChange: (v: ProfileLink[]) => void }) {
  const rows = value.length ? value : [{ label: "LinkedIn", url: "" }];
  const update = (i: number, patch: Partial<ProfileLink>) => {
- const next = rows.map((r, idx) => (idx === i ? { ...r, ...patch } : r));
- onChange(next.filter((r) => r.url.trim() || r === next[i]));
+  const next = rows.map((r, idx) => (idx === i ? { ...r, ...patch } : r));
+  onChange(next.filter((r) => r.url.trim() || r === next[i]));
  };
  const remove = (i: number) => onChange(rows.filter((_, idx) => idx !== i).filter((r) => r.url.trim()));
  const add = () => onChange([...rows, { label: "Other", url: "" }]);
  const canAddMore = rows.length < 10;
 
  return (
- <div className="flex flex-col gap-2">
- <p className="text-[11px] text-zinc-500 dark:text-zinc-400">
- Optional — add up to 10 links employers can click. LinkedIn, portfolio, GitHub, anything.
- </p>
- {rows.map((row, i) => (
- <div key={i} className="flex flex-col gap-2 sm:flex-row">
- <div className="sm:w-44">
- <select
- value={LINK_PRESETS.includes(row.label) ? row.label : "Other"}
- onChange={(e) => update(i, { label: e.target.value === "Other" ? row.label || "Other" : e.target.value })}
- className="h-11 w-full rounded-lg border border-zinc-300 bg-white px-3.5 text-sm focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500/15 dark:border-zinc-700 dark:bg-zinc-950"
- >
- {LINK_PRESETS.map((l) => (
- <option key={l} value={l}>{l}</option>
- ))}
- </select>
- </div>
- <input
- type="url"
- value={row.url}
- onChange={(e) => update(i, { url: e.target.value })}
- placeholder="https://..."
- className="h-11 flex-1 rounded-lg border border-zinc-300 bg-white px-3.5 text-sm focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500/15 dark:border-zinc-700 dark:bg-zinc-950"
- />
- <button
- type="button"
- onClick={() => remove(i)}
- className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-lg text-zinc-400 transition hover:bg-rose-50 hover:text-rose-600 dark:hover:bg-rose-500/10"
- aria-label="Remove link"
- >
- <Trash2 size={16} />
- </button>
- </div>
- ))}
- {canAddMore && (
- <button
- type="button"
- onClick={add}
- className="inline-flex w-fit items-center gap-1.5 rounded-lg border border-dashed border-zinc-300 px-3 py-1.5 text-xs font-semibold text-zinc-600 transition hover:border-brand-400 hover:bg-brand-50 hover:text-brand-700 dark:border-zinc-700 dark:text-zinc-400 dark:hover:border-brand-500/50 dark:hover:bg-brand-500/10"
- >
- <Plus size={12} /> Add another link
- </button>
- )}
- </div>
+  <div className="flex flex-col gap-2">
+   <p className="text-[11px] text-zinc-500 dark:text-zinc-400">
+    Optional — add up to 10 links employers can click. LinkedIn, portfolio, GitHub, anything.
+   </p>
+   {rows.map((row, i) => (
+    <div key={i} className="flex flex-col gap-2 sm:flex-row">
+     <div className="sm:w-44">
+      <select
+       value={LINK_PRESETS.includes(row.label) ? row.label : "Other"}
+       onChange={(e) => update(i, { label: e.target.value === "Other" ? row.label || "Other" : e.target.value })}
+       className="h-11 w-full rounded-lg border border-zinc-300 bg-white px-3.5 text-sm focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500/15 dark:border-zinc-700 dark:bg-zinc-950"
+      >
+       {LINK_PRESETS.map((l) => (
+        <option key={l} value={l}>{l}</option>
+       ))}
+      </select>
+     </div>
+     <input
+      type="url"
+      value={row.url}
+      onChange={(e) => update(i, { url: e.target.value })}
+      placeholder="https://..."
+      className="h-11 flex-1 rounded-lg border border-zinc-300 bg-white px-3.5 text-sm focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500/15 dark:border-zinc-700 dark:bg-zinc-950"
+     />
+     <button
+      type="button"
+      onClick={() => remove(i)}
+      className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-lg text-zinc-400 transition hover:bg-rose-50 hover:text-rose-600 dark:hover:bg-rose-500/10"
+      aria-label="Remove link"
+     >
+      <Trash2 size={16} />
+     </button>
+    </div>
+   ))}
+   {canAddMore && (
+    <button
+     type="button"
+     onClick={add}
+     className="inline-flex w-fit items-center gap-1.5 rounded-lg border border-dashed border-zinc-300 px-3 py-1.5 text-xs font-semibold text-zinc-600 transition hover:border-brand-400 hover:bg-brand-50 hover:text-brand-700 dark:border-zinc-700 dark:text-zinc-400 dark:hover:border-brand-500/50 dark:hover:bg-brand-500/10"
+    >
+     <Plus size={12} /> Add another link
+    </button>
+   )}
+  </div>
  );
 }

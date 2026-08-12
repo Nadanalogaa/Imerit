@@ -1,8 +1,9 @@
 import { Link, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import { ArrowLeft, Edit3, LayoutDashboard, Palette } from "lucide-react";
+import { ArrowLeft, Building2, Download, Edit3, FileText, LayoutDashboard, MapPin, Palette } from "lucide-react";
 import { useAuth } from "../store/auth";
 import { useProfile } from "../store/profile";
+import { useLocations } from "../store/locations";
 import { ThemeToggle } from "../components/ThemeToggle";
 import { RenderTemplate } from "../components/templates";
 import { TEMPLATE_META } from "../components/templates/types";
@@ -11,6 +12,7 @@ export function CandidateProfilePreview() {
  const navigate = useNavigate();
  const user = useAuth((s) => s.currentUser)!;
  const profile = useProfile((s) => s.get)(user.id);
+ const districts = useLocations((s) => s.districts);
 
  if (!profile.selectedTemplateId) {
  navigate("/candidate/profile/build", { replace: true });
@@ -18,6 +20,17 @@ export function CandidateProfilePreview() {
  }
 
  const templateMeta = TEMPLATE_META.find((t) => t.id === profile.selectedTemplateId);
+
+ // Resolved preferred-location label — first try the multi-select
+ // districts (canonical), then the legacy free-text field.
+ const preferredLabel = (() => {
+ const ids = profile.preferredDistricts ?? [];
+ if (ids.length) {
+ const names = ids.map((id) => districts.find((d) => d.id === id)?.name).filter(Boolean);
+ if (names.length) return names.join(", ");
+ }
+ return profile.preferredLocation ?? "";
+ })();
 
  return (
  <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950">
@@ -51,6 +64,40 @@ export function CandidateProfilePreview() {
  </header>
 
  <main className="mx-auto max-w-7xl px-5 py-6 md:py-6 md:py-10">
+ {/* Info strip — surfaces preferred location + industry/department +
+     CV download in the profile-view surface (existing templates
+     render some but not all of these consistently). Kept above the
+     template so the info is visible even on print-optimised layouts. */}
+ <div className="mb-4 flex flex-wrap items-center gap-2 rounded-2xl bg-white p-3 text-[12px] shadow-sm dark:bg-zinc-900">
+ {preferredLabel && (
+ <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-3 py-1 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-300">
+ <MapPin size={12} />
+ <span className="font-semibold">Preferred location:</span> {preferredLabel}
+ </span>
+ )}
+ {profile.industry && (
+ <span className="inline-flex items-center gap-1.5 rounded-full bg-sky-50 px-3 py-1 text-sky-700 dark:bg-sky-500/10 dark:text-sky-300">
+ <Building2 size={12} />
+ <span className="font-semibold">Industry:</span> {profile.industry}
+ </span>
+ )}
+ {profile.department && (
+ <span className="inline-flex items-center gap-1.5 rounded-full bg-teal-50 px-3 py-1 text-teal-700 dark:bg-teal-500/10 dark:text-teal-300">
+ <Building2 size={12} />
+ <span className="font-semibold">Department:</span> {profile.department}
+ </span>
+ )}
+ {profile.cvUrl && (
+ <a
+ href={profile.cvUrl}
+ download={profile.cvFileName ?? "resume.pdf"}
+ className="ml-auto inline-flex items-center gap-1.5 rounded-full bg-gradient-to-r from-brand-500 to-brand-600 px-3 py-1 text-white shadow-md shadow-brand-500/30"
+ >
+ <FileText size={12} /> {profile.cvFileName ?? "CV"} <Download size={12} />
+ </a>
+ )}
+ </div>
+
  <motion.div
  initial={{ opacity: 0, y: 12 }}
  animate={{ opacity: 1, y: 0 }}

@@ -45,6 +45,7 @@ export interface ApiJob {
   contactEmail?: string | null;
   contactMobile?: string | null;
   industry?: string | null;
+  department?: string | null;
   status: ApiJobStatus;
   moderationStatus: "PENDING" | "APPROVED" | "REJECTED";
   postedAt: string;
@@ -94,6 +95,7 @@ export interface CreateJobInput {
   contactEmail?: string;
   contactMobile?: string;
   industry?: string;
+  department?: string;
 }
 
 interface ListResponse<T> { items: T[]; total: number; page: number; pageSize: number }
@@ -103,6 +105,8 @@ interface BrowseQuery {
   type?: ApiJobType;
   experience?: ApiJobExperience;
   districtId?: string;
+  industry?: string;
+  department?: string;
   search?: string;
   page?: number;
   pageSize?: number;

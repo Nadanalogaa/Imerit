@@ -48,7 +48,8 @@ router.get(
   asyncHandler(async (req, res) => {
     const q = req.query as unknown as {
       field?: JobField; type?: JobType; experience?: JobExperience;
-      districtId?: string; search?: string; page: number; pageSize: number;
+      districtId?: string; industry?: string; department?: string;
+      search?: string; page: number; pageSize: number;
     };
     res.json(await listPublicJobs(q));
   }),
@@ -143,7 +144,8 @@ router.get(
   validate({ query: employerCandidateSearchSchema }),
   asyncHandler(async (req, res) => {
     const q = req.query as unknown as {
-      field?: FieldKind; type?: CandidateType; districtId?: string; search?: string;
+      field?: FieldKind; type?: CandidateType; districtId?: string;
+      industry?: string; department?: string; search?: string;
       page: number; pageSize: number;
     };
     res.json(await searchCandidatesForEmployer(q));

@@ -37,6 +37,7 @@ import { LocationPicker } from "./LocationPicker";
 import { StepIndicator } from "./profile/StepIndicator";
 import { StepShell } from "./profile/StepShell";
 import { JOB_BENEFITS, type JobBenefit, type JobExperience, type JobField, type JobType } from "../store/jobs";
+import { DEPARTMENTS, industriesForField } from "../lib/industryTaxonomy";
 import { type PlaceRef } from "../store/locations";
 import {
   SKILL_SUGGESTIONS_COMMON,
@@ -73,6 +74,8 @@ export interface JobFormValues {
    *  coarse IT / Non-IT split. Optional client-side; server-side
    *  persistence lands in a follow-up migration. */
   industry?: string;
+  /** Naukri-style department tag, paired with industry in the wizard. */
+  department?: string;
   logoUrl: string | null;
   /** True when the user changed the logo in this session; parent uses
    *  this to decide whether to hit the profile-patch endpoint. */
@@ -159,36 +162,9 @@ const FIELD_OPTIONS: { id: JobField; label: string; icon: LucideIcon; tone: Tone
   { id: "non_it", label: "Non-IT", icon: Building2, tone: "amber" },
 ];
 
-/**
- * Curated industry list — used by the Select Industry dropdown in
- * BasicsStep. Kept modest (12 entries) so the dropdown stays scannable;
- * "Other" as the escape hatch preserves free-form intent without
- * turning the list into a hundred-item scroll.
- *
- * If we later add server-side persistence + filtering by industry,
- * this list moves to the backend and is served through /admin/plans-
- * style config — but the wire format (single lowercase snake_case
- * enum) stays the same.
- */
-const INDUSTRY_OPTIONS: readonly string[] = [
-  "Software / IT services",
-  "BPO / KPO / ITES",
-  "Healthcare / Pharma",
-  "Banking / Finance / Insurance",
-  "Education / EdTech",
-  "Retail / eCommerce",
-  "Manufacturing / Engineering",
-  "Construction / Real estate",
-  "Hospitality / Travel",
-  "Media / Marketing / Advertising",
-  "Logistics / Supply chain",
-  "Government / Public sector",
-  "NGO / Non-profit",
-  "Agriculture / Food processing",
-  "Automobile",
-  "Telecom",
-  "Other",
-];
+// Industry + Department options come from the shared taxonomy file
+// so the candidate profile, filter panels and this wizard all agree
+// on one canonical list. See web/src/lib/industryTaxonomy.ts.
 
 const EXPERIENCE_OPTIONS: { id: JobExperience; label: string; icon: LucideIcon; tone: Tone }[] = [
   { id: "fresher", label: "Fresher", icon: Sparkles, tone: "emerald" },
@@ -255,6 +231,7 @@ export function JobFormWizard({
   const [contactEmail, setContactEmail] = useState(initialValues?.contactEmail ?? "");
   const [contactMobile, setContactMobile] = useState(initialValues?.contactMobile ?? "");
   const [industry, setIndustry] = useState(initialValues?.industry ?? "");
+  const [department, setDepartment] = useState(initialValues?.department ?? "");
   const [logoUrl, setLogoUrl] = useState<string | null>(initialValues?.logoUrl ?? null);
   const [logoDirty, setLogoDirty] = useState(false);
   const topRef = useRef<HTMLDivElement>(null);
@@ -291,6 +268,7 @@ export function JobFormWizard({
     if (initialValues.contactEmail !== undefined) setContactEmail(initialValues.contactEmail);
     if (initialValues.contactMobile !== undefined) setContactMobile(initialValues.contactMobile);
     if (initialValues.industry !== undefined) setIndustry(initialValues.industry);
+    if (initialValues.department !== undefined) setDepartment(initialValues.department);
     if (initialValues.logoUrl !== undefined) setLogoUrl(initialValues.logoUrl);
   }, [initialValues]);
 
@@ -352,6 +330,7 @@ export function JobFormWizard({
         contactEmail: contactEmail.trim(),
         contactMobile: contactMobile.trim(),
         industry: industry.trim() || undefined,
+        department: department.trim() || undefined,
         logoUrl,
         logoDirty,
       });
@@ -404,6 +383,7 @@ export function JobFormWizard({
               type={type} setType={setType}
               experience={experience} setExperience={setExperience}
               industry={industry} setIndustry={setIndustry}
+              department={department} setDepartment={setDepartment}
               errors={errors}
             />
           </StepShell>
@@ -492,27 +472,54 @@ function BasicsStep(props: {
   type?: JobType; setType: (v: JobType) => void;
   experience?: JobExperience; setExperience: (v: JobExperience) => void;
   industry: string; setIndustry: (v: string) => void;
+  department: string; setDepartment: (v: string) => void;
   errors: Record<string, string>;
 }) {
+  // Industry list narrows to the picked field (IT/Non-IT) when the
+  // employer has already made a choice earlier in the form. Before then
+  // we show the full union so they aren't blocked from filling this
+  // block first.
+  const fieldForIndustry: "IT" | "NON_IT" | undefined =
+    props.field === "it" ? "IT" : props.field === "non_it" ? "NON_IT" : undefined;
+  const industryOptions = industriesForField(fieldForIndustry);
   return (
     <div className="flex flex-col gap-5">
       <TextField label="JOB TITLE / SPECIFICATION " value={props.title} onChange={props.setTitle} placeholder="e.g. Senior React Developer" error={props.errors.title} />
-      <div>
-        <label htmlFor="job-industry" className="mb-1.5 flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wider text-zinc-700 dark:text-zinc-300">
-          <Building2 size={12} /> Select Industry
-        </label>
-        <select
-          id="job-industry"
-          value={props.industry}
-          onChange={(e) => props.setIndustry(e.target.value)}
-          className="h-11 w-full rounded-lg border border-zinc-200 bg-white px-3.5 text-sm text-zinc-900 focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500/15 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-100"
-        >
-          <option value="">Select industry…</option>
-          {INDUSTRY_OPTIONS.map((label) => (
-            <option key={label} value={label}>{label}</option>
-          ))}
-        </select>
-        {props.errors.industry && <p className="mt-1 text-[11px] text-rose-600">{props.errors.industry}</p>}
+      <div className="grid gap-4 sm:grid-cols-2">
+        <div>
+          <label htmlFor="job-industry" className="mb-1.5 flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wider text-zinc-700 dark:text-zinc-300">
+            <Building2 size={12} /> Select Industry
+          </label>
+          <select
+            id="job-industry"
+            value={props.industry}
+            onChange={(e) => props.setIndustry(e.target.value)}
+            className="h-11 w-full rounded-lg border border-zinc-200 bg-white px-3.5 text-sm text-zinc-900 focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500/15 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-100"
+          >
+            <option value="">Select industry…</option>
+            {industryOptions.map((label) => (
+              <option key={label} value={label}>{label}</option>
+            ))}
+          </select>
+          {props.errors.industry && <p className="mt-1 text-[11px] text-rose-600">{props.errors.industry}</p>}
+        </div>
+        <div>
+          <label htmlFor="job-department" className="mb-1.5 flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wider text-zinc-700 dark:text-zinc-300">
+            <Building2 size={12} /> Select Department
+          </label>
+          <select
+            id="job-department"
+            value={props.department}
+            onChange={(e) => props.setDepartment(e.target.value)}
+            className="h-11 w-full rounded-lg border border-zinc-200 bg-white px-3.5 text-sm text-zinc-900 focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500/15 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-100"
+          >
+            <option value="">Select department…</option>
+            {DEPARTMENTS.map((label) => (
+              <option key={label} value={label}>{label}</option>
+            ))}
+          </select>
+          {props.errors.department && <p className="mt-1 text-[11px] text-rose-600">{props.errors.department}</p>}
+        </div>
       </div>
       <div>
         <label className="mb-1.5 flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wider text-zinc-700 dark:text-zinc-300">

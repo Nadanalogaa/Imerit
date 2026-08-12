@@ -25,6 +25,8 @@ export interface CandidateSearchFilters {
   type?: CandidateType;
   search?: string;
   districtId?: string;
+  industry?: string;
+  department?: string;
   page: number;
   pageSize: number;
 }
@@ -58,6 +60,8 @@ export async function searchCandidatesForEmployer(args: CandidateSearchFilters) 
     moderationStatus: ModerationStatus.APPROVED,
     ...(args.field ? { field: args.field } : {}),
     ...(args.type ? { type: args.type } : {}),
+    ...(args.industry ? { industry: args.industry } : {}),
+    ...(args.department ? { department: args.department } : {}),
     ...(and.length ? { AND: and } : {}),
   };
 
@@ -79,6 +83,8 @@ export async function searchCandidatesForEmployer(args: CandidateSearchFilters) 
         nonItDepartments: true,
         topSkills: true,
         yearsOfExperience: true,
+        industry: true,
+        department: true,
         preferredLocation: true,
         preferredLat: true,
         preferredLng: true,

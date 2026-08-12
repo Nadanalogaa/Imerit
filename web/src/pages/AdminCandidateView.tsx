@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link, Navigate, useParams } from "react-router-dom";
 import { AnimatePresence, motion } from "framer-motion";
-import { ArrowLeft, CheckCircle2, FileType2, Mail, Phone, XCircle, Clock, NotebookPen } from "lucide-react";
+import { ArrowLeft, CheckCircle2, Download, FileText, FileType2, Mail, Phone, XCircle, Clock, NotebookPen } from "lucide-react";
 import { allUsers, type User } from "../store/auth";
 import { fromApiProfile, useProfile, type CandidateProfile } from "../store/profile";
 import { RenderTemplate } from "../components/templates";
@@ -158,6 +158,15 @@ export function AdminCandidateView() {
  {candidate.mobile && (
  <a href={`tel:+91${candidate.mobile}`} className="inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold text-zinc-700 transition hover:bg-zinc-100 dark:border-zinc-700 dark:text-zinc-200 dark:hover:bg-zinc-800">
  <Phone size={12} /> Call
+ </a>
+ )}
+ {profile.cvUrl && (
+ <a
+ href={profile.cvUrl}
+ download={profile.cvFileName ?? `${candidate.name}-CV.pdf`}
+ className="inline-flex items-center gap-1.5 rounded-full bg-gradient-to-r from-brand-500 to-brand-700 px-3 py-1.5 text-xs font-semibold text-white shadow-md shadow-brand-500/30"
+ >
+ <FileText size={12} /> {profile.cvFileName ?? "Download CV"} <Download size={12} />
  </a>
  )}
  <button onClick={printPdf} className="inline-flex items-center gap-1.5 rounded-full bg-gradient-to-r from-rose-500 to-pink-500 px-3 py-1.5 text-xs font-semibold text-white shadow-md shadow-rose-500/30">

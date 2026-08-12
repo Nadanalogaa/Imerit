@@ -4,6 +4,8 @@ import { apiEnabled } from "../lib/api";
 import {
   profileApi,
   type ApiCandidateProfile,
+  type ApiCandidateProject,
+  type ApiCertification,
   type ApiEducation,
   type ApiEducationLevel,
   type ApiExperience,
@@ -47,6 +49,31 @@ export interface Experience {
   fromDate: string; // YYYY-MM
   toDate: string | null; // null = present
   projects?: ExperienceProject[];
+}
+
+/**
+ * Standalone / personal project on the candidate profile — freshers use
+ * this for college / side projects, experienced can add personal work
+ * outside their day job. Distinct from ExperienceProject which is scoped
+ * to a specific Experience row.
+ */
+export interface CandidateProject {
+  name: string;
+  description?: string;
+  skills?: string[];
+  role?: string;
+  showcaseUrl?: string;
+  startedAt?: string; // "YYYY-MM" | "YYYY"
+  endedAt?: string;   // "YYYY-MM" | "YYYY" | "Present"
+}
+
+export interface Certification {
+  name: string;
+  issuer?: string;
+  issuedYear?: number;
+  expiryYear?: number;
+  credentialId?: string;
+  credentialUrl?: string;
 }
 
 /** Showcase link on the candidate profile — LinkedIn / Portfolio / GitHub / etc. */
@@ -105,6 +132,20 @@ export interface CandidateProfile {
   /** Optional showcase links — LinkedIn / Portfolio / GitHub / etc. */
   links?: ProfileLink[];
 
+  /** Naukri-style taxonomy — set by both fresher + experienced flows. */
+  industry?: string;
+  department?: string;
+
+  /** Uploaded CV — base64 data URL for the file bytes, filename for the
+   *  download button label. Employer / admin / super-admin can view + download. */
+  cvUrl?: string;
+  cvFileName?: string;
+
+  /** Standalone personal projects (freshers + experienced). Role-scoped
+   *  projects still live under `experiences[i].projects`. */
+  projects?: CandidateProject[];
+  certifications?: Certification[];
+
   // education
   education: Education[];
 
@@ -125,6 +166,8 @@ interface ProfileState {
   get: (userId: string) => CandidateProfile;
   patch: (userId: string, patch: Partial<CandidateProfile>) => void;
   setEducation: (userId: string, edu: Education[]) => void;
+  setProjects: (userId: string, rows: CandidateProject[]) => void;
+  setCertifications: (userId: string, rows: Certification[]) => void;
 
   /** Pull the canonical profile from the API into local state. No-op if API is off. */
   fetchMine: () => Promise<CandidateProfile | null>;
@@ -188,6 +231,10 @@ function toApiProfilePatch(p: Partial<CandidateProfile>): ApiProfilePatch {
   if ("nonItDepartments" in p) out.nonItDepartments = p.nonItDepartments ?? null;
   if ("yearsOfExperience" in p) out.yearsOfExperience = p.yearsOfExperience ?? null;
   if ("topSkills" in p) out.topSkills = p.topSkills ?? null;
+  if ("industry" in p) out.industry = p.industry ?? null;
+  if ("department" in p) out.department = p.department ?? null;
+  if ("cvUrl" in p) out.cvUrl = p.cvUrl ?? null;
+  if ("cvFileName" in p) out.cvFileName = p.cvFileName ?? null;
   if ("links" in p) out.links = p.links ?? null;
   if ("selectedTemplateId" in p) {
     out.selectedTemplateId = p.selectedTemplateId
@@ -225,6 +272,27 @@ export function fromApiProfile(api: ApiCandidateProfile): CandidateProfile {
     nonItDepartments: api.nonItDepartments ?? undefined,
     yearsOfExperience: api.yearsOfExperience ?? undefined,
     topSkills: api.topSkills ?? undefined,
+    industry: api.industry ?? undefined,
+    department: api.department ?? undefined,
+    cvUrl: api.cvUrl ?? undefined,
+    cvFileName: api.cvFileName ?? undefined,
+    projects: (api.projects ?? []).map((p) => ({
+      name: p.name,
+      description: p.description ?? undefined,
+      skills: p.skills ?? undefined,
+      role: p.role ?? undefined,
+      showcaseUrl: p.showcaseUrl ?? undefined,
+      startedAt: p.startedAt ?? undefined,
+      endedAt: p.endedAt ?? undefined,
+    })),
+    certifications: (api.certifications ?? []).map((c) => ({
+      name: c.name,
+      issuer: c.issuer ?? undefined,
+      issuedYear: c.issuedYear ?? undefined,
+      expiryYear: c.expiryYear ?? undefined,
+      credentialId: c.credentialId ?? undefined,
+      credentialUrl: c.credentialUrl ?? undefined,
+    })),
     experiences: api.experiences.map((e) => ({
       company: e.company,
       role: e.role,
@@ -278,6 +346,35 @@ function toApiExperiences(rows: Experience[]): ApiExperience[] {
     role: e.role,
     fromDate: e.fromDate,
     toDate: e.toDate ?? null,
+    projects: (e.projects ?? []).map((p) => ({
+      name: p.name,
+      description: p.description ?? null,
+      skills: p.skills ?? [],
+      showcaseUrl: p.showcaseUrl ?? null,
+    })),
+  }));
+}
+
+function toApiProjects(rows: CandidateProject[]): ApiCandidateProject[] {
+  return rows.map((p) => ({
+    name: p.name,
+    description: p.description ?? null,
+    skills: p.skills ?? [],
+    role: p.role ?? null,
+    showcaseUrl: p.showcaseUrl ?? null,
+    startedAt: p.startedAt ?? null,
+    endedAt: p.endedAt ?? null,
+  }));
+}
+
+function toApiCertifications(rows: Certification[]): ApiCertification[] {
+  return rows.map((c) => ({
+    name: c.name,
+    issuer: c.issuer ?? null,
+    issuedYear: c.issuedYear ?? null,
+    expiryYear: c.expiryYear ?? null,
+    credentialId: c.credentialId ?? null,
+    credentialUrl: c.credentialUrl ?? null,
   }));
 }
 
@@ -310,10 +407,17 @@ export const useProfile = create<ProfileState>((set) => ({
       save(STORAGE_KEY, byUser);
 
       if (apiEnabled) {
-        // Strip experiences out of the scalar patch — they have their own
-        // bulk endpoint. Education is the same story but isn't sent via
-        // patch() in the current form code; it goes through setEducation.
-        const { experiences, education: _education, ...scalar } = patch;
+        // Strip the array-shaped relations out of the scalar patch — each
+        // has its own PUT endpoint (replaceExperiences / replaceProjects /
+        // replaceCertifications). Education is the same story but flows
+        // through setEducation() only.
+        const {
+          experiences,
+          projects,
+          certifications,
+          education: _education,
+          ...scalar
+        } = patch;
         if (Object.keys(scalar).length > 0) {
           void profileApi.patch(toApiProfilePatch(scalar)).catch((err) => {
             // eslint-disable-next-line no-console
@@ -324,6 +428,18 @@ export const useProfile = create<ProfileState>((set) => ({
           void profileApi.replaceExperiences(toApiExperiences(experiences)).catch((err) => {
             // eslint-disable-next-line no-console
             console.warn("[profile.experiences] API mirror failed", err);
+          });
+        }
+        if (projects) {
+          void profileApi.replaceProjects(toApiProjects(projects)).catch((err) => {
+            // eslint-disable-next-line no-console
+            console.warn("[profile.projects] API mirror failed", err);
+          });
+        }
+        if (certifications) {
+          void profileApi.replaceCertifications(toApiCertifications(certifications)).catch((err) => {
+            // eslint-disable-next-line no-console
+            console.warn("[profile.certifications] API mirror failed", err);
           });
         }
       }
@@ -350,6 +466,46 @@ export const useProfile = create<ProfileState>((set) => ({
         });
       }
 
+      return { byUser };
+    }),
+
+  setProjects: (userId, rows) =>
+    set((s) => {
+      const current = s.byUser[userId] ?? emptyProfile(userId);
+      const next: CandidateProfile = {
+        ...current,
+        projects: rows,
+        userId,
+        updatedAt: new Date().toISOString(),
+      };
+      const byUser = { ...s.byUser, [userId]: next };
+      save(STORAGE_KEY, byUser);
+      if (apiEnabled) {
+        void profileApi.replaceProjects(toApiProjects(rows)).catch((err) => {
+          // eslint-disable-next-line no-console
+          console.warn("[profile.projects] API mirror failed", err);
+        });
+      }
+      return { byUser };
+    }),
+
+  setCertifications: (userId, rows) =>
+    set((s) => {
+      const current = s.byUser[userId] ?? emptyProfile(userId);
+      const next: CandidateProfile = {
+        ...current,
+        certifications: rows,
+        userId,
+        updatedAt: new Date().toISOString(),
+      };
+      const byUser = { ...s.byUser, [userId]: next };
+      save(STORAGE_KEY, byUser);
+      if (apiEnabled) {
+        void profileApi.replaceCertifications(toApiCertifications(rows)).catch((err) => {
+          // eslint-disable-next-line no-console
+          console.warn("[profile.certifications] API mirror failed", err);
+        });
+      }
       return { byUser };
     }),
 

@@ -1,8 +1,35 @@
-import { Prisma, type CandidateProfile, type Education, type Experience, type ExperienceProject } from "@prisma/client";
+import {
+  Prisma,
+  type CandidateProfile,
+  type CandidateProject,
+  type Certification,
+  type Education,
+  type Experience,
+  type ExperienceProject,
+} from "@prisma/client";
 import { prisma } from "../lib/prisma.js";
 import { HttpError } from "../middleware/error.js";
 import { logger } from "../lib/logger.js";
 import { notifyProfileSubmitted } from "./notify.service.js";
+
+/**
+ * The default `include` block used everywhere the frontend reads a
+ * profile. Centralised so a new relation (Project, Certification, …)
+ * only needs to land in one spot. Ordering choices:
+ *   - experiences.projects ordered by createdAt so the display order
+ *     matches insertion order.
+ *   - candidateProjects + certifications ordered updatedAt DESC so the
+ *     candidate's most-recent edit floats to the top of the resume.
+ */
+const PROFILE_INCLUDE = {
+  education: true,
+  experiences: {
+    include: { projects: { orderBy: { createdAt: "asc" as const } } },
+    orderBy: { fromDate: "desc" as const },
+  },
+  projects: { orderBy: { updatedAt: "desc" as const } },
+  certifications: { orderBy: { updatedAt: "desc" as const } },
+} satisfies Prisma.CandidateProfileInclude;
 
 /**
  * Get the caller's profile, lazily creating an empty shell on first hit so
@@ -12,13 +39,13 @@ import { notifyProfileSubmitted } from "./notify.service.js";
 export async function getOrCreateProfile(userId: string): Promise<ProfileWithRelations> {
   const existing = await prisma.candidateProfile.findUnique({
     where: { userId },
-    include: { education: true, experiences: { include: { projects: { orderBy: { createdAt: "asc" } } }, orderBy: { fromDate: "desc" } } },
+    include: PROFILE_INCLUDE,
   });
   if (existing) return existing;
 
   return prisma.candidateProfile.create({
     data: { userId },
-    include: { education: true, experiences: { include: { projects: { orderBy: { createdAt: "asc" } } }, orderBy: { fromDate: "desc" } } },
+    include: PROFILE_INCLUDE,
   });
 }
 
@@ -32,8 +59,7 @@ export async function getProfileByUserId(userId: string): Promise<ProfileWithUse
   const found = await prisma.candidateProfile.findUnique({
     where: { userId },
     include: {
-      education: true,
-      experiences: { include: { projects: { orderBy: { createdAt: "asc" } } }, orderBy: { fromDate: "desc" } },
+      ...PROFILE_INCLUDE,
       user: {
         select: { id: true, name: true, email: true, mobile: true, role: true, createdAt: true, lastSeenAt: true },
       },
@@ -62,7 +88,7 @@ export async function patchProfile(
   const updated = await prisma.candidateProfile.update({
     where: { userId },
     data,
-    include: { education: true, experiences: { include: { projects: { orderBy: { createdAt: "asc" } } }, orderBy: { fromDate: "desc" } } },
+    include: PROFILE_INCLUDE,
   });
 
   // Detect the first-time submit: profile had no template before, and
@@ -162,6 +188,86 @@ export async function replaceExperiences(
   });
 }
 
+export interface CandidateProjectInput {
+  name: string;
+  description?: string | null;
+  skills?: string[];
+  role?: string | null;
+  showcaseUrl?: string | null;
+  startedAt?: string | null;
+  endedAt?: string | null;
+}
+
+/**
+ * Replace the standalone / personal projects list. Same wipe-and-insert
+ * shape as the education/experience flows — the wizard's project step
+ * is add/remove-freely and we don't want ghost rows.
+ */
+export async function replaceCandidateProjects(
+  userId: string,
+  rows: CandidateProjectInput[],
+): Promise<CandidateProject[]> {
+  const profile = await getOrCreateProfile(userId);
+  return prisma.$transaction(async (tx) => {
+    await tx.candidateProject.deleteMany({ where: { profileId: profile.id } });
+    if (rows.length === 0) return [];
+    for (const r of rows) {
+      await tx.candidateProject.create({
+        data: {
+          profileId: profile.id,
+          name: r.name,
+          description: r.description ?? null,
+          skills: (r.skills ?? []) as Prisma.InputJsonValue,
+          role: r.role ?? null,
+          showcaseUrl: r.showcaseUrl ?? null,
+          startedAt: r.startedAt ?? null,
+          endedAt: r.endedAt ?? null,
+        },
+      });
+    }
+    return tx.candidateProject.findMany({
+      where: { profileId: profile.id },
+      orderBy: { updatedAt: "desc" },
+    });
+  });
+}
+
+export interface CertificationInput {
+  name: string;
+  issuer?: string | null;
+  issuedYear?: number | null;
+  expiryYear?: number | null;
+  credentialId?: string | null;
+  credentialUrl?: string | null;
+}
+
+/** Replace the certifications list (wipe + reinsert). */
+export async function replaceCertifications(
+  userId: string,
+  rows: CertificationInput[],
+): Promise<Certification[]> {
+  const profile = await getOrCreateProfile(userId);
+  return prisma.$transaction(async (tx) => {
+    await tx.certification.deleteMany({ where: { profileId: profile.id } });
+    if (rows.length === 0) return [];
+    await tx.certification.createMany({
+      data: rows.map((r) => ({
+        profileId: profile.id,
+        name: r.name,
+        issuer: r.issuer ?? null,
+        issuedYear: r.issuedYear ?? null,
+        expiryYear: r.expiryYear ?? null,
+        credentialId: r.credentialId ?? null,
+        credentialUrl: r.credentialUrl ?? null,
+      })),
+    });
+    return tx.certification.findMany({
+      where: { profileId: profile.id },
+      orderBy: { updatedAt: "desc" },
+    });
+  });
+}
+
 /**
  * Get-or-create the caller's employer profile. The /auth/register flow only
  * creates a User row for employers — the profile is implied until they fill
@@ -192,6 +298,8 @@ export type ExperienceWithProjects = Experience & { projects: ExperienceProject[
 export type ProfileWithRelations = CandidateProfile & {
   education: Education[];
   experiences: ExperienceWithProjects[];
+  projects: CandidateProject[];
+  certifications: Certification[];
 };
 
 export type ProfileWithUser = ProfileWithRelations & {

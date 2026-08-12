@@ -64,6 +64,10 @@ export interface Job {
   skills: string[];
   benefits?: JobBenefit[];
   contactEmail?: string;
+  contactMobile?: string;
+  /** Naukri-style taxonomy fields — shown on the card + filterable. */
+  industry?: string;
+  department?: string;
   postedAt: string;
   /** ISO string — 45 days after postedAt on create, extended by repost. */
   expiresAt?: string;
@@ -208,6 +212,8 @@ interface JobsState {
     type?: JobType;
     experience?: JobExperience;
     districtId?: string;
+    industry?: string;
+    department?: string;
     search?: string;
     pageSize?: number;
   }) => Promise<void>;
@@ -298,6 +304,8 @@ export const useJobs = create<JobsState>((set, get) => ({
         type: filters.type ? TYPE_TO_API[filters.type] : undefined,
         experience: filters.experience ? EXPERIENCE_TO_API[filters.experience] : undefined,
         districtId: filters.districtId,
+        industry: filters.industry,
+        department: filters.department,
         search: filters.search,
         page: 1,
         pageSize: filters.pageSize ?? 100,
@@ -352,6 +360,9 @@ export const useJobs = create<JobsState>((set, get) => ({
       skills: input.skills,
       benefits: input.benefits,
       contactEmail: input.contactEmail,
+      contactMobile: input.contactMobile,
+      industry: input.industry,
+      department: input.department,
     });
     const local = fromApiJob(job);
     const next = [local, ...get().jobs];
@@ -389,6 +400,9 @@ export const useJobs = create<JobsState>((set, get) => ({
       skills: input.skills,
       benefits: input.benefits,
       contactEmail: input.contactEmail,
+      contactMobile: input.contactMobile,
+      industry: input.industry,
+      department: input.department,
     });
     const local = fromApiJob(job);
     const next = [local, ...get().jobs];
@@ -512,6 +526,9 @@ export function fromApiJob(j: ApiJob): Job {
     skills: j.skills,
     benefits: (j.benefits ?? []) as JobBenefit[],
     contactEmail: j.contactEmail ?? undefined,
+    contactMobile: j.contactMobile ?? undefined,
+    industry: j.industry ?? undefined,
+    department: j.department ?? undefined,
     postedAt: j.postedAt,
     expiresAt: j.expiresAt,
   };

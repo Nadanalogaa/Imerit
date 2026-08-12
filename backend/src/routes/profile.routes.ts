@@ -10,10 +10,14 @@ import {
   getProfileByUserId,
   patchProfile,
   patchEmployerProfile,
+  replaceCandidateProjects,
+  replaceCertifications,
   replaceEducation,
   replaceExperiences,
 } from "../services/profile.service.js";
 import {
+  candidateProjectsReplaceSchema,
+  certificationsReplaceSchema,
   educationReplaceSchema,
   employerProfilePatchSchema,
   experiencesReplaceSchema,
@@ -79,6 +83,30 @@ router.put(
     const { experiences } = req.body as { experiences: Array<{ company: string; role: string; fromDate: string }> };
     const rows = await replaceExperiences(req.user!.sub, experiences as Parameters<typeof replaceExperiences>[1]);
     res.json({ experiences: rows });
+  }),
+);
+
+router.put(
+  "/candidate/profile/projects",
+  requireAuth,
+  requireRole(UserRole.CANDIDATE),
+  validate({ body: candidateProjectsReplaceSchema }),
+  asyncHandler(async (req, res) => {
+    const { projects } = req.body as { projects: Parameters<typeof replaceCandidateProjects>[1] };
+    const rows = await replaceCandidateProjects(req.user!.sub, projects);
+    res.json({ projects: rows });
+  }),
+);
+
+router.put(
+  "/candidate/profile/certifications",
+  requireAuth,
+  requireRole(UserRole.CANDIDATE),
+  validate({ body: certificationsReplaceSchema }),
+  asyncHandler(async (req, res) => {
+    const { certifications } = req.body as { certifications: Parameters<typeof replaceCertifications>[1] };
+    const rows = await replaceCertifications(req.user!.sub, certifications);
+    res.json({ certifications: rows });
   }),
 );
 

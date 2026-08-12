@@ -50,6 +50,35 @@ export interface ApiExperience {
   createdAt?: string;
 }
 
+/** Standalone / personal projects on the candidate profile (freshers +
+ *  experienced), distinct from ExperienceProject which is role-scoped. */
+export interface ApiCandidateProject {
+  id?: string;
+  profileId?: string;
+  name: string;
+  description?: string | null;
+  skills?: string[];
+  role?: string | null;
+  showcaseUrl?: string | null;
+  startedAt?: string | null;
+  endedAt?: string | null;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface ApiCertification {
+  id?: string;
+  profileId?: string;
+  name: string;
+  issuer?: string | null;
+  issuedYear?: number | null;
+  expiryYear?: number | null;
+  credentialId?: string | null;
+  credentialUrl?: string | null;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
 export interface ApiProfileLink {
   label: string;
   url: string;
@@ -90,6 +119,11 @@ export interface ApiCandidateProfile {
   nonItDepartments: string[] | null;
   yearsOfExperience: number | null;
   topSkills: string[] | null;
+  industry: string | null;
+  department: string | null;
+  /** Base64 data URL — PDF/DOC/DOCX up to 5 MB. */
+  cvUrl: string | null;
+  cvFileName: string | null;
   links?: ApiProfileLink[] | null;
 
   selectedTemplateId: ApiTemplateId | null;
@@ -101,6 +135,8 @@ export interface ApiCandidateProfile {
 
   education: ApiEducation[];
   experiences: ApiExperience[];
+  projects: ApiCandidateProject[];
+  certifications: ApiCertification[];
 }
 
 /** Profile patch shape — any subset of the writable fields. */
@@ -132,6 +168,10 @@ export type ApiProfilePatch = Partial<
     | "nonItDepartments"
     | "yearsOfExperience"
     | "topSkills"
+    | "industry"
+    | "department"
+    | "cvUrl"
+    | "cvFileName"
     | "links"
     | "selectedTemplateId"
   >
@@ -157,6 +197,18 @@ export const profileApi = {
     api<{ experiences: ApiExperience[] }>("/candidate/profile/experiences", {
       method: "PUT",
       json: { experiences },
+    }),
+
+  replaceProjects: (projects: ApiCandidateProject[]) =>
+    api<{ projects: ApiCandidateProject[] }>("/candidate/profile/projects", {
+      method: "PUT",
+      json: { projects },
+    }),
+
+  replaceCertifications: (certifications: ApiCertification[]) =>
+    api<{ certifications: ApiCertification[] }>("/candidate/profile/certifications", {
+      method: "PUT",
+      json: { certifications },
     }),
 
   getByUserId: (userId: string) =>

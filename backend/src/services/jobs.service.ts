@@ -21,6 +21,8 @@ export interface JobFilters {
   type?: JobType;
   experience?: JobExperience;
   districtId?: string;
+  industry?: string;
+  department?: string;
   search?: string;
   page: number;
   pageSize: number;
@@ -48,6 +50,8 @@ export async function listPublicJobs(args: JobFilters) {
   if (args.experience === "FRESHER") where.experience = { in: ["FRESHER", "ANY"] };
   else if (args.experience === "EXPERIENCED") where.experience = { in: ["EXPERIENCED", "ANY"] };
   if (args.districtId) where.districtId = args.districtId;
+  if (args.industry) where.industry = args.industry;
+  if (args.department) where.department = args.department;
   if (args.search?.trim()) {
     const q = args.search.trim();
     where.OR = [
@@ -110,6 +114,7 @@ interface CreateJobArgs {
     contactEmail?: string;
     contactMobile?: string;
     industry?: string;
+    department?: string;
   };
 }
 

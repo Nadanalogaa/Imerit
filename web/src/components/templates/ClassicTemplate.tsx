@@ -51,6 +51,57 @@ export function ClassicTemplate({ user, profile }: TemplateProps) {
  </p>
  </div>
  <p className="text-[#1E3A8A]">{e.company || "Company"}</p>
+ {(e.projects ?? []).length > 0 && (
+ <ul className="mt-1 ml-4 list-disc space-y-0.5 text-[11px] text-[#27314D]">
+ {(e.projects ?? []).map((p, pi) => (
+ <li key={pi}>
+ <span className="font-semibold text-[#0B1B3A]">{p.name}</span>
+ {p.description && <> — {p.description}</>}
+ </li>
+ ))}
+ </ul>
+ )}
+ </div>
+ ))}
+ </Section>
+ )}
+
+ {profile.projects && profile.projects.length > 0 && (
+ <Section title="Projects">
+ {profile.projects.map((p, i) => (
+ <div key={i} className="mb-2 last:mb-0">
+ <div className="flex items-baseline justify-between">
+ <p className="font-semibold">{p.name}</p>
+ {(p.startedAt || p.endedAt) && (
+ <p className="text-[10px] tracking-wide text-[#27314D]">
+ {[p.startedAt, p.endedAt].filter(Boolean).join(" – ")}
+ </p>
+ )}
+ </div>
+ {p.role && <p className="text-[#1E3A8A]">{p.role}</p>}
+ {p.description && <p className="text-[11px] text-[#27314D]">{p.description}</p>}
+ {p.skills && p.skills.length > 0 && (
+ <p className="text-[10px] italic text-[#27314D]">Stack: {p.skills.join(", ")}</p>
+ )}
+ {p.showcaseUrl && (
+ <p className="text-[10px] text-[#1E3A8A]">↗ {p.showcaseUrl}</p>
+ )}
+ </div>
+ ))}
+ </Section>
+ )}
+
+ {profile.certifications && profile.certifications.length > 0 && (
+ <Section title="Certifications">
+ {profile.certifications.map((c, i) => (
+ <div key={i} className="mb-1.5 last:mb-0 flex items-baseline justify-between">
+ <div>
+ <p className="font-semibold">{c.name}</p>
+ {c.issuer && <p className="text-[11px] text-[#27314D]">{c.issuer}</p>}
+ </div>
+ <p className="text-[10px] text-[#27314D]">
+ {[c.issuedYear, c.expiryYear ? `→ ${c.expiryYear}` : ""].filter(Boolean).join(" ")}
+ </p>
  </div>
  ))}
  </Section>
@@ -103,6 +154,25 @@ export function ClassicTemplate({ user, profile }: TemplateProps) {
  {profile.preferredLocation && (
  <Section title="Preferred Location">
  <p>{profile.preferredLocation}</p>
+ </Section>
+ )}
+
+ {(profile.industry || profile.department) && (
+ <Section title="Industry / Department">
+ {profile.industry && <p>{profile.industry}</p>}
+ {profile.department && <p className="text-[#27314D]">{profile.department}</p>}
+ </Section>
+ )}
+
+ {profile.links && profile.links.length > 0 && (
+ <Section title="Links">
+ <ul className="space-y-1">
+ {profile.links.map((l, i) => (
+ <li key={i} className="truncate">
+ <span className="font-semibold text-[#1E3A8A]">{l.label}:</span> {l.url}
+ </li>
+ ))}
+ </ul>
  </Section>
  )}
  </aside>

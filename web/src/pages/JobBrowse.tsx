@@ -76,6 +76,8 @@ export function JobBrowse() {
  types: [],
  experience: "all",
  posted: "any",
+ industry: "",
+ department: "",
  });
  const [filtersOpen, setFiltersOpen] = useState(false); // mobile drawer
  const districts = useLocations((s) => s.districts);
@@ -123,6 +125,8 @@ export function JobBrowse() {
  const cutoff = Date.now() - POSTED_MS[filters.posted];
  if (new Date(j.postedAt).getTime() < cutoff) return false;
  }
+ if (skip !== "industry" && filters.industry && (j.industry ?? "") !== filters.industry) return false;
+ if (skip !== "department" && filters.department && (j.department ?? "") !== filters.department) return false;
  return true;
  };
 
@@ -282,8 +286,10 @@ export function JobBrowse() {
  filters.districts.length + filters.taluks.length + filters.types.length +
  (filters.field !== "all" ? 1 : 0) +
  (filters.experience !== "all" ? 1 : 0) +
- (filters.posted !== "any" ? 1 : 0);
- const clearAll = () => setFilters({ districts: [], taluks: [], field: "all", types: [], experience: "all", posted: "any" });
+ (filters.posted !== "any" ? 1 : 0) +
+ (filters.industry ? 1 : 0) +
+ (filters.department ? 1 : 0);
+ const clearAll = () => setFilters({ districts: [], taluks: [], field: "all", types: [], experience: "all", posted: "any", industry: "", department: "" });
 
  const radiusOptions = [
  { value: 5, label: "5 km" },
@@ -416,6 +422,16 @@ export function JobBrowse() {
  {filters.posted !== "any" && (
  <Chip onClear={() => setFilters({ ...filters, posted: "any" })}>
  Last {filters.posted}
+ </Chip>
+ )}
+ {filters.industry && (
+ <Chip onClear={() => setFilters({ ...filters, industry: "" })}>
+ {filters.industry}
+ </Chip>
+ )}
+ {filters.department && (
+ <Chip onClear={() => setFilters({ ...filters, department: "" })}>
+ {filters.department}
  </Chip>
  )}
  <button
@@ -678,12 +694,23 @@ function JobCard({ job, matchResult, distance, delay }: { job: Job; matchResult?
  {initials}
  </div>
  <div className="min-w-0 flex-1">
+ {/* Position title + company on one line so candidates can see the
+     hiring org at a glance. Company name kept subordinate (medium
+     weight + zinc-500) so the position remains the visual anchor. */}
  <h2 className="truncate text-base font-semibold tracking-tight text-zinc-900 dark:text-zinc-100">
- {job.title}
+ <span>{job.title}</span>
+ {job.employerName && (
+   <>
+     <span className="mx-1.5 text-zinc-400 dark:text-zinc-600">·</span>
+     <span className="font-medium text-zinc-600 dark:text-zinc-400">{job.employerName}</span>
+   </>
+ )}
  </h2>
- <p className="truncate text-xs text-zinc-600 dark:text-zinc-400">
- {job.employerName}
+ {(job.industry || job.department) && (
+ <p className="mt-0.5 truncate text-[11px] text-zinc-500 dark:text-zinc-500">
+ {[job.industry, job.department].filter(Boolean).join(" · ")}
  </p>
+ )}
  </div>
  {/* pr-10 reserves ~40px on the right so the absolute-positioned
      bookmark button (top-3 right-3, h-8 w-8) doesn't sit on top of

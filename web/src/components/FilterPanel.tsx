@@ -1,9 +1,10 @@
 import { useMemo, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { ChevronDown, ChevronUp, MapPin, Briefcase, Code2, Clock, GraduationCap, X } from "lucide-react";
+import { ChevronDown, ChevronUp, MapPin, Briefcase, Code2, Clock, GraduationCap, X, Building2 } from "lucide-react";
 import { useLocations } from "../store/locations";
 import type { JobField, JobExperience, JobType } from "../store/jobs";
 import { Checkbox } from "./Checkbox";
+import { DEPARTMENTS, industriesForField } from "../lib/industryTaxonomy";
 
 export type PostedBucket = "any" | "24h" | "7d" | "30d";
 
@@ -23,6 +24,11 @@ export interface FilterState {
   types: JobType[];
   experience: JobExperience | "all";
   posted: PostedBucket;
+  /** Naukri-style filters — empty string means "any". Single-select
+   *  because a job posting has exactly one industry + department; a
+   *  multi-select here would silently produce an AND (never any results). */
+  industry: string;
+  department: string;
 }
 
 interface Props {
@@ -210,6 +216,42 @@ export function FilterPanel({ state, counts, onChange, onClose }: Props) {
               onChange={() => onChange({ ...state, field: "non_it" })}
             />
           </div>
+        </FacetGroup>
+
+        <FacetGroup
+          icon={<Building2 size={14} className="text-brand-500" />}
+          title="Industry"
+          open={openSections.industry ?? true}
+          onToggle={() => toggleSection("industry")}
+        >
+          <select
+            value={state.industry}
+            onChange={(e) => onChange({ ...state, industry: e.target.value })}
+            className="h-10 w-full rounded-lg border border-zinc-200 bg-white px-3 text-sm text-zinc-900 focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500/15 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-100"
+          >
+            <option value="">All industries</option>
+            {industriesForField(state.field === "it" ? "IT" : state.field === "non_it" ? "NON_IT" : undefined).map((label) => (
+              <option key={label} value={label}>{label}</option>
+            ))}
+          </select>
+        </FacetGroup>
+
+        <FacetGroup
+          icon={<Building2 size={14} className="text-teal-500" />}
+          title="Department"
+          open={openSections.department ?? true}
+          onToggle={() => toggleSection("department")}
+        >
+          <select
+            value={state.department}
+            onChange={(e) => onChange({ ...state, department: e.target.value })}
+            className="h-10 w-full rounded-lg border border-zinc-200 bg-white px-3 text-sm text-zinc-900 focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500/15 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-100"
+          >
+            <option value="">All departments</option>
+            {DEPARTMENTS.map((label) => (
+              <option key={label} value={label}>{label}</option>
+            ))}
+          </select>
         </FacetGroup>
 
         <FacetGroup

@@ -35,6 +35,9 @@ export interface CandidateFilterState {
    */
   nearJobId?: string;
   maxDistanceKm?: number;
+  /** Naukri-style taxonomy filters. Empty string means "any". */
+  industry?: string;
+  department?: string;
   sort: CandidateSort;
 }
 
@@ -54,7 +57,9 @@ export function isDefaultFilter(f: CandidateFilterState): boolean {
     f.yearsMax == null &&
     f.educationLevels.length === 0 &&
     f.skills.length === 0 &&
-    !f.nearJobId
+    !f.nearJobId &&
+    !f.industry &&
+    !f.department
   );
 }
 
@@ -66,7 +71,9 @@ export function activeFacetCount(f: CandidateFilterState): number {
     (f.yearsMin != null || f.yearsMax != null ? 1 : 0) +
     (f.educationLevels.length > 0 ? 1 : 0) +
     (f.skills.length > 0 ? 1 : 0) +
-    (f.nearJobId ? 1 : 0)
+    (f.nearJobId ? 1 : 0) +
+    (f.industry ? 1 : 0) +
+    (f.department ? 1 : 0)
   );
 }
 
@@ -130,6 +137,8 @@ export function matchesFilter(
   }
   if (f.field && profile.field !== f.field) return false;
   if (f.candidateType && profile.type !== f.candidateType) return false;
+  if (f.industry && (profile.industry ?? "") !== f.industry) return false;
+  if (f.department && (profile.department ?? "") !== f.department) return false;
   if (f.yearsMin != null || f.yearsMax != null) {
     const y = profile.yearsOfExperience ?? -1;
     if (f.yearsMin != null && y < f.yearsMin) return false;

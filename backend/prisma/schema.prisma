@@ -190,6 +190,19 @@ model CandidateProfile {
   yearsOfExperience Int?
   topSkills         Json? // string[]
 
+  // Naukri-style industry + department taxonomy. Both optional at the
+  // schema layer for backwards compatibility; the profile wizard treats
+  // them as recommended so candidates surface in the employer
+  // Industry/Department filters on Browse Candidates.
+  industry          String? @db.VarChar(120)
+  department        String? @db.VarChar(120)
+
+  // Uploaded CV — base64 data URL (PDF/DOC/DOCX, ≤5 MB). Same storage
+  // pattern as photoUrl / employerProfile.logoUrl. Move to object storage
+  // when the DB weight becomes a concern.
+  cvUrl             String? @db.Text
+  cvFileName        String? @db.VarChar(255)
+
   // Showcase links — array of { label, url }. Optional. Free-form so the
   // candidate can add LinkedIn, Portfolio, GitHub, Behance, anything.
   links             Json     @default("[]") // { label: string; url: string }[]
@@ -203,14 +216,17 @@ model CandidateProfile {
   moderatedAt      DateTime?
   moderatedById    String?
 
-  education    Education[]
-  experiences  Experience[]
-  applications Application[] @relation("CandidateAppsViaProfile")
+  education      Education[]
+  experiences    Experience[]
+  projects       CandidateProject[]
+  certifications Certification[]
+  applications   Application[] @relation("CandidateAppsViaProfile")
 
   @@index([moderationStatus])
   @@index([type, field])
   @@index([currentDistrictId])
   @@index([preferredDistrictId])
+  @@index([industry, department])
   @@map("candidate_profiles")
 }
 
@@ -280,6 +296,52 @@ model ExperienceProject {
 
   @@index([experienceId])
   @@map("experience_projects")
+}
+
+/**
+ * Standalone / personal projects that live on the candidate profile itself,
+ * not scoped to a specific Experience row. Freshers use this for college /
+ * side projects; experienced candidates can add personal work here too
+ * (per-role projects still live on ExperienceProject).
+ */
+model CandidateProject {
+  id          String           @id @default(cuid())
+  profileId   String
+  profile     CandidateProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  name        String
+  description String?          @db.Text
+  skills      Json             @default("[]") // string[]
+  role        String?          @db.VarChar(120) // "Team lead", "Individual contributor", etc.
+  showcaseUrl String?          @db.VarChar(512)
+  startedAt   String?          @db.VarChar(10) // "YYYY-MM" or "YYYY"
+  endedAt     String?          @db.VarChar(10) // "YYYY-MM" / "YYYY" / "Present"
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+
+  @@index([profileId])
+  @@map("candidate_projects")
+}
+
+/**
+ * Certifications, both online (Coursera, Udemy) and formal (AWS, PMP, GATE).
+ * Optional expiry so time-bound certs (AWS, security) show currency status
+ * in the resume view.
+ */
+model Certification {
+  id            String           @id @default(cuid())
+  profileId     String
+  profile       CandidateProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  name          String
+  issuer        String?          @db.VarChar(200)
+  issuedYear    Int?
+  expiryYear    Int?
+  credentialId  String?          @db.VarChar(160)
+  credentialUrl String?          @db.VarChar(512)
+  createdAt     DateTime         @default(now())
+  updatedAt     DateTime         @updatedAt
+
+  @@index([profileId])
+  @@map("certifications")
 }
 
 // -------------------------------------------------------------------- //
@@ -392,6 +454,10 @@ model Job {
   // employer because staffing agencies rotate across industries and a single
   // employer can legitimately post jobs across categories.
   industry      String?       @db.VarChar(120)
+  // Naukri-style department taxonomy — sits next to industry in the wizard
+  // and both surface as Browse Jobs filters. Nullable so older jobs stay
+  // valid.
+  department    String?       @db.VarChar(120)
   // Lifecycle
   status            JobStatus        @default(ACTIVE)
   moderationStatus  ModerationStatus @default(PENDING)

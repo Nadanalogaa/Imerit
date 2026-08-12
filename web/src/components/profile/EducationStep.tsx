@@ -1,3 +1,4 @@
+import { useEffect, useMemo, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { GraduationCap, Plus, ChevronDown } from "lucide-react";
 import type { Education, EducationLevel } from "../../store/profile";
@@ -299,24 +300,107 @@ function DistrictSelect({
  onChange: (id: string) => void;
 }) {
  const districts = useLocations((s) => s.districts);
- return (
- <div>
- <label className="mb-1.5 block text-[12px] font-semibold text-zinc-700 dark:text-zinc-300">{label}</label>
- <div className="relative">
- <select
- value={value}
- onChange={(e) => onChange(e.target.value)}
- className="h-11 w-full appearance-none rounded-lg border border-zinc-300 bg-white pl-3.5 pr-9 text-sm focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500/15 dark:border-zinc-700 dark:bg-zinc-950"
- >
- <option value="">Select district</option>
- {districts.map((d) => (
- <option key={d.id} value={d.id}>{d.name}</option>
- ))}
- </select>
- <ChevronDown size={15} className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400" />
- </div>
- </div>
- );
+  const [open, setOpen] = useState(false);
+  const [query, setQuery] = useState("");
+  const rootRef = useRef<HTMLDivElement>(null);
+
+  const selected = districts.find((d) => d.id === value);
+  const filtered = useMemo(
+    () => districts.filter((d) => d.name.toLowerCase().includes(query.toLowerCase().trim())),
+    [districts, query],
+  );
+
+  useEffect(() => {
+    const onDown = (e: MouseEvent) => {
+      if (!rootRef.current?.contains(e.target as Node)) setOpen(false);
+    };
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setOpen(false);
+    };
+    document.addEventListener("mousedown", onDown);
+    document.addEventListener("keydown", onKey);
+    return () => {
+      document.removeEventListener("mousedown", onDown);
+      document.removeEventListener("keydown", onKey);
+    };
+  }, []);
+
+  const selectDistrict = (id: string) => {
+    onChange(id);
+    setQuery("");
+    setOpen(false);
+  };
+
+  return (
+    <div ref={rootRef}>
+      <label className="mb-1.5 block text-[12px] font-semibold text-zinc-700 dark:text-zinc-300">{label}</label>
+      <div className="relative">
+        <button
+          type="button"
+          onClick={() => setOpen((o) => !o)}
+          className="flex h-11 w-full items-center justify-between rounded-lg border border-zinc-300 bg-white px-3.5 text-left text-sm transition hover:border-zinc-400 focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500/15 dark:border-zinc-700 dark:bg-zinc-950 dark:hover:border-zinc-600"
+        >
+          <span className={selected ? "text-zinc-700 dark:text-zinc-300" : "text-zinc-400"}>
+            {selected?.name ?? "Select district"}
+          </span>
+          <ChevronDown size={15} className={`text-zinc-400 transition ${open ? "rotate-180" : ""}`} />
+        </button>
+
+        {open && (
+          <div className="absolute z-30 mt-1 w-full overflow-hidden rounded-lg border border-zinc-200 bg-white shadow-lg dark:border-zinc-700 dark:bg-zinc-900">
+            <div className="border-b border-zinc-200 p-2 dark:border-zinc-700">
+              <input
+                type="text"
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                placeholder="Search districts…"
+                autoFocus
+                className="h-9 w-full rounded-md border border-zinc-200 bg-zinc-50 px-3 text-sm focus:border-brand-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-brand-500/15 dark:border-zinc-700 dark:bg-zinc-950 dark:focus:bg-zinc-950"
+              />
+            </div>
+            <ul
+              className="max-h-56 overflow-y-auto py-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+              style={{ overscrollBehavior: "contain" }}
+            >
+              <li>
+                <button
+                  type="button"
+                  onClick={() => selectDistrict("")}
+                  className="flex w-full items-center justify-between gap-2 px-3 py-2 text-left text-sm text-zinc-500 hover:bg-brand-50 hover:text-brand-700 dark:text-zinc-400 dark:hover:bg-brand-500/10 dark:hover:text-brand-300"
+                >
+                  Clear selection
+                </button>
+              </li>
+              {filtered.length === 0 ? (
+                <li className="px-3 py-2 text-[12px] text-zinc-500">No districts match "{query}"</li>
+              ) : (
+                filtered.map((d) => {
+                  const active = value === d.id;
+                  return (
+                    <li key={d.id}>
+                      <button
+                        type="button"
+                        onClick={() => selectDistrict(d.id)}
+                        className={[
+                          "flex w-full items-center justify-between gap-2 px-3 py-2 text-left text-sm transition",
+                          active
+                            ? "bg-brand-50 text-brand-700 dark:bg-brand-500/10 dark:text-brand-300"
+                            : "text-zinc-700 hover:bg-brand-50 dark:text-zinc-300 dark:hover:bg-brand-500/10",
+                        ].join(" ")}
+                      >
+                        <span>{d.name}</span>
+                        <ChevronDown size={12} className={`opacity-0 ${active ? "opacity-100" : ""}`} />
+                      </button>
+                    </li>
+                  );
+                })
+              )}
+            </ul>
+          </div>
+        )}
+      </div>
+    </div>
+  );
 }
 
 const LEVEL_ORDER: EducationLevel[] = ["10th", "12th", "diploma", "ug", "pg", "mphil", "phd", "other"];

@@ -5,6 +5,7 @@ import { Navbar } from "../components/Navbar";
 import { StepIndicator } from "../components/profile/StepIndicator";
 import { StepShell } from "../components/profile/StepShell";
 import { PhotoUpload } from "../components/profile/PhotoUpload";
+import { CvUpload } from "../components/profile/CvUpload";
 import { EducationStep } from "../components/profile/EducationStep";
 import { AmbitionStep } from "../components/profile/AmbitionStep";
 import { AboutYouStep } from "../components/profile/AboutYouStep";
@@ -22,6 +23,8 @@ import {
  type Field as FieldKind,
  type Experience,
  type TemplateId,
+ type CandidateProject,
+ type Certification,
 } from "../store/profile";
 
 const STEPS = [
@@ -42,6 +45,12 @@ export function CandidateProfileForm() {
  // into the profile PATCH. Bind the store's setEducation under a
  // different local name to avoid clashing with useState's setter below.
  const saveEducation = useProfile((s) => s.setEducation);
+ // Projects + certifications also have dedicated bulk-replace endpoints
+ // (setProjects / setCertifications on the profile store). We save them
+ // explicitly on the About You step's Next handler so the API mirror
+ // fires alongside the scalar patch.
+ const saveProjects = useProfile((s) => s.setProjects);
+ const saveCertifications = useProfile((s) => s.setCertifications);
 
  const [step, setStep] = useState(0);
 
@@ -50,6 +59,10 @@ export function CandidateProfileForm() {
  const [name, setName] = useState(user.name);
  const [mobile, setMobile] = useState(user.mobile ?? "");
  const [altMobile, setAltMobile] = useState(profile.alternateMobile ?? "");
+ // CV mirrors — kept in local state so the widget stays snappy; the
+ // scalar patch is fired inside the onChange handler.
+ const [cvUrl, setCvUrl] = useState<string | undefined>(profile.cvUrl);
+ const [cvFileName, setCvFileName] = useState<string | undefined>(profile.cvFileName);
 
  // Current location
  const [currentPlace, setCurrentPlace] = useState<PlaceRef>({
@@ -86,6 +99,13 @@ export function CandidateProfileForm() {
  const [topSkills, setTopSkills] = useState<string[]>(profile.topSkills ?? []);
  const [experiences, setExperiences] = useState<Experience[]>(profile.experiences ?? []);
  const [links, setLinks] = useState<import("../store/profile").ProfileLink[]>(profile.links ?? []);
+ // Naukri-style taxonomy — shared between fresher + experienced. Seeded
+ // from the profile, wired through AboutYouStep's onIndustry/onDepartment.
+ const [industry, setIndustry] = useState<string | undefined>(profile.industry);
+ const [department, setDepartment] = useState<string | undefined>(profile.department);
+ // Standalone projects + certifications lists.
+ const [projects, setProjects] = useState<CandidateProject[]>(profile.projects ?? []);
+ const [certifications, setCertifications] = useState<Certification[]>(profile.certifications ?? []);
 
  /**
  * Display label for the preferred work location, derived from the new
@@ -138,6 +158,12 @@ export function CandidateProfileForm() {
  experiences: experiences.length ? experiences : profile.experiences,
  links: links.length ? links : profile.links,
  preferredLocation: preferredLocation ?? profile.preferredLocation,
+ industry: industry ?? profile.industry,
+ department: department ?? profile.department,
+ cvUrl: cvUrl ?? profile.cvUrl,
+ cvFileName: cvFileName ?? profile.cvFileName,
+ projects: projects.length ? projects : profile.projects,
+ certifications: certifications.length ? certifications : profile.certifications,
  };
 
  const liveUser = { ...user, name, mobile };
@@ -165,6 +191,7 @@ export function CandidateProfileForm() {
  if (!name.trim()) next.name = "Required";
  if (!/^[6-9]\d{9}$/.test(mobile)) next.mobile = "Enter a valid 10-digit Indian mobile number";
  if (altMobile && !/^[6-9]\d{9}$/.test(altMobile)) next.altMobile = "Enter a valid 10-digit number or leave blank";
+ if (!currentPlace.districtId) next.currentPlace = "Pick your district";
  setErrors(next);
  if (Object.keys(next).length) return;
  patch(user.id, {
@@ -246,8 +273,10 @@ export function CandidateProfileForm() {
  if (Object.keys(errs).length) return;
  patch(user.id, {
  type,
+ // `field` now applies to both branches (shared IT/Non-IT selector);
+ // internOrJob + IT/Non-IT sub-choices stay fresher-only.
+ field,
  internOrJob: type === "fresher" ? internOrJob : undefined,
- field: type === "fresher" ? field : undefined,
  itSpecialization: type === "fresher" && field === "it" ? itSpecialization : undefined,
  itLanguages: type === "fresher" && field === "it" ? itLanguages : undefined,
  nonItDepartments: type === "fresher" && field === "non_it" ? nonItDepartments : undefined,
@@ -259,6 +288,12 @@ export function CandidateProfileForm() {
  ? links.filter((l) => l.url.trim())
  : undefined,
  });
+ // Naukri-style taxonomy is a scalar patch — allowed to be undefined
+ // so a candidate can un-set both after picking them once.
+ patch(user.id, { industry, department });
+ // Projects + certifications each have their own bulk-replace endpoint.
+ saveProjects(user.id, projects);
+ saveCertifications(user.id, certifications);
  }
 
  setStep((s) => Math.min(s + 1, STEPS.length - 1));
@@ -305,9 +340,14 @@ export function CandidateProfileForm() {
 
  <div className="rounded-xl bg-zinc-50 p-4 dark:bg-zinc-950/50">
  <h3 className="mb-3 text-sm font-semibold tracking-tight text-zinc-900 dark:text-zinc-100">
- Where you live <span className="text-xs font-normal text-zinc-500">(optional)</span>
+ Where you live <span className="text-xs font-normal text-rose-600 dark:text-rose-400">(required)</span>
  </h3>
  <LocationPicker value={currentPlace} onChange={setCurrentPlace} />
+ {errors.currentPlace && (
+ <p className="mt-2 rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-xs text-rose-700 dark:border-rose-500/30 dark:bg-rose-500/10 dark:text-rose-400">
+ {errors.currentPlace}
+ </p>
+ )}
  </div>
 
  <div className="rounded-xl bg-zinc-50 p-4 dark:bg-zinc-950/50">
@@ -320,6 +360,21 @@ export function CandidateProfileForm() {
  </p>
  </div>
  <DistrictMultiSelect value={preferredDistricts} onChange={setPreferredDistricts} />
+ </div>
+
+ <div className="rounded-xl bg-zinc-50 p-4 dark:bg-zinc-950/50">
+ <h3 className="mb-3 text-sm font-semibold tracking-tight text-zinc-900 dark:text-zinc-100">
+ Your CV <span className="text-xs font-normal text-zinc-500">(optional)</span>
+ </h3>
+ <CvUpload
+ value={cvUrl}
+ fileName={cvFileName}
+ onChange={(url, name) => {
+ setCvUrl(url);
+ setCvFileName(name);
+ patch(user.id, { cvUrl: url, cvFileName: name });
+ }}
+ />
  </div>
  </div>
  </StepShell>
@@ -386,6 +441,14 @@ export function CandidateProfileForm() {
  onExperiences={setExperiences}
  links={links}
  onLinks={setLinks}
+ industry={industry}
+ onIndustry={setIndustry}
+ department={department}
+ onDepartment={setDepartment}
+ projects={projects}
+ onProjects={setProjects}
+ certifications={certifications}
+ onCertifications={setCertifications}
  errors={errors}
  />
  </StepShell>
@@ -436,6 +499,8 @@ export function CandidateProfileForm() {
  name,
  mobile,
  altMobile,
+ cvUrl,
+ cvFileName,
  education,
  shortTerm,
  longTerm,
@@ -448,6 +513,11 @@ export function CandidateProfileForm() {
  yearsOfExperience,
  topSkills,
  experiences,
+ links,
+ industry,
+ department,
+ projects,
+ certifications,
  currentPlace,
  preferredDistricts,
  firstPreferred,

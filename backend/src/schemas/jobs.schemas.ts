@@ -35,6 +35,8 @@ export const browseJobsSchema = z.object({
   type: z.nativeEnum(JobType).optional(),
   experience: z.nativeEnum(JobExperience).optional(),
   districtId: z.string().max(80).optional(),
+  industry: z.string().trim().max(120).optional(),
+  department: z.string().trim().max(120).optional(),
   search: z.string().trim().max(200).optional(),
   page: z.coerce.number().int().min(1).default(1),
   pageSize: z.coerce.number().int().min(1).max(100).default(20),
@@ -66,6 +68,9 @@ export const createJobSchema = z.object({
   // Curated industry list on the client, but we accept any short string
   // here — future free-tag support without a schema change.
   industry: z.string().trim().max(120).optional(),
+  // Naukri-style department, paired with industry in the wizard. Also
+  // free-text server-side; the UI enforces the pick-list.
+  department: z.string().trim().max(120).optional(),
 });
 
 export const updateJobSchema = createJobSchema.partial().extend({
@@ -95,6 +100,8 @@ export const employerCandidateSearchSchema = z.object({
   field: z.nativeEnum(FieldKind).optional(),
   type: z.nativeEnum(CandidateType).optional(),
   districtId: z.string().max(80).optional(),
+  industry: z.string().trim().max(120).optional(),
+  department: z.string().trim().max(120).optional(),
   search: z.string().trim().max(200).optional(),
   page: z.coerce.number().int().min(1).default(1),
   pageSize: z.coerce.number().int().min(1).max(100).default(20),

@@ -1,7 +1,7 @@
 import { useEffect } from "react";
 import { Link, Navigate, useParams } from "react-router-dom";
 import { motion } from "framer-motion";
-import { ArrowLeft, Lock, ShieldAlert, Sparkles, Mail, Phone } from "lucide-react";
+import { ArrowLeft, Download, FileText, Lock, ShieldAlert, Sparkles, Mail, Phone } from "lucide-react";
 import { Navbar } from "../components/Navbar";
 import { useAuth, allUsers } from "../store/auth";
 import { useProfile } from "../store/profile";
@@ -104,6 +104,15 @@ export function EmployerCandidateDetail() {
  className="inline-flex items-center gap-1.5 rounded-full bg-gradient-to-r from-sky-500 to-sky-700 px-3 py-1.5 text-xs font-semibold text-white shadow-md shadow-sky-500/30"
  >
  <Phone size={12} /> Call
+ </a>
+ )}
+ {profile.cvUrl && (
+ <a
+ href={profile.cvUrl}
+ download={profile.cvFileName ?? `${candidate.name}-CV.pdf`}
+ className="inline-flex items-center gap-1.5 rounded-full bg-gradient-to-r from-brand-500 to-brand-700 px-3 py-1.5 text-xs font-semibold text-white shadow-md shadow-brand-500/30"
+ >
+ <FileText size={12} /> {profile.cvFileName ?? "Download CV"} <Download size={12} />
  </a>
  )}
  </div>

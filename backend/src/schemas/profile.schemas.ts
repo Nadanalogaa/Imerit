@@ -52,6 +52,20 @@ export const profilePatchSchema = z.object({
   yearsOfExperience: z.number().int().min(0).max(60).nullable().optional(),
   topSkills: stringArray.nullable().optional(),
 
+  // Naukri-style industry + department taxonomy — shared by both
+  // fresher + experienced branches. Free-text at the schema layer so
+  // the UI's option list can evolve without a migration.
+  industry: z.string().trim().max(120).nullable().optional(),
+  department: z.string().trim().max(120).nullable().optional(),
+
+  // Uploaded CV. Base64 data URL, capped at 5 MB (same ballpark as
+  // employer logo, higher to fit a rich-formatted PDF). Client-side
+  // MIME check restricts to PDF/DOC/DOCX; server-side we only bound
+  // the byte count so a stricter check can land later without a
+  // schema change.
+  cvUrl: z.string().max(7_500_000).nullable().optional(),
+  cvFileName: z.string().trim().max(255).nullable().optional(),
+
   // Showcase links — optional, max 10 entries of { label, url }.
   links: z.array(z.object({
     label: z.string().trim().min(1).max(40),
@@ -103,6 +117,39 @@ export const experiencesReplaceSchema = z.object({
   experiences: z.array(experienceRowSchema).max(30),
 });
 export type ExperiencesReplace = z.infer<typeof experiencesReplaceSchema>;
+
+/* ---------- Candidate personal projects (fresher + experienced) ---------- */
+
+const candidateProjectRowSchema = z.object({
+  name: z.string().trim().min(1).max(160),
+  description: z.string().trim().max(2000).nullable().optional(),
+  skills: z.array(z.string().trim().min(1).max(60)).max(20).default([]),
+  role: z.string().trim().max(120).nullable().optional(),
+  showcaseUrl: z.string().trim().url().max(500).nullable().optional(),
+  startedAt: z.string().trim().max(10).nullable().optional(),
+  endedAt: z.string().trim().max(10).nullable().optional(),
+}).strict();
+
+export const candidateProjectsReplaceSchema = z.object({
+  projects: z.array(candidateProjectRowSchema).max(20),
+});
+export type CandidateProjectsReplace = z.infer<typeof candidateProjectsReplaceSchema>;
+
+/* ---------- Certifications ---------- */
+
+const certificationRowSchema = z.object({
+  name: z.string().trim().min(1).max(200),
+  issuer: z.string().trim().max(200).nullable().optional(),
+  issuedYear: z.number().int().min(1950).max(2100).nullable().optional(),
+  expiryYear: z.number().int().min(1950).max(2100).nullable().optional(),
+  credentialId: z.string().trim().max(160).nullable().optional(),
+  credentialUrl: z.string().trim().url().max(500).nullable().optional(),
+}).strict();
+
+export const certificationsReplaceSchema = z.object({
+  certifications: z.array(certificationRowSchema).max(30),
+});
+export type CertificationsReplace = z.infer<typeof certificationsReplaceSchema>;
 
 /* ---------- Employer profile (logo + brand metadata for Post Job wizard) ---------- */
 
