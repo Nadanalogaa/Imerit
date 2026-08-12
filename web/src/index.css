@@ -13,8 +13,14 @@
   --font-sans: "Lato", "Inter", "SF Pro Display", system-ui, -apple-system, sans-serif;
 }
 
+/**
+ * Reset margins only. Do NOT set `height: 100%` on the html/body/#root
+ * chain — it caps every ancestor at viewport height, so pages taller
+ * than the viewport (profile wizard, dashboards) render a second inner
+ * scrollbar in addition to the browser's. `min-h-screen` on page roots
+ * still gives us "at least the viewport" without the containment trap.
+ */
 html, body, #root {
-  height: 100%;
   margin: 0;
 }
 
