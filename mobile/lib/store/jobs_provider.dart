@@ -215,6 +215,51 @@ const benefitTone = {
 /// `Job.expiresAt` default (`now() + interval '45 days'`).
 const jobValidityDays = 45;
 
+/// Extra location on a Job (beyond the primary districtId/lat/lng on the Job
+/// itself). Mirrors web's `JobExtraLocation` — same shape as `PlaceRef` plus a
+/// required display `label` so cards / detail pages can render each pill
+/// without re-resolving the taluk.
+@immutable
+class JobExtraLocation {
+  const JobExtraLocation({
+    this.districtId,
+    this.talukId,
+    this.lat,
+    this.lng,
+    this.pincode,
+    this.street,
+    required this.label,
+  });
+
+  final String? districtId;
+  final String? talukId;
+  final double? lat;
+  final double? lng;
+  final String? pincode;
+  final String? street;
+  final String label;
+
+  Map<String, dynamic> toJson() => {
+        if (districtId != null) 'districtId': districtId,
+        if (talukId != null) 'talukId': talukId,
+        if (lat != null) 'lat': lat,
+        if (lng != null) 'lng': lng,
+        if (pincode != null) 'pincode': pincode,
+        if (street != null) 'street': street,
+        'label': label,
+      };
+
+  static JobExtraLocation fromJson(Map<String, dynamic> j) => JobExtraLocation(
+        districtId: j['districtId'] as String?,
+        talukId: j['talukId'] as String?,
+        lat: (j['lat'] as num?)?.toDouble(),
+        lng: (j['lng'] as num?)?.toDouble(),
+        pincode: j['pincode'] as String?,
+        street: j['street'] as String?,
+        label: (j['label'] as String?) ?? '',
+      );
+}
+
 @immutable
 class Job {
   const Job({
@@ -241,6 +286,7 @@ class Job {
     this.contactEmail,
     this.industry,
     this.department,
+    this.extraLocations = const [],
     required this.postedAt,
     required this.expiresAt,
   });
@@ -271,6 +317,10 @@ class Job {
   final String? industry;
   /// Naukri-style department tag on the job. Nullable.
   final String? department;
+  /// Additional posting locations beyond the primary district / taluk. Empty
+  /// by default. Each entry carries its own display `label` so cards / detail
+  /// pages can render a pill without re-resolving the taluk.
+  final List<JobExtraLocation> extraLocations;
   final String postedAt;
   final String expiresAt;
 
@@ -305,6 +355,8 @@ class Job {
         if (contactEmail != null) 'contactEmail': contactEmail,
         if (industry != null) 'industry': industry,
         if (department != null) 'department': department,
+        if (extraLocations.isNotEmpty)
+          'extraLocations': extraLocations.map((l) => l.toJson()).toList(),
         'postedAt': postedAt,
         'expiresAt': expiresAt,
       };
@@ -345,6 +397,9 @@ class Job {
       contactEmail: j['contactEmail'] as String?,
       industry: j['industry'] as String?,
       department: j['department'] as String?,
+      extraLocations: ((j['extraLocations'] as List<dynamic>?) ?? const [])
+          .map((e) => JobExtraLocation.fromJson(e as Map<String, dynamic>))
+          .toList(),
       postedAt: postedAt,
       expiresAt: expiresAt,
     );
@@ -371,6 +426,7 @@ class Job {
     String? contactEmail,
     String? industry,
     String? department,
+    List<JobExtraLocation>? extraLocations,
     String? postedAt,
     String? expiresAt,
   }) =>
@@ -398,6 +454,7 @@ class Job {
         contactEmail: contactEmail ?? this.contactEmail,
         industry: industry ?? this.industry,
         department: department ?? this.department,
+        extraLocations: extraLocations ?? this.extraLocations,
         postedAt: postedAt ?? this.postedAt,
         expiresAt: expiresAt ?? this.expiresAt,
       );
@@ -612,6 +669,7 @@ class JobsNotifier extends Notifier<List<Job>> {
     List<String> skills = const [],
     List<JobBenefit> benefits = const [],
     String? contactEmail,
+    List<JobExtraLocation> extraLocations = const [],
   }) {
     final now = DateTime.now();
     final job = Job(
@@ -636,6 +694,7 @@ class JobsNotifier extends Notifier<List<Job>> {
       skills: skills,
       benefits: benefits,
       contactEmail: contactEmail,
+      extraLocations: extraLocations,
       postedAt: now.toIso8601String(),
       expiresAt: now.add(const Duration(days: jobValidityDays)).toIso8601String(),
     );
@@ -685,6 +744,11 @@ class JobsNotifier extends Notifier<List<Job>> {
       contactEmail: j['contactEmail'] as String?,
       industry: j['industry'] as String?,
       department: j['department'] as String?,
+      // Server ships extra postings on the `locations` array; map to our
+      // `extraLocations` field so cards + detail page can render the pills.
+      extraLocations: ((j['locations'] as List?) ?? const [])
+          .map((e) => JobExtraLocation.fromJson(e as Map<String, dynamic>))
+          .toList(),
       postedAt: j['postedAt'] as String,
       expiresAt: j['expiresAt'] as String,
     );
@@ -733,6 +797,7 @@ class JobsNotifier extends Notifier<List<Job>> {
     String? contactMobile,
     String? industry,
     String? department,
+    List<JobExtraLocation> extraLocations = const [],
   }) async {
     if (!apiEnabled) {
       return addJob(
@@ -742,6 +807,7 @@ class JobsNotifier extends Notifier<List<Job>> {
         field: field, type: type, experience: experience,
         yearsMin: yearsMin, yearsMax: yearsMax, salaryRange: salaryRange,
         skills: skills, benefits: benefits, contactEmail: contactEmail,
+        extraLocations: extraLocations,
       );
     }
     final input = _toApiInput(
@@ -752,6 +818,7 @@ class JobsNotifier extends Notifier<List<Job>> {
       salaryRange: salaryRange, skills: skills, benefits: benefits,
       contactEmail: contactEmail, contactMobile: contactMobile,
       industry: industry, department: department,
+      extraLocations: extraLocations,
     );
     final row = await JobsApi.instance.employerCreate(input);
     final job = _fromApi(row);
@@ -783,6 +850,7 @@ class JobsNotifier extends Notifier<List<Job>> {
     List<String> skills = const [],
     List<JobBenefit> benefits = const [],
     String? contactEmail,
+    List<JobExtraLocation> extraLocations = const [],
   }) async {
     if (!apiEnabled) {
       // Offline fallback — write to localStorage so demo/dev still works.
@@ -793,6 +861,7 @@ class JobsNotifier extends Notifier<List<Job>> {
         field: field, type: type, experience: experience,
         yearsMin: yearsMin, yearsMax: yearsMax, salaryRange: salaryRange,
         skills: skills, benefits: benefits, contactEmail: contactEmail,
+        extraLocations: extraLocations,
       );
     }
     final input = _toApiInput(
@@ -802,6 +871,7 @@ class JobsNotifier extends Notifier<List<Job>> {
       experience: experience, yearsMin: yearsMin, yearsMax: yearsMax,
       salaryRange: salaryRange, skills: skills, benefits: benefits,
       contactEmail: contactEmail,
+      extraLocations: extraLocations,
     );
     input['employerId'] = employerId;
     final row = await StaffApi.instance.createJob(input);
@@ -846,6 +916,7 @@ class JobsNotifier extends Notifier<List<Job>> {
     String? contactMobile,
     String? industry,
     String? department,
+    List<JobExtraLocation> extraLocations = const [],
   }) {
     final typeStr = _typeKey(type).toUpperCase();
     return {
@@ -871,6 +942,8 @@ class JobsNotifier extends Notifier<List<Job>> {
       if (contactMobile != null && contactMobile.isNotEmpty) 'contactMobile': contactMobile,
       if (industry != null && industry.isNotEmpty) 'industry': industry,
       if (department != null && department.isNotEmpty) 'department': department,
+      if (extraLocations.isNotEmpty)
+        'extraLocations': extraLocations.map((l) => l.toJson()).toList(),
     };
   }
 
@@ -944,6 +1017,7 @@ class JobsNotifier extends Notifier<List<Job>> {
     List<String>? skills,
     List<JobBenefit>? benefits,
     String? contactEmail,
+    List<JobExtraLocation>? extraLocations,
   }) async {
     if (!apiEnabled) {
       // Local-only edit — apply on top of the existing row.
@@ -968,6 +1042,7 @@ class JobsNotifier extends Notifier<List<Job>> {
         skills: skills ?? existing.skills,
         benefits: benefits ?? existing.benefits,
         contactEmail: contactEmail ?? existing.contactEmail,
+        extraLocations: extraLocations ?? existing.extraLocations,
       );
       _persist(state.map((j) => j.id == id ? updated : j).toList());
       return updated;
@@ -994,6 +1069,11 @@ class JobsNotifier extends Notifier<List<Job>> {
     if (skills != null) patch['skills'] = skills;
     if (benefits != null) patch['benefits'] = benefits.map(benefitKey).toList();
     if (contactEmail != null) patch['contactEmail'] = contactEmail;
+    // Explicit list (even empty) tells the backend to wipe+reinsert child rows;
+    // omitting the field leaves existing extras alone — matches web semantics.
+    if (extraLocations != null) {
+      patch['extraLocations'] = extraLocations.map((l) => l.toJson()).toList();
+    }
     try {
       final row = await JobsApi.instance.employerUpdate(id, patch);
       final job = _fromApi(row);

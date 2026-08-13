@@ -48,6 +48,10 @@ class _StaffPostJobPageState extends ConsumerState<StaffPostJobPage> {
   List<String> _skills = [];
   List<JobBenefit> _benefits = [];
   PlaceRef _place = const PlaceRef();
+  // Additional postings for the same job — matches the web LocationStep's
+  // `extraPlaces`. Dropped rows without a district picked at submit time so
+  // an untouched card doesn't produce a phantom JobLocation server-side.
+  List<PlaceRef> _extraPlaces = [];
 
   Map<String, String?> _errors = {};
 
@@ -140,8 +144,24 @@ class _StaffPostJobPageState extends ConsumerState<StaffPostJobPage> {
     }
 
     final loc = ref.read(locationsProvider);
-    final taluk = _place.talukId != null ? loc.talukById(_place.talukId!) : null;
-    final label = taluk != null ? '${taluk.taluk.name}, ${taluk.district.name}' : '';
+    String labelFor(PlaceRef p) {
+      final t = p.talukId != null ? loc.talukById(p.talukId!) : null;
+      return t != null ? '${t.taluk.name}, ${t.district.name}' : '';
+    }
+    final label = labelFor(_place);
+    // Skip empty extra cards; each remaining one becomes a JobLocation row.
+    final extraLocations = _extraPlaces
+        .where((p) => p.districtId != null)
+        .map((p) => JobExtraLocation(
+              districtId: p.districtId,
+              talukId: p.talukId,
+              lat: p.lat,
+              lng: p.lng,
+              pincode: p.pincode,
+              street: p.street,
+              label: labelFor(p),
+            ))
+        .toList();
 
     // Hit POST /staff/jobs when apiEnabled — job lands in the real DB
     // with postedByStaffId set, employer sees it on their dashboard,
@@ -170,6 +190,7 @@ class _StaffPostJobPageState extends ConsumerState<StaffPostJobPage> {
             skills: _skills,
             benefits: _benefits,
             contactEmail: _contactEmail.text.trim().isEmpty ? null : _contactEmail.text.trim(),
+            extraLocations: extraLocations,
           );
     } catch (err) {
       if (mounted) {
@@ -304,8 +325,65 @@ class _StaffPostJobPageState extends ConsumerState<StaffPostJobPage> {
 
             _SectionTitle('Location'),
             const SizedBox(height: 8),
-            LocationPickerWidget(value: _place, onChange: (v) => setState(() => _place = v)),
+            _StaffLocationCard(
+              tone: const Color(0xFFF97316),
+              label: 'Primary location',
+              child: LocationPickerWidget(
+                value: _place,
+                onChange: (v) => setState(() => _place = v),
+              ),
+            ),
             if (_errors['location'] != null) _errorText(_errors['location']!),
+            for (var i = 0; i < _extraPlaces.length; i++) ...[
+              const SizedBox(height: 10),
+              _StaffLocationCard(
+                tone: const Color(0xFF10B981),
+                label: 'Additional location ${i + 1}',
+                onRemove: () {
+                  HapticFeedback.selectionClick();
+                  setState(() {
+                    final rows = [..._extraPlaces]..removeAt(i);
+                    _extraPlaces = rows;
+                  });
+                },
+                child: LocationPickerWidget(
+                  value: _extraPlaces[i],
+                  onChange: (next) {
+                    setState(() {
+                      final rows = [..._extraPlaces];
+                      rows[i] = next;
+                      _extraPlaces = rows;
+                    });
+                  },
+                ),
+              ),
+            ],
+            const SizedBox(height: 10),
+            OutlinedButton.icon(
+              onPressed: _extraPlaces.length >= 15
+                  ? null
+                  : () {
+                      HapticFeedback.selectionClick();
+                      setState(() => _extraPlaces = [..._extraPlaces, const PlaceRef()]);
+                    },
+              icon: const Icon(Icons.add_location_alt_rounded, size: 16),
+              label: Text(
+                _extraPlaces.isEmpty ? 'Add another location' : 'Add one more location',
+                style: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.w700),
+              ),
+              style: OutlinedButton.styleFrom(
+                padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                side: const BorderSide(color: Color(0xFF10B981), width: 1.4),
+                foregroundColor: const Color(0xFF047857),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+              ),
+            ),
+            const SizedBox(height: 6),
+            const Text(
+              'Hiring in multiple places? Add every location — one posting will '
+              "show up in each district's feed.",
+              style: TextStyle(fontSize: 11, height: 1.4, color: Color(0xFF71717A)),
+            ),
             const SizedBox(height: 20),
 
             _SectionTitle('Required skills'),
@@ -359,6 +437,85 @@ class _StaffPostJobPageState extends ConsumerState<StaffPostJobPage> {
         padding: const EdgeInsets.only(top: 6),
         child: Text(text, style: const TextStyle(fontSize: 11.5, color: Color(0xFFEF4444), fontWeight: FontWeight.w600)),
       );
+}
+
+/// Tinted card that wraps a `LocationPickerWidget` on the staff post-job
+/// form. `onRemove` appears only for additional-location cards.
+class _StaffLocationCard extends StatelessWidget {
+  const _StaffLocationCard({
+    required this.tone,
+    required this.label,
+    required this.child,
+    this.onRemove,
+  });
+  final Color tone;
+  final String label;
+  final Widget child;
+  final VoidCallback? onRemove;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.fromLTRB(14, 12, 14, 14),
+      decoration: BoxDecoration(
+        color: tone.withValues(alpha: 0.04),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: tone.withValues(alpha: 0.28)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Row(
+            children: [
+              Icon(Icons.place_rounded, size: 13, color: tone),
+              const SizedBox(width: 6),
+              Expanded(
+                child: Text(
+                  label.toUpperCase(),
+                  style: TextStyle(
+                    fontSize: 10.5,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: 1.4,
+                    color: tone,
+                  ),
+                ),
+              ),
+              if (onRemove != null)
+                InkWell(
+                  onTap: onRemove,
+                  borderRadius: BorderRadius.circular(999),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFE11D48).withValues(alpha: 0.10),
+                      borderRadius: BorderRadius.circular(999),
+                      border: Border.all(color: const Color(0xFFE11D48).withValues(alpha: 0.25)),
+                    ),
+                    child: const Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(Icons.close_rounded, size: 12, color: Color(0xFFBE123C)),
+                        SizedBox(width: 4),
+                        Text(
+                          'Remove',
+                          style: TextStyle(
+                            fontSize: 10.5,
+                            fontWeight: FontWeight.w800,
+                            color: Color(0xFFBE123C),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          child,
+        ],
+      ),
+    );
+  }
 }
 
 class _SectionTitle extends StatelessWidget {

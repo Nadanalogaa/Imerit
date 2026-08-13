@@ -694,6 +694,20 @@ class _JobCard extends StatelessWidget {
                 runSpacing: 6,
                 children: [
                   _Pill(text: job.location, icon: Icons.place_rounded, color: const Color(0xFF71717A), isDark: isDark),
+                  if (job.extraLocations.isNotEmpty)
+                    Tooltip(
+                      // Long-press reveals the full list of extras. Matches
+                      // the web card's `title=` hover text — mobile users
+                      // get the same information via long-press.
+                      message: job.extraLocations.map((l) => l.label).join(' · '),
+                      preferBelow: false,
+                      child: _Pill(
+                        text: '+${job.extraLocations.length} more',
+                        icon: Icons.place_rounded,
+                        color: const Color(0xFF059669),
+                        isDark: isDark,
+                      ),
+                    ),
                   _Pill(text: fieldLabel[job.field]!, icon: isIt ? Icons.code_rounded : Icons.business_center_rounded, color: isIt ? const Color(0xFF0284C7) : const Color(0xFFD97706), isDark: isDark),
                   _Pill(text: typeLabelShort[job.type]!, icon: typeIcon[job.type]!, color: tone, isDark: isDark),
                   if (freshersWelcome && job.type != JobType.internshipTraining)

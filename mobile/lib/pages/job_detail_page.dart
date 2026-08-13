@@ -269,6 +269,11 @@ class _JobDetailPageState extends ConsumerState<JobDetailPage> {
                       runSpacing: 6,
                       children: [
                         _PillBig(text: job.location, icon: Icons.place_rounded, isDark: isDark),
+                        // Every extra location gets its own pill so candidates
+                        // browsing the detail page see every place this role
+                        // is being hired for — matches the web JobDetail.
+                        for (final l in job.extraLocations)
+                          _PillBig(text: l.label, icon: Icons.place_rounded, isDark: isDark),
                         _PillBig(
                           text: fieldLabel[job.field]!,
                           icon: isIt ? Icons.code_rounded : Icons.business_center_rounded,

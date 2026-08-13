@@ -80,7 +80,17 @@ class JobFilterState {
 
   bool matches(Job job) {
     if (hideExpired && job.isExpired) return false;
-    if (districtIds.isNotEmpty && !districtIds.contains(job.districtId)) return false;
+    if (districtIds.isNotEmpty) {
+      // A multi-location posting hits the filter when EITHER its primary
+      // district OR any extra-location district matches — mirrors the
+      // backend `GET /jobs?districtId=X` union semantics.
+      final jobDistricts = <String>{
+        if (job.districtId != null) job.districtId!,
+        for (final l in job.extraLocations)
+          if (l.districtId != null) l.districtId!,
+      };
+      if (!districtIds.any(jobDistricts.contains)) return false;
+    }
     if (field != null && job.field != field) return false;
     if (types.isNotEmpty && !types.contains(job.type)) return false;
     if (experience != null && job.experience != experience && job.experience != JobExperience.any) {
@@ -129,11 +139,15 @@ class _JobFilterSheetState extends ConsumerState<JobFilterSheet> {
   Widget build(BuildContext context) {
     final isDark = ref.watch(themeProvider) == ThemeMode.dark;
     final locations = ref.watch(locationsProvider);
-    final availableDistrictIds = widget.jobs
-        .map((j) => j.districtId)
-        .whereType<String>()
-        .toSet()
-        .toList()
+    // Include every district a job touches — primary AND extras — so a
+    // multi-location posting shows up under each of its district chips.
+    final availableDistrictIds = <String>{
+      for (final j in widget.jobs) ...[
+        if (j.districtId != null) j.districtId!,
+        for (final l in j.extraLocations)
+          if (l.districtId != null) l.districtId!,
+      ],
+    }.toList()
       ..sort();
 
     return DraggableScrollableSheet(

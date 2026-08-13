@@ -69,6 +69,11 @@ class _EmployerPostJobPageState extends ConsumerState<EmployerPostJobPage> {
 
   // Step 4 — Location + contact
   PlaceRef _place = const PlaceRef();
+  // Optional additional postings for the same job. Empty by default. Each
+  // extra card becomes a JobLocation row on the server; the primary location
+  // above stays on the top-level job fields — same shape as the web wizard's
+  // `extraPlaces`.
+  List<PlaceRef> _extraPlaces = [];
   final _contactEmail = TextEditingController();
   // Required contact mobile — matches web's Brand-step contactMobile.
   // Mobile has no separate Brand step, so it lives alongside the
@@ -158,8 +163,25 @@ class _EmployerPostJobPageState extends ConsumerState<EmployerPostJobPage> {
 
   Future<void> _submit() async {
     final loc = ref.read(locationsProvider);
-    final taluk = _place.talukId != null ? loc.talukById(_place.talukId!) : null;
-    final label = taluk != null ? '${taluk.taluk.name}, ${taluk.district.name}' : '';
+    String labelFor(PlaceRef p) {
+      final t = p.talukId != null ? loc.talukById(p.talukId!) : null;
+      return t != null ? '${t.taluk.name}, ${t.district.name}' : '';
+    }
+    final label = labelFor(_place);
+    // Any extra cards without a district picked are empty rows — drop them
+    // before sending, matching the web wizard's `.filter((p) => p.districtId)`.
+    final extraLocations = _extraPlaces
+        .where((p) => p.districtId != null)
+        .map((p) => JobExtraLocation(
+              districtId: p.districtId,
+              talukId: p.talukId,
+              lat: p.lat,
+              lng: p.lng,
+              pincode: p.pincode,
+              street: p.street,
+              label: labelFor(p),
+            ))
+        .toList();
     final user = ref.read(authProvider)!;
     late final Job job;
     try {
@@ -187,6 +209,7 @@ class _EmployerPostJobPageState extends ConsumerState<EmployerPostJobPage> {
             contactMobile: _contactMobile.text.trim().isEmpty ? null : _contactMobile.text.trim(),
             industry: _industry,
             department: _department,
+            extraLocations: extraLocations,
           );
     } catch (err) {
       if (mounted) {
@@ -290,6 +313,8 @@ class _EmployerPostJobPageState extends ConsumerState<EmployerPostJobPage> {
                   _StepScroll(controller: _scrolls[3], child: _LocationStep(
                     place: _place,
                     onPlace: (p) => setState(() => _place = p),
+                    extraPlaces: _extraPlaces,
+                    onExtraPlaces: (rows) => setState(() => _extraPlaces = rows),
                     contactEmail: _contactEmail,
                     contactMobile: _contactMobile,
                     errors: _errors,
@@ -850,6 +875,8 @@ class _LocationStep extends StatelessWidget {
   const _LocationStep({
     required this.place,
     required this.onPlace,
+    required this.extraPlaces,
+    required this.onExtraPlaces,
     required this.contactEmail,
     required this.contactMobile,
     required this.errors,
@@ -857,10 +884,29 @@ class _LocationStep extends StatelessWidget {
   });
   final PlaceRef place;
   final ValueChanged<PlaceRef> onPlace;
+  final List<PlaceRef> extraPlaces;
+  final ValueChanged<List<PlaceRef>> onExtraPlaces;
   final TextEditingController contactEmail;
   final TextEditingController contactMobile;
   final Map<String, String?> errors;
   final bool isDark;
+
+  void _updateExtra(int i, PlaceRef next) {
+    final rows = [...extraPlaces];
+    rows[i] = next;
+    onExtraPlaces(rows);
+  }
+
+  void _removeExtra(int i) {
+    HapticFeedback.selectionClick();
+    final rows = [...extraPlaces]..removeAt(i);
+    onExtraPlaces(rows);
+  }
+
+  void _addExtra() {
+    HapticFeedback.selectionClick();
+    onExtraPlaces([...extraPlaces, const PlaceRef()]);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -875,8 +921,55 @@ class _LocationStep extends StatelessWidget {
           tone: Color(0xFFF97316),
         ),
         const SizedBox(height: 18),
-        LocationPickerWidget(value: place, onChange: onPlace),
+        _LocationCard(
+          isDark: isDark,
+          tone: const Color(0xFFF97316),
+          label: 'Primary location',
+          child: LocationPickerWidget(value: place, onChange: onPlace),
+        ),
         if (errors['location'] != null) _ErrorText(errors['location']!),
+        for (var i = 0; i < extraPlaces.length; i++) ...[
+          const SizedBox(height: 12),
+          _LocationCard(
+            isDark: isDark,
+            tone: const Color(0xFF10B981),
+            label: 'Additional location ${i + 1}',
+            onRemove: () => _removeExtra(i),
+            child: LocationPickerWidget(
+              value: extraPlaces[i],
+              onChange: (next) => _updateExtra(i, next),
+            ),
+          ),
+        ],
+        const SizedBox(height: 12),
+        OutlinedButton.icon(
+          onPressed: extraPlaces.length >= 15 ? null : _addExtra,
+          icon: const Icon(Icons.add_location_alt_rounded, size: 16),
+          label: Text(
+            extraPlaces.isEmpty ? 'Add another location' : 'Add one more location',
+            style: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.w700),
+          ),
+          style: OutlinedButton.styleFrom(
+            padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 18),
+            side: const BorderSide(
+              color: Color(0xFF10B981),
+              width: 1.4,
+              style: BorderStyle.solid,
+            ),
+            foregroundColor: const Color(0xFF047857),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+          ),
+        ),
+        const SizedBox(height: 6),
+        Text(
+          'Hiring for the same role in multiple places? Add every location — '
+          "one posting shows up in each district's Browse Jobs feed.",
+          style: TextStyle(
+            fontSize: 11,
+            height: 1.4,
+            color: isDark ? Colors.white.withValues(alpha: 0.55) : const Color(0xFF71717A),
+          ),
+        ),
         const SizedBox(height: 18),
         _LabelText('Contact Number (Mobile)'),
         const SizedBox(height: 6),
@@ -1234,6 +1327,91 @@ class _ErrorText extends StatelessWidget {
   final String text;
   @override
   Widget build(BuildContext context) => Padding(padding: const EdgeInsets.only(top: 6), child: Text(text, style: const TextStyle(fontSize: 11.5, color: Color(0xFFE11D48), fontWeight: FontWeight.w600)));
+}
+
+/// Wraps a `LocationPickerWidget` in the tinted card style used by
+/// `IndustryDepartmentPicker` so the primary + additional location cards
+/// stack cleanly on the wizard. Optional `onRemove` renders a trailing
+/// remove pill — only shown on additional cards.
+class _LocationCard extends StatelessWidget {
+  const _LocationCard({
+    required this.isDark,
+    required this.tone,
+    required this.label,
+    required this.child,
+    this.onRemove,
+  });
+  final bool isDark;
+  final Color tone;
+  final String label;
+  final Widget child;
+  final VoidCallback? onRemove;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.fromLTRB(14, 12, 14, 14),
+      decoration: BoxDecoration(
+        color: isDark
+            ? tone.withValues(alpha: 0.06)
+            : tone.withValues(alpha: 0.04),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: tone.withValues(alpha: 0.28)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Row(
+            children: [
+              Icon(Icons.place_rounded, size: 13, color: tone),
+              const SizedBox(width: 6),
+              Expanded(
+                child: Text(
+                  label.toUpperCase(),
+                  style: TextStyle(
+                    fontSize: 10.5,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: 1.4,
+                    color: tone,
+                  ),
+                ),
+              ),
+              if (onRemove != null)
+                InkWell(
+                  onTap: onRemove,
+                  borderRadius: BorderRadius.circular(999),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFE11D48).withValues(alpha: 0.10),
+                      borderRadius: BorderRadius.circular(999),
+                      border: Border.all(color: const Color(0xFFE11D48).withValues(alpha: 0.25)),
+                    ),
+                    child: const Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(Icons.close_rounded, size: 12, color: Color(0xFFBE123C)),
+                        SizedBox(width: 4),
+                        Text(
+                          'Remove',
+                          style: TextStyle(
+                            fontSize: 10.5,
+                            fontWeight: FontWeight.w800,
+                            color: Color(0xFFBE123C),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          child,
+        ],
+      ),
+    );
+  }
 }
 
 class _MiniPill extends StatelessWidget {
