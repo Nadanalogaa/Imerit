@@ -155,8 +155,11 @@ export function StaffPostJob() {
       }
     }
 
-    const taluk = v.place.talukId ? talukById(v.place.talukId) : undefined;
-    const locationLabel = taluk ? `${taluk.taluk.name}, ${taluk.district.name}` : "";
+    const labelFor = (p: typeof v.place) => {
+      const t = p.talukId ? talukById(p.talukId) : undefined;
+      return t ? `${t.taluk.name}, ${t.district.name}` : "";
+    };
+    const locationLabel = labelFor(v.place);
 
     // Post the job via the server-side /staff/jobs endpoint — the row
     // lands in Postgres, the employer sees it on their dashboard,
@@ -184,6 +187,17 @@ export function StaffPostJob() {
       skills: v.skills,
       benefits: v.benefits,
       contactEmail: v.contactEmail || undefined,
+      extraLocations: v.extraPlaces
+        .filter((p) => p.districtId)
+        .map((p) => ({
+          districtId: p.districtId,
+          talukId: p.talukId,
+          lat: p.lat,
+          lng: p.lng,
+          pincode: p.pincode,
+          street: p.street,
+          label: labelFor(p),
+        })),
     });
 
     if (freshCreds) {

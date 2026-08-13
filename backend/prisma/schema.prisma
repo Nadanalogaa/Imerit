@@ -476,6 +476,7 @@ model Job {
 
   applications Application[]
   savedBy      SavedJob[]
+  locations    JobLocation[]
 
   @@index([status, moderationStatus])
   @@index([field, type, experience])
@@ -484,6 +485,38 @@ model Job {
   @@index([postedAt])
   @@index([expiresAt])
   @@map("jobs")
+}
+
+/**
+ * Extra locations for a job posting. The Job row keeps its own
+ * district/taluk/lat/lng/pincode/street/location columns as the
+ * PRIMARY location (unchanged, no data migration). This table holds
+ * every additional posting-eligible location — one row per extra.
+ *
+ * Browse-jobs district filter matches when EITHER the primary or any
+ * JobLocation row is in the picked district (see listPublicJobs).
+ */
+model JobLocation {
+  id         String  @id @default(cuid())
+  jobId      String
+  job        Job     @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  // Same shape as the primary columns on Job so the filter query and
+  // any distance math can treat both consistently.
+  districtId String?
+  talukId    String?
+  lat        Float?
+  lng        Float?
+  pincode    String?
+  street     String? @db.VarChar(255)
+  /** Human label — mirrors Job.location, used on cards / detail. */
+  label      String
+  /** Display order — 0-based; primary is implicitly -1 so extras sort after it. */
+  position   Int     @default(0)
+  createdAt  DateTime @default(now())
+
+  @@index([jobId])
+  @@index([districtId])
+  @@map("job_locations")
 }
 
 enum ApplicationStatus {

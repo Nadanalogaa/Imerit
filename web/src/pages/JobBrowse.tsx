@@ -115,8 +115,21 @@ export function JobBrowse() {
  const haystack = `${j.title} ${j.employerName} ${j.description} ${j.skills.join(" ")}`.toLowerCase();
  if (!haystack.includes(q)) return false;
  }
- if (skip !== "districts" && filters.districts.length && !filters.districts.includes(j.districtId ?? "")) return false;
- if (skip !== "taluks" && filters.taluks.length && !filters.taluks.includes(j.talukId ?? "")) return false;
+ if (skip !== "districts" && filters.districts.length) {
+   // Match against the primary district OR any extra JobLocation —
+   // mirrors listPublicJobs on the backend so client-side and API-
+   // side filtering agree when the API isn't wired.
+   const jobDistricts = new Set<string>();
+   if (j.districtId) jobDistricts.add(j.districtId);
+   (j.extraLocations ?? []).forEach((l) => { if (l.districtId) jobDistricts.add(l.districtId); });
+   if (!filters.districts.some((d) => jobDistricts.has(d))) return false;
+ }
+ if (skip !== "taluks" && filters.taluks.length) {
+   const jobTaluks = new Set<string>();
+   if (j.talukId) jobTaluks.add(j.talukId);
+   (j.extraLocations ?? []).forEach((l) => { if (l.talukId) jobTaluks.add(l.talukId); });
+   if (!filters.taluks.some((t) => jobTaluks.has(t))) return false;
+ }
  if (skip !== "field" && filters.field !== "all" && j.field !== filters.field) return false;
  if (skip !== "types" && filters.types.length && !filters.types.includes(j.type)) return false;
  if (skip !== "experience" && filters.experience !== "all"
@@ -733,6 +746,11 @@ function JobCard({ job, matchResult, distance, delay }: { job: Job; matchResult?
 
  <div className="mt-4 flex flex-wrap gap-1.5 text-[10px] font-semibold">
  <Pill icon={<MapPin size={10} />} color="zinc">{job.location}</Pill>
+ {(job.extraLocations?.length ?? 0) > 0 && (
+   <Pill icon={<MapPin size={10} />} color="emerald" title={(job.extraLocations ?? []).map((l) => l.label).join(" · ")}>
+     +{job.extraLocations!.length} more
+   </Pill>
+ )}
  <Pill icon={job.field === "it" ? <Code2 size={10} /> : <Building2 size={10} />} color={job.field === "it" ? "sky" : "amber"}>
  {FIELD_LABEL[job.field]}
  </Pill>
@@ -791,13 +809,15 @@ function Pill({
  icon,
  color,
  children,
+ title,
 }: {
  icon?: React.ReactNode;
  color: keyof typeof PILL_COLORS;
  children: React.ReactNode;
+ title?: string;
 }) {
  return (
- <span className={["inline-flex items-center gap-1 rounded-full px-2 py-0.5", PILL_COLORS[color]].join(" ")}>
+ <span title={title} className={["inline-flex items-center gap-1 rounded-full px-2 py-0.5", PILL_COLORS[color]].join(" ")}>
  {icon}
  {children}
  </span>

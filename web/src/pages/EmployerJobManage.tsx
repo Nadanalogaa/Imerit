@@ -111,6 +111,14 @@ export function EmployerJobManage({ role }: { role: "employer" | "staff" }) {
       pincode: job.pincode,
       street: job.street,
     },
+    extraPlaces: (job.extraLocations ?? []).map((l) => ({
+      districtId: l.districtId,
+      talukId: l.talukId,
+      lat: l.lat,
+      lng: l.lng,
+      pincode: l.pincode,
+      street: l.street,
+    })),
     benefits: job.benefits ?? [],
     companyName: job.employerName,
     contactEmail: job.contactEmail ?? "",
@@ -145,8 +153,11 @@ export function EmployerJobManage({ role }: { role: "employer" | "staff" }) {
           hideBrandStep
           initialValues={initialValues}
           onSubmit={async (v) => {
-            const taluk = v.place.talukId ? talukById(v.place.talukId) : undefined;
-            const locationLabel = taluk ? `${taluk.taluk.name}, ${taluk.district.name}` : job.location;
+            const labelFor = (p: typeof v.place) => {
+              const t = p.talukId ? talukById(p.talukId) : undefined;
+              return t ? `${t.taluk.name}, ${t.district.name}` : "";
+            };
+            const locationLabel = labelFor(v.place) || job.location;
             await updateJobAsync(job.id, {
               title: v.title,
               description: v.description,
@@ -166,6 +177,17 @@ export function EmployerJobManage({ role }: { role: "employer" | "staff" }) {
               skills: v.skills,
               benefits: v.benefits,
               contactEmail: v.contactEmail || undefined,
+              extraLocations: v.extraPlaces
+                .filter((p) => p.districtId)
+                .map((p) => ({
+                  districtId: p.districtId,
+                  talukId: p.talukId,
+                  lat: p.lat,
+                  lng: p.lng,
+                  pincode: p.pincode,
+                  street: p.street,
+                  label: labelFor(p),
+                })),
             });
             setEditing(false);
             setBanner("Changes saved.");

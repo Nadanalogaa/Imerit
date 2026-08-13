@@ -22,6 +22,20 @@ export type ApiJobExperience = "FRESHER" | "EXPERIENCED" | "ANY";
 export type ApiJobStatus = "DRAFT" | "ACTIVE" | "PAUSED" | "CLOSED";
 export type ApiApplicationStatus = "APPLIED" | "VIEWED" | "SHORTLISTED" | "INTERVIEW" | "REJECTED" | "HIRED" | "WITHDRAWN";
 
+export interface ApiJobExtraLocation {
+  id?: string;
+  jobId?: string;
+  districtId: string | null;
+  talukId: string | null;
+  lat: number | null;
+  lng: number | null;
+  pincode: string | null;
+  street?: string | null;
+  label: string;
+  position: number;
+  createdAt?: string;
+}
+
 export interface ApiJob {
   id: string;
   employerId: string;
@@ -34,6 +48,7 @@ export interface ApiJob {
   lat: number | null;
   lng: number | null;
   pincode: string | null;
+  locations?: ApiJobExtraLocation[];
   field: ApiJobField;
   type: ApiJobType;
   experience: ApiJobExperience;
@@ -96,6 +111,16 @@ export interface CreateJobInput {
   contactMobile?: string;
   industry?: string;
   department?: string;
+  /** Extra locations beyond the primary. */
+  extraLocations?: Array<{
+    districtId?: string;
+    talukId?: string;
+    lat?: number;
+    lng?: number;
+    pincode?: string;
+    street?: string;
+    label: string;
+  }>;
 }
 
 interface ListResponse<T> { items: T[]; total: number; page: number; pageSize: number }

@@ -39,6 +39,18 @@ export type JobBenefit =
   | "TRANSPORT" | "PAID_LEAVE" | "LEARNING_BUDGET" | "PERFORMANCE_BONUS"
   | "STOCK_OPTIONS" | "GYM_WELLNESS";
 
+/** Extra location on a Job (beyond the primary districtId/lat/lng on
+ *  Job itself). Same shape as PlaceRef plus a required display label. */
+export interface JobExtraLocation {
+  districtId?: string;
+  talukId?: string;
+  lat?: number;
+  lng?: number;
+  pincode?: string;
+  street?: string;
+  label: string;
+}
+
 export interface Job {
   id: string;
   employerId: string;
@@ -68,6 +80,9 @@ export interface Job {
   /** Naukri-style taxonomy fields — shown on the card + filterable. */
   industry?: string;
   department?: string;
+  /** Extra locations. First entry of the merged (primary + extras) list
+   *  is the primary; the wizard writes both consistently. */
+  extraLocations?: JobExtraLocation[];
   postedAt: string;
   /** ISO string — 45 days after postedAt on create, extended by repost. */
   expiresAt?: string;
@@ -363,6 +378,7 @@ export const useJobs = create<JobsState>((set, get) => ({
       contactMobile: input.contactMobile,
       industry: input.industry,
       department: input.department,
+      extraLocations: input.extraLocations,
     });
     const local = fromApiJob(job);
     const next = [local, ...get().jobs];
@@ -403,6 +419,7 @@ export const useJobs = create<JobsState>((set, get) => ({
       contactMobile: input.contactMobile,
       industry: input.industry,
       department: input.department,
+      extraLocations: input.extraLocations,
     });
     const local = fromApiJob(job);
     const next = [local, ...get().jobs];
@@ -462,6 +479,10 @@ export const useJobs = create<JobsState>((set, get) => ({
     if ("skills" in patch) apiPatch.skills = patch.skills!;
     if ("benefits" in patch) apiPatch.benefits = patch.benefits;
     if ("contactEmail" in patch) apiPatch.contactEmail = patch.contactEmail;
+    if ("contactMobile" in patch) apiPatch.contactMobile = patch.contactMobile;
+    if ("industry" in patch) apiPatch.industry = patch.industry;
+    if ("department" in patch) apiPatch.department = patch.department;
+    if ("extraLocations" in patch) apiPatch.extraLocations = patch.extraLocations;
     const { job } = await employerJobsApi.update(id, apiPatch);
     const local = fromApiJob(job);
     const next = get().jobs.map((j) => (j.id === id ? local : j));
@@ -529,6 +550,15 @@ export function fromApiJob(j: ApiJob): Job {
     contactMobile: j.contactMobile ?? undefined,
     industry: j.industry ?? undefined,
     department: j.department ?? undefined,
+    extraLocations: (j.locations ?? []).map((l) => ({
+      districtId: l.districtId ?? undefined,
+      talukId: l.talukId ?? undefined,
+      lat: l.lat ?? undefined,
+      lng: l.lng ?? undefined,
+      pincode: l.pincode ?? undefined,
+      street: l.street ?? undefined,
+      label: l.label,
+    })),
     postedAt: j.postedAt,
     expiresAt: j.expiresAt,
   };

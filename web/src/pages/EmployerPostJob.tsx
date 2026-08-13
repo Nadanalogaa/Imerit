@@ -58,8 +58,11 @@ export function EmployerPostJob() {
             logoUrl: profileLogoUrl,
           }}
           onSubmit={async (v) => {
-            const taluk = v.place.talukId ? talukById(v.place.talukId) : undefined;
-            const locationLabel = taluk ? `${taluk.taluk.name}, ${taluk.district.name}` : "";
+            const labelFor = (p: typeof v.place) => {
+              const t = p.talukId ? talukById(p.talukId) : undefined;
+              return t ? `${t.taluk.name}, ${t.district.name}` : "";
+            };
+            const locationLabel = labelFor(v.place);
 
             // Save brand fields back to the profile only when actually
             // changed — avoids clobbering nothing on every post.
@@ -89,6 +92,19 @@ export function EmployerPostJob() {
               skills: v.skills,
               benefits: v.benefits,
               contactEmail: v.contactEmail || undefined,
+              // Any extra locations become JobLocation rows on the server.
+              // Drop rows that have no district picked (empty wizard cards).
+              extraLocations: v.extraPlaces
+                .filter((p) => p.districtId)
+                .map((p) => ({
+                  districtId: p.districtId,
+                  talukId: p.talukId,
+                  lat: p.lat,
+                  lng: p.lng,
+                  pincode: p.pincode,
+                  street: p.street,
+                  label: labelFor(p),
+                })),
             });
             // Land on the manage page so the employer sees the full job
             // they just created + Edit / Applicants / Repost actions.

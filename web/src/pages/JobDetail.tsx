@@ -179,6 +179,9 @@ export function JobDetail() {
 
  <div className="mt-5 flex flex-wrap gap-2 text-xs">
  <Pill icon={<MapPin size={12} />}>{job.location}</Pill>
+ {(job.extraLocations ?? []).map((l, i) => (
+ <Pill key={i} icon={<MapPin size={12} />}>{l.label}</Pill>
+ ))}
  <Pill icon={job.field === "it" ? <Code2 size={12} /> : <Building2 size={12} />}>
  {FIELD_LABEL[job.field]}
  </Pill>

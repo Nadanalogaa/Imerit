@@ -136,6 +136,15 @@ export const staffApi = {
     contactMobile?: string;
     industry?: string;
     department?: string;
+    extraLocations?: Array<{
+      districtId?: string;
+      talukId?: string;
+      lat?: number;
+      lng?: number;
+      pincode?: string;
+      street?: string;
+      label: string;
+    }>;
   }) =>
     api<{ job: ApiJob }>("/staff/jobs", { method: "POST", json: input }),
 };

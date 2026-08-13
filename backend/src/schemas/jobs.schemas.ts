@@ -42,6 +42,18 @@ export const browseJobsSchema = z.object({
   pageSize: z.coerce.number().int().min(1).max(100).default(20),
 });
 
+/** Single extra location row. The primary is still the top-level
+ *  districtId/lat/lng/pincode/street/location fields on the job body. */
+const jobExtraLocation = z.object({
+  districtId: z.string().max(80).optional(),
+  talukId: z.string().max(80).optional(),
+  lat: z.number().min(-90).max(90).optional(),
+  lng: z.number().min(-180).max(180).optional(),
+  pincode: z.string().regex(/^\d{6}$/u).optional(),
+  street: z.string().max(255).optional(),
+  label: z.string().trim().min(1).max(200),
+}).strict();
+
 export const createJobSchema = z.object({
   title,
   description,
@@ -52,6 +64,8 @@ export const createJobSchema = z.object({
   lng: z.number().min(-180).max(180).optional(),
   pincode: z.string().regex(/^\d{6}$/u).optional(),
   street: z.string().max(255).optional(),
+  /** Extra locations beyond the primary. Empty / omitted = single-location job. */
+  extraLocations: z.array(jobExtraLocation).max(15).optional(),
   field: z.nativeEnum(JobField),
   type: z.nativeEnum(JobType),
   experience: z.nativeEnum(JobExperience),

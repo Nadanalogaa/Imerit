@@ -61,6 +61,12 @@ export interface JobFormValues {
   salaryRange?: string;
   skills: string[];
   place: PlaceRef;
+  /**
+   * Extra locations for this posting — one row per additional place.
+   * The primary place stays in `place`. Empty = single-location job.
+   * Persisted as the JobLocation rows on the server.
+   */
+  extraPlaces: PlaceRef[];
   benefits: JobBenefit[];
   companyName: string;
   contactEmail: string;
@@ -226,6 +232,7 @@ export function JobFormWizard({
   const [salary, setSalary] = useState(initialValues?.salaryRange ?? "");
   const [skills, setSkills] = useState<string[]>(initialValues?.skills ?? []);
   const [place, setPlace] = useState<PlaceRef>(initialValues?.place ?? {});
+  const [extraPlaces, setExtraPlaces] = useState<PlaceRef[]>(initialValues?.extraPlaces ?? []);
   const [benefits, setBenefits] = useState<JobBenefit[]>(initialValues?.benefits ?? []);
   const [companyName, setCompanyName] = useState(initialValues?.companyName ?? "");
   const [contactEmail, setContactEmail] = useState(initialValues?.contactEmail ?? "");
@@ -263,6 +270,7 @@ export function JobFormWizard({
     if (initialValues.salaryRange !== undefined) setSalary(initialValues.salaryRange);
     if (initialValues.skills !== undefined) setSkills(initialValues.skills);
     if (initialValues.place !== undefined) setPlace(initialValues.place);
+    if (initialValues.extraPlaces !== undefined) setExtraPlaces(initialValues.extraPlaces);
     if (initialValues.benefits !== undefined) setBenefits(initialValues.benefits);
     if (initialValues.companyName !== undefined) setCompanyName(initialValues.companyName);
     if (initialValues.contactEmail !== undefined) setContactEmail(initialValues.contactEmail);
@@ -325,6 +333,7 @@ export function JobFormWizard({
         salaryRange: salary.trim() || undefined,
         skills,
         place,
+        extraPlaces,
         benefits,
         companyName: companyName.trim(),
         contactEmail: contactEmail.trim(),
@@ -409,7 +418,13 @@ export function JobFormWizard({
         )}
         {step === 2 && (
           <StepShell key="location" title="Mention the Job Location" subtitle="District + taluk so we can match candidates near home." onBack={back} onNext={next}>
-            <LocationStep place={place} setPlace={setPlace} errors={errors} />
+            <LocationStep
+              place={place}
+              setPlace={setPlace}
+              extraPlaces={extraPlaces}
+              setExtraPlaces={setExtraPlaces}
+              errors={errors}
+            />
           </StepShell>
         )}
         {step === 3 && (
@@ -847,11 +862,56 @@ function parseLpaRange(s: string): { min?: number; max?: number; unit: "LPA" | "
   };
 }
 
-function LocationStep(props: { place: PlaceRef; setPlace: (p: PlaceRef) => void; errors: Record<string, string> }) {
+function LocationStep(props: {
+  place: PlaceRef;
+  setPlace: (p: PlaceRef) => void;
+  extraPlaces: PlaceRef[];
+  setExtraPlaces: (rows: PlaceRef[]) => void;
+  errors: Record<string, string>;
+}) {
+  const addExtra = () => props.setExtraPlaces([...props.extraPlaces, {}]);
+  const updateExtra = (i: number, next: PlaceRef) =>
+    props.setExtraPlaces(props.extraPlaces.map((p, idx) => (idx === i ? next : p)));
+  const removeExtra = (i: number) =>
+    props.setExtraPlaces(props.extraPlaces.filter((_, idx) => idx !== i));
   return (
-    <div>
-      <LocationPicker value={props.place} onChange={props.setPlace} />
-      {props.errors.location && <p className="mt-2 text-[11px] text-rose-600">{props.errors.location}</p>}
+    <div className="flex flex-col gap-4">
+      <div>
+        <p className="mb-2 text-[11px] font-bold uppercase tracking-wider text-zinc-700 dark:text-zinc-300">
+          Primary location
+        </p>
+        <LocationPicker value={props.place} onChange={props.setPlace} />
+        {props.errors.location && <p className="mt-2 text-[11px] text-rose-600">{props.errors.location}</p>}
+      </div>
+
+      {props.extraPlaces.map((p, i) => (
+        <div key={i} className="rounded-2xl border border-brand-200 bg-brand-50/40 p-3 dark:border-brand-500/30 dark:bg-brand-500/5">
+          <div className="mb-2 flex items-center justify-between">
+            <p className="text-[11px] font-bold uppercase tracking-wider text-brand-700 dark:text-brand-300">
+              Additional location {i + 1}
+            </p>
+            <button
+              type="button"
+              onClick={() => removeExtra(i)}
+              className="inline-flex items-center gap-1 rounded-full border border-rose-200 bg-white px-2.5 py-1 text-[11px] font-semibold text-rose-600 transition hover:bg-rose-50 dark:border-rose-500/30 dark:bg-rose-500/10 dark:text-rose-300 dark:hover:bg-rose-500/20"
+            >
+              Remove
+            </button>
+          </div>
+          <LocationPicker value={p} onChange={(next) => updateExtra(i, next)} />
+        </div>
+      ))}
+
+      <button
+        type="button"
+        onClick={addExtra}
+        className="inline-flex w-fit items-center gap-1.5 rounded-full border-2 border-dashed border-brand-300 bg-white px-4 py-2 text-xs font-semibold text-brand-700 transition hover:border-brand-400 hover:bg-brand-50 dark:border-brand-500/40 dark:bg-transparent dark:text-brand-300 dark:hover:bg-brand-500/10"
+      >
+        + Add another location
+      </button>
+      <p className="text-[11px] text-zinc-500 dark:text-zinc-400">
+        Hiring for the same role in multiple places? Add every location — one posting will show up in each district's Browse Jobs feed.
+      </p>
     </div>
   );
 }
