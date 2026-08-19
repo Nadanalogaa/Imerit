@@ -100,7 +100,14 @@ function LevelCard({
  // Flipped to true once the height-expand animation completes so the
  // body can render `overflow: visible` — needed for the searchable
  // DistrictSelect popover to escape the card. See the motion.div below.
- const [bodyOpen, setBodyOpen] = useState(false);
+ //
+ // SEED FROM `enabled`: AnimatePresence uses initial={false} so a card
+ // that's already open on first render skips its enter animation —
+ // which means onAnimationComplete never fires, bodyOpen stays false,
+ // and the district dropdown gets clipped. Starting bodyOpen=enabled
+ // matches the visible state at mount and only flips to false while a
+ // fresh collapse/expand animation is actually running.
+ const [bodyOpen, setBodyOpen] = useState(enabled);
  return (
  // `overflow-hidden` used to live here so the height-collapse
  // animation clipped cleanly, but it also clipped the searchable
