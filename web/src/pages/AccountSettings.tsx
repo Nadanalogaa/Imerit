@@ -1,10 +1,11 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { Eye, EyeOff, KeyRound, Pencil, ShieldCheck, User as UserIcon, X } from "lucide-react";
+import { Building2, Eye, EyeOff, KeyRound, Lock, Pencil, ShieldCheck, User as UserIcon, X } from "lucide-react";
 import { Navbar } from "../components/Navbar";
 import { authApi } from "../lib/api/auth";
+import { employerProfileApi } from "../lib/api/profile";
 import { useAuth } from "../store/auth";
-import { ApiError } from "../lib/api";
+import { ApiError, apiEnabled } from "../lib/api";
 import { TextField } from "../components/TextField";
 
 /**
@@ -111,6 +112,21 @@ function AccountIdentitySection() {
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
 
+  // Employer accounts get a locked Company row sourced from
+  // EmployerProfile.companyName — the User.name column is the CONTACT
+  // PERSON's name (which some employers unfortunately filled with the
+  // company name at signup), and only super-admin can change the
+  // canonical company on /admin/employers/:id.
+  const [company, setCompany] = useState<string | undefined>(undefined);
+  useEffect(() => {
+    if (user.role !== "employer" || !apiEnabled) return;
+    let alive = true;
+    employerProfileApi.getMine()
+      .then(({ profile }) => { if (alive) setCompany(profile.companyName?.trim() || undefined); })
+      .catch(() => { /* leave blank */ });
+    return () => { alive = false; };
+  }, [user.role]);
+
   const startEdit = () => {
     setName(user.name);
     setMobile(user.mobile ?? "");
@@ -169,7 +185,7 @@ function AccountIdentitySection() {
           <div>
             <h2 className="text-base font-semibold">Account</h2>
             <p className="mt-0.5 text-xs text-zinc-600 dark:text-zinc-400">
-              Update your display name or mobile number. Email + role are locked.
+              Update your contact name or mobile number. Email{user.role === "employer" ? ", role and company name" : " and role"} are locked.
             </p>
           </div>
         </div>
@@ -188,9 +204,17 @@ function AccountIdentitySection() {
       {editing ? (
         <div className="flex flex-col gap-3">
           <div className="grid gap-3 sm:grid-cols-2">
-            <TextField label="Name" value={name} onChange={setName} placeholder="Your full name" />
+            <TextField
+              label={user.role === "employer" ? "Contact person name" : "Name"}
+              value={name}
+              onChange={setName}
+              placeholder={user.role === "employer" ? "e.g. Priya Ramesh" : "Your full name"}
+            />
             <TextField label="Mobile" value={mobile} onChange={setMobile} placeholder="9876543210" inputMode="tel" />
           </div>
+          {user.role === "employer" && (
+            <LockedCompanyRow value={company} />
+          )}
           <dl className="grid gap-3 text-sm sm:grid-cols-2">
             <Field label="Email (locked)" value={user.email} className="text-zinc-500 dark:text-zinc-400" />
             <Field label="Role (locked)" value={user.role.replace("_", " ")} className="capitalize text-zinc-500 dark:text-zinc-400" />
@@ -218,7 +242,7 @@ function AccountIdentitySection() {
       ) : (
         <>
           <dl className="grid gap-3 text-sm sm:grid-cols-2">
-            <Field label="Name" value={user.name} />
+            <Field label={user.role === "employer" ? "Contact person" : "Name"} value={user.name} />
             <Field label="Email" value={user.email} />
             {user.mobile && <Field label="Mobile" value={user.mobile} />}
             <Field label="Role" value={user.role.replace("_", " ")} className="capitalize" />
@@ -227,6 +251,11 @@ function AccountIdentitySection() {
               value={new Date(user.createdAt).toLocaleDateString(undefined, { year: "numeric", month: "long", day: "numeric" })}
             />
           </dl>
+          {user.role === "employer" && (
+            <div className="mt-3">
+              <LockedCompanyRow value={company} />
+            </div>
+          )}
           {success && <p className="mt-3 text-xs text-emerald-600 dark:text-emerald-400">{success}</p>}
         </>
       )}
@@ -329,6 +358,29 @@ function FieldPassword({
           {show ? <EyeOff size={14} /> : <Eye size={14} />}
         </button>
       </div>
+    </div>
+  );
+}
+
+/**
+ * Locked "Company" row for the employer account settings. The value is
+ * the canonical `EmployerProfile.companyName` — Super Admin owns it, so
+ * we render it disabled with a padlock and a "Contact your account
+ * manager" hint. Employers see it always; other roles never render.
+ */
+function LockedCompanyRow({ value }: { value?: string }) {
+  return (
+    <div>
+      <label className="mb-1.5 flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
+        <Building2 size={11} /> Company (locked)
+      </label>
+      <div className="flex h-11 items-center gap-2 rounded-lg border border-zinc-200 bg-zinc-100 px-3.5 text-sm text-zinc-700 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-300">
+        <Lock size={12} className="text-zinc-400" />
+        <span className="truncate">{value?.trim() || "—"}</span>
+      </div>
+      <p className="mt-1 text-[11px] text-zinc-500 dark:text-zinc-400">
+        Only Super Admin can change your company name. Contact your account manager to update it.
+      </p>
     </div>
   );
 }
