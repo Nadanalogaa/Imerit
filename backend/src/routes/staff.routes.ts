@@ -172,14 +172,16 @@ router.patch(
   "/staff/employers/:id",
   ...staffGuard,
   asyncHandler(async (req, res) => {
-    const body = req.body as { name?: unknown; mobile?: unknown; company?: unknown };
+    // Company is intentionally NOT accepted here — only super-admin
+    // can change an employer's company name (PATCH /admin/employers/:id).
+    // We silently drop it if legacy clients still send it.
+    const body = req.body as { name?: unknown; mobile?: unknown };
     const { user } = await updateEmployerByStaff({
       staffId: req.user!.sub,
       employerId: paramId(req.params.id),
       patch: {
         name: typeof body.name === "string" ? body.name : undefined,
         mobile: body.mobile === undefined ? undefined : (typeof body.mobile === "string" ? body.mobile : null),
-        company: body.company === undefined ? undefined : (typeof body.company === "string" ? body.company : null),
       },
     });
     res.json({ user });

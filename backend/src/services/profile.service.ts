@@ -284,27 +284,26 @@ export async function getOrCreateEmployerProfile(userId: string) {
   });
 }
 
-/** Apply a partial update to the caller's employer profile. When the
- *  companyName changes, also relabel every existing (non-deleted) job
- *  this employer owns so the denormalized `Job.employerName` snapshot
- *  stays in sync — otherwise browse cards keep showing the old label
- *  until the employer reposts. */
+/** Apply a partial update to the caller's employer profile.
+ *
+ *  Product rule: the employer can NOT change their own companyName —
+ *  only super-admin can (via /admin/employers/:id). We silently drop
+ *  companyName from the incoming patch instead of erroring so old
+ *  clients that still send it don't 400; the value on the row is
+ *  untouched.
+ *
+ *  When the companyName does change through the admin path, that
+ *  service is responsible for relabeling Job.employerName — see
+ *  updateEmployerByAdmin. */
 export async function patchEmployerProfile(
   userId: string,
   data: Prisma.EmployerProfileUpdateInput,
 ) {
   await getOrCreateEmployerProfile(userId);
-  return prisma.$transaction(async (tx) => {
-    const updated = await tx.employerProfile.update({ where: { userId }, data });
-    const nextName = updated.companyName?.trim();
-    if (nextName) {
-      await tx.job.updateMany({
-        where: { employerId: userId, deletedAt: null },
-        data: { employerName: nextName },
-      });
-    }
-    return updated;
-  });
+  // Strip companyName — employer self-service can't touch it.
+  const { companyName: _lockedCompanyName, ...safe } = data;
+  void _lockedCompanyName;
+  return prisma.employerProfile.update({ where: { userId }, data: safe });
 }
 
 export type ExperienceWithProjects = Experience & { projects: ExperienceProject[] };

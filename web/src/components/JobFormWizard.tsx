@@ -119,6 +119,14 @@ export interface JobFormWizardProps {
    *  captures them upstream, so re-asking is redundant). Both fields
    *  are still submitted with the form, just not re-editable here. */
   brandStepLogoOnly?: boolean;
+  /** When true, the Brand step's Company name is rendered read-only
+   *  with a "contact your admin to change" hint. Product rule: the
+   *  employer can never change their own companyName; only super-admin
+   *  can (via /admin/employers/:id). Pass `true` from the employer
+   *  self-service path (EmployerPostJob / EmployerJobManage); leave
+   *  falsy on the staff-side flows so staff creating a new employer
+   *  can still type the name. */
+  lockCompanyName?: boolean;
   /** True when the parent is in the middle of network I/O. The submit
    *  button label switches to a spinner-friendly label + disables the
    *  button so double-clicks can't fire the mutation twice. */
@@ -203,6 +211,7 @@ export function JobFormWizard({
   subheading,
   hideBrandStep = false,
   brandStepLogoOnly = false,
+  lockCompanyName = false,
   externalSubmitting = false,
 }: JobFormWizardProps) {
   const steps = hideBrandStep ? STEPS_NO_BRAND : STEPS_WITH_BRAND;
@@ -465,6 +474,7 @@ export function JobFormWizard({
               setLogoUrl={(v) => { setLogoUrl(v); setLogoDirty(true); }}
               errors={errors}
               logoOnly={brandStepLogoOnly}
+              companyNameLocked={lockCompanyName}
             />
             {submitError && (
               <p className="mt-3 rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-xs text-rose-700 dark:border-rose-500/30 dark:bg-rose-500/10 dark:text-rose-400">
@@ -973,6 +983,9 @@ function BrandStep(props: {
    *  from the parent (staff picker) and re-collecting them here is
    *  redundant. Only the logo uploader stays. */
   logoOnly?: boolean;
+  /** When true, the Company name field is rendered read-only with an
+   *  admin-contact hint. Employer self-service can't change it. */
+  companyNameLocked?: boolean;
 }) {
   const [logoError, setLogoError] = useState<string | null>(null);
 
@@ -1021,7 +1034,21 @@ function BrandStep(props: {
       </div>
       {!props.logoOnly && (
         <>
-          <TextField label="Company name" value={props.companyName} onChange={props.setCompanyName} placeholder="e.g. Acme Tamil Pvt. Ltd." error={props.errors.companyName} />
+          {props.companyNameLocked ? (
+            <div>
+              <label className="mb-1.5 block text-[11px] font-bold uppercase tracking-wider text-zinc-700 dark:text-zinc-300">
+                Company name
+              </label>
+              <div className="flex h-11 items-center rounded-lg border border-zinc-200 bg-zinc-100 px-3.5 text-sm text-zinc-700 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-300">
+                {props.companyName || "—"}
+              </div>
+              <p className="mt-1 text-[11px] text-zinc-500 dark:text-zinc-400">
+                Only Super Admin can change the company name. Contact your account manager to update it.
+              </p>
+            </div>
+          ) : (
+            <TextField label="Company name" value={props.companyName} onChange={props.setCompanyName} placeholder="e.g. Acme Tamil Pvt. Ltd." error={props.errors.companyName} />
+          )}
           <TextField label="Hiring contact email" value={props.contactEmail} onChange={props.setContactEmail} placeholder="hiring@yourcompany.com" type="email" error={props.errors.contactEmail} />
           <TextField
             label="Contact number (mobile)"

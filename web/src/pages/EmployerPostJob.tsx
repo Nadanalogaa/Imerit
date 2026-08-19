@@ -50,6 +50,7 @@ export function EmployerPostJob() {
 
         <JobFormWizard
           mode="create"
+          lockCompanyName
           initialValues={{
             // Prefer profile values (fetched async); fall back to what
             // we know from the User row.
