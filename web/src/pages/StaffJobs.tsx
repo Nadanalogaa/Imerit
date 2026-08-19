@@ -142,9 +142,11 @@ function JobRow({ job }: { job: ReturnType<typeof useJobs.getState>["jobs"][numb
         <Briefcase size={18} />
       </div>
       <div className="min-w-0 flex-1">
-        <div className="flex flex-wrap items-baseline gap-2">
+        <div>
           <h3 className="text-sm font-semibold tracking-tight text-zinc-900 dark:text-zinc-100">{job.title}</h3>
-          <span className="text-xs text-zinc-500 dark:text-zinc-400">· {job.employerName}</span>
+          {job.employerName && (
+            <p className="text-xs font-semibold text-sky-700 dark:text-sky-300">{job.employerName}</p>
+          )}
         </div>
         <div className="mt-1 flex flex-wrap items-center gap-2 text-[11px] text-zinc-500 dark:text-zinc-400">
           <span className="inline-flex items-center gap-1">

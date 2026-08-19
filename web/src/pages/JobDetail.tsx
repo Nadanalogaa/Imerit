@@ -173,7 +173,9 @@ export function JobDetail() {
  </div>
  <div className="flex-1">
  <h1 className="text-2xl font-semibold tracking-tight md:text-3xl">{job.title}</h1>
- <p className="mt-0.5 text-sm text-zinc-600 dark:text-zinc-400">{job.employerName}</p>
+ {job.employerName && (
+ <p className="mt-1 text-base font-semibold text-sky-700 dark:text-sky-300">{job.employerName}</p>
+ )}
  </div>
  </div>
 

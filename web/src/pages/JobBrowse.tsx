@@ -634,7 +634,9 @@ function JobPopup({
  <div className="flex items-start justify-between gap-2">
  <div className="min-w-0 flex-1">
  <h3 className="truncate text-sm font-semibold text-zinc-900 dark:text-zinc-100">{job.title}</h3>
- <p className="truncate text-[11px] text-zinc-600 dark:text-zinc-400">{job.employerName}</p>
+ {job.employerName && (
+ <p className="truncate text-[11px] font-semibold text-sky-700 dark:text-sky-300">{job.employerName}</p>
+ )}
  </div>
  {matchResult && (
  <div className={["shrink-0 rounded-lg px-1.5 py-0.5 ring-1", BAND_COLORS[matchResult.band].bg, BAND_COLORS[matchResult.band].ring].join(" ")}>
@@ -707,18 +709,19 @@ function JobCard({ job, matchResult, distance, delay }: { job: Job; matchResult?
  {initials}
  </div>
  <div className="min-w-0 flex-1">
- {/* Position title + company on one line so candidates can see the
-     hiring org at a glance. Company name kept subordinate (medium
-     weight + zinc-500) so the position remains the visual anchor. */}
+ {/* Two-line header: position on line 1, company on line 2 as a
+     bold sky-tinted subtitle. Inline "title · company" got clipped
+     by `truncate` on narrow cards, so the company was invisible on
+     any job with a longer title — moved to its own line so it's
+     always visible. Matches the Indeed / Naukri / LinkedIn pattern. */}
  <h2 className="truncate text-base font-semibold tracking-tight text-zinc-900 dark:text-zinc-100">
- <span>{job.title}</span>
- {job.employerName && (
-   <>
-     <span className="mx-1.5 text-zinc-400 dark:text-zinc-600">·</span>
-     <span className="font-medium text-zinc-600 dark:text-zinc-400">{job.employerName}</span>
-   </>
- )}
+ {job.title}
  </h2>
+ {job.employerName && (
+ <p className="truncate text-[12px] font-semibold text-sky-700 dark:text-sky-300">
+ {job.employerName}
+ </p>
+ )}
  {(job.industry || job.department) && (
  <p className="mt-0.5 truncate text-[11px] text-zinc-500 dark:text-zinc-500">
  {[job.industry, job.department].filter(Boolean).join(" · ")}

@@ -123,6 +123,9 @@ export function EmployerJobApplicants() {
  </div>
  <div className="flex-1">
  <h1 className="text-xl font-semibold tracking-tight md:text-2xl">{job.title}</h1>
+ {job.employerName && (
+ <p className="mt-1 text-sm font-semibold text-sky-700 dark:text-sky-300">{job.employerName}</p>
+ )}
  <p className="mt-0.5 text-sm text-zinc-600 dark:text-zinc-400">
  <MapPin size={11} className="inline" /> {job.location} · {FIELD_LABEL[job.field]} · {TYPE_LABEL[job.type]}
  </p>
