@@ -215,10 +215,6 @@ function AccountIdentitySection() {
           {user.role === "employer" && (
             <LockedCompanyRow value={company} />
           )}
-          <dl className="grid gap-3 text-sm sm:grid-cols-2">
-            <Field label="Email (locked)" value={user.email} className="text-zinc-500 dark:text-zinc-400" />
-            <Field label="Role (locked)" value={user.role.replace("_", " ")} className="capitalize text-zinc-500 dark:text-zinc-400" />
-          </dl>
           {error && <p className="text-xs text-rose-500">{error}</p>}
           <div className="mt-1 flex items-center gap-2">
             <button
