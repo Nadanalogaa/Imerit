@@ -27,7 +27,7 @@ import type {
  Certification,
 } from "../../store/profile";
 import { suggestionsForField } from "../../lib/skillSuggestions";
-import { industriesForField, DEPARTMENTS } from "../../lib/industryTaxonomy";
+import { industriesForField, departmentsForIndustry } from "../../lib/industryTaxonomy";
 
 const IT_SPECIALIZATIONS = [
  "Artificial Intelligence",
@@ -130,7 +130,15 @@ export function AboutYouStep(p: Props) {
    <Group label="Industry" icon={<Building2 size={16} className="text-sky-600 dark:text-sky-400" />}>
     <select
      value={p.industry ?? ""}
-     onChange={(e) => p.onIndustry(e.target.value || undefined)}
+     onChange={(e) => {
+      const industry = e.target.value || undefined;
+      // Clear a stale department when the new industry doesn't offer it.
+      const validDepts = departmentsForIndustry(industry);
+      if (p.department && !validDepts.includes(p.department)) {
+       p.onDepartment(undefined);
+      }
+      p.onIndustry(industry);
+     }}
      className="h-11 w-full rounded-lg border border-zinc-300 bg-white px-3.5 text-sm focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500/15 dark:border-zinc-700 dark:bg-zinc-950"
     >
      <option value="">Select an industry</option>
@@ -145,8 +153,8 @@ export function AboutYouStep(p: Props) {
      onChange={(e) => p.onDepartment(e.target.value || undefined)}
      className="h-11 w-full rounded-lg border border-zinc-300 bg-white px-3.5 text-sm focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500/15 dark:border-zinc-700 dark:bg-zinc-950"
     >
-     <option value="">Select a department</option>
-     {DEPARTMENTS.map((d) => (
+     <option value="">{p.industry ? "Select a department" : "Pick an industry first"}</option>
+     {departmentsForIndustry(p.industry).map((d) => (
       <option key={d} value={d}>{d}</option>
      ))}
     </select>

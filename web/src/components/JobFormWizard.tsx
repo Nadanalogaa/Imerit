@@ -37,7 +37,7 @@ import { LocationPicker } from "./LocationPicker";
 import { StepIndicator } from "./profile/StepIndicator";
 import { StepShell } from "./profile/StepShell";
 import { JOB_BENEFITS, type JobBenefit, type JobExperience, type JobField, type JobType } from "../store/jobs";
-import { DEPARTMENTS, industriesForField } from "../lib/industryTaxonomy";
+import { departmentsForIndustry, industriesForField } from "../lib/industryTaxonomy";
 import { type PlaceRef } from "../store/locations";
 import {
   SKILL_SUGGESTIONS_COMMON,
@@ -507,6 +507,20 @@ function BasicsStep(props: {
   const fieldForIndustry: "IT" | "NON_IT" | undefined =
     props.field === "it" ? "IT" : props.field === "non_it" ? "NON_IT" : undefined;
   const industryOptions = industriesForField(fieldForIndustry);
+  // Department list narrows to what makes sense for the picked industry.
+  // If no industry yet, we show every department so the field isn't
+  // blocked from being filled first.
+  const departmentOptions = departmentsForIndustry(props.industry || undefined);
+
+  const handleIndustryChange = (next: string) => {
+    props.setIndustry(next);
+    // If the currently-selected department isn't valid for the new
+    // industry, clear it — otherwise the field silently keeps a stale
+    // value the dropdown no longer displays.
+    if (props.department && !departmentsForIndustry(next || undefined).includes(props.department)) {
+      props.setDepartment("");
+    }
+  };
   return (
     <div className="flex flex-col gap-5">
       <TextField label="JOB TITLE / SPECIFICATION " value={props.title} onChange={props.setTitle} placeholder="e.g. Senior React Developer" error={props.errors.title} />
@@ -518,7 +532,7 @@ function BasicsStep(props: {
           <select
             id="job-industry"
             value={props.industry}
-            onChange={(e) => props.setIndustry(e.target.value)}
+            onChange={(e) => handleIndustryChange(e.target.value)}
             className="h-11 w-full rounded-lg border border-zinc-200 bg-white px-3.5 text-sm text-zinc-900 focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500/15 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-100"
           >
             <option value="">Select industry…</option>
@@ -538,8 +552,10 @@ function BasicsStep(props: {
             onChange={(e) => props.setDepartment(e.target.value)}
             className="h-11 w-full rounded-lg border border-zinc-200 bg-white px-3.5 text-sm text-zinc-900 focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500/15 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-100"
           >
-            <option value="">Select department…</option>
-            {DEPARTMENTS.map((label) => (
+            <option value="">
+              {props.industry ? "Select department…" : "Pick an industry first…"}
+            </option>
+            {departmentOptions.map((label) => (
               <option key={label} value={label}>{label}</option>
             ))}
           </select>

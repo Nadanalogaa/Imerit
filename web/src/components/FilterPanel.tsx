@@ -4,7 +4,7 @@ import { ChevronDown, ChevronUp, MapPin, Briefcase, Code2, Clock, GraduationCap,
 import { useLocations } from "../store/locations";
 import type { JobField, JobExperience, JobType } from "../store/jobs";
 import { Checkbox } from "./Checkbox";
-import { DEPARTMENTS, industriesForField } from "../lib/industryTaxonomy";
+import { departmentsForIndustry, industriesForField } from "../lib/industryTaxonomy";
 
 export type PostedBucket = "any" | "24h" | "7d" | "30d";
 
@@ -226,7 +226,17 @@ export function FilterPanel({ state, counts, onChange, onClose }: Props) {
         >
           <select
             value={state.industry}
-            onChange={(e) => onChange({ ...state, industry: e.target.value })}
+            onChange={(e) => {
+              const industry = e.target.value;
+              // Clear a stale department when it no longer belongs to
+              // the new industry — otherwise the filter chip lingers
+              // but nothing in the dropdown selects it.
+              const validDepts = departmentsForIndustry(industry || undefined);
+              const department = state.department && validDepts.includes(state.department)
+                ? state.department
+                : "";
+              onChange({ ...state, industry, department });
+            }}
             className="h-10 w-full rounded-lg border border-zinc-200 bg-white px-3 text-sm text-zinc-900 focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500/15 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-100"
           >
             <option value="">All industries</option>
@@ -248,7 +258,7 @@ export function FilterPanel({ state, counts, onChange, onClose }: Props) {
             className="h-10 w-full rounded-lg border border-zinc-200 bg-white px-3 text-sm text-zinc-900 focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500/15 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-100"
           >
             <option value="">All departments</option>
-            {DEPARTMENTS.map((label) => (
+            {departmentsForIndustry(state.industry || undefined).map((label) => (
               <option key={label} value={label}>{label}</option>
             ))}
           </select>
