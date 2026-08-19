@@ -192,8 +192,8 @@ export function SuperAdminAdmins() {
 
  <main className="mx-auto max-w-7xl px-5 py-6 md:py-6 md:py-10">
  <div className="mb-5 flex items-center justify-between gap-3">
- <Link to="/super-admin/dashboard" className="inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-xs font-semibold text-zinc-700 transition hover:bg-zinc-100 dark:border-zinc-700 dark:text-zinc-200 dark:hover:bg-zinc-800">
- <ArrowLeft size={14} /> Dashboard
+ <Link to="/super-admin/dashboard" className="inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-lg font-semibold text-zinc-700 transition hover:bg-zinc-100 dark:border-zinc-700 dark:text-zinc-200 dark:hover:bg-zinc-800">
+ <ArrowLeft size={20} /> Dashboard
  </Link>
  </div>
 

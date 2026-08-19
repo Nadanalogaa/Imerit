@@ -178,7 +178,7 @@ export function EmployerJobApplicants() {
  </div>
  <div className={["flex flex-col items-center rounded-2xl px-3 py-2 ring-1", colors.bg, colors.ring].join(" ")}>
  <span className={["text-base font-bold", colors.text].join(" ")}>{a.result?.score ?? 0}%</span>
- <span className={["text-[9px] font-semibold uppercase tracking-wider", colors.text].join(" ")}>match</span>
+ <span className={["text-[9px] font-semibold uppercase tracking-wider", colors.text].join(" ")}>Relevant</span>
  </div>
  {!hasSub && <Lock size={14} className="text-amber-600 dark:text-amber-400" />}
  {hasSub && <ChevronRight size={18} className="text-zinc-400" />}

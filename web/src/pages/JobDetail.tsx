@@ -122,9 +122,9 @@ export function JobDetail() {
  <div className="mb-6 flex items-center justify-between">
  <Link
  to="/candidate/jobs"
- className="inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-xs font-semibold text-zinc-700 transition hover:bg-zinc-100 dark:border-zinc-700 dark:text-zinc-200 dark:hover:bg-zinc-800"
+ className="inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-lg font-semibold text-zinc-700 transition hover:bg-zinc-100 dark:border-zinc-700 dark:text-zinc-200 dark:hover:bg-zinc-800"
  >
- <ArrowLeft size={14} /> Back to jobs
+ <ArrowLeft size={20} /> Back to jobs
  </Link>
  <motion.button
  whileTap={{ scale: 0.94 }}

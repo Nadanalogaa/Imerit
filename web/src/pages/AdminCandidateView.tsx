@@ -92,8 +92,8 @@ export function AdminCandidateView() {
  <Navbar />
  <main className="mx-auto max-w-7xl px-5 py-6 md:py-10 text-center">
  <p className="text-sm font-semibold text-rose-700 dark:text-rose-400">{loadError}</p>
- <Link to="/admin/candidates" className="mt-3 inline-flex items-center gap-2 text-xs font-semibold text-brand-600 hover:underline dark:text-brand-400">
- <ArrowLeft size={12} /> Back to candidates
+ <Link to="/admin/candidates" className="mt-3 inline-flex items-center gap-2 text-lg font-semibold text-brand-600 hover:underline dark:text-brand-400">
+ <ArrowLeft size={20} /> Back to candidates
  </Link>
  </main>
  </div>
@@ -144,8 +144,8 @@ export function AdminCandidateView() {
  <main className="mx-auto max-w-7xl px-5 py-6 md:py-6 md:py-10">
  <div className="mb-6 flex flex-wrap items-center justify-between gap-3 print:hidden">
  <div className="flex items-center gap-2">
- <Link to="/admin/candidates" className="inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-xs font-semibold text-zinc-700 transition hover:bg-zinc-100 dark:border-zinc-700 dark:text-zinc-200 dark:hover:bg-zinc-800">
- <ArrowLeft size={14} /> Candidates
+ <Link to="/admin/candidates" className="inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-lg font-semibold text-zinc-700 transition hover:bg-zinc-100 dark:border-zinc-700 dark:text-zinc-200 dark:hover:bg-zinc-800">
+ <ArrowLeft size={20} /> Candidates
  </Link>
  <StatusBadge status={moderationStatus} />
  </div>

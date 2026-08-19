@@ -39,9 +39,9 @@ export function CandidateProfilePreview() {
  <div className="mx-auto flex max-w-5xl items-center justify-between px-5 py-3">
  <button
  onClick={() => navigate("/candidate/dashboard")}
- className="inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-xs font-semibold text-zinc-700 transition hover:bg-zinc-100 dark:border-zinc-700 dark:text-zinc-200 dark:hover:bg-zinc-800"
+ className="inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-lg font-semibold text-zinc-700 transition hover:bg-zinc-100 dark:border-zinc-700 dark:text-zinc-200 dark:hover:bg-zinc-800"
  >
- <ArrowLeft size={14} />
+ <ArrowLeft size={20} />
  <span className="hidden sm:inline">Dashboard</span>
  </button>
  <div className="flex items-center gap-2 text-sm font-semibold tracking-tight">

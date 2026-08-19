@@ -23,9 +23,9 @@ export function EmployerSubscribe() {
  <main className="mx-auto max-w-7xl px-5 py-6 md:py-6 md:py-10">
  <Link
  to={returnTo}
- className="mb-6 inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-xs font-semibold text-zinc-700 transition hover:bg-zinc-100 dark:border-zinc-700 dark:text-zinc-200 dark:hover:bg-zinc-800"
+ className="mb-6 inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-lg font-semibold text-zinc-700 transition hover:bg-zinc-100 dark:border-zinc-700 dark:text-zinc-200 dark:hover:bg-zinc-800"
  >
- <ArrowLeft size={14} /> Back
+ <ArrowLeft size={20} /> Back
  </Link>
 
  <header className="mb-8 text-center">

@@ -43,7 +43,7 @@ const EDUCATION_ORDER: EducationLevel[] = [
 ];
 
 const SORT_OPTIONS: { id: CandidateSort; label: string; icon: React.ReactNode }[] = [
-  { id: "skill_match", label: "Match %", icon: <Sparkles size={12} /> },
+  { id: "skill_match", label: "Relevant %", icon: <Sparkles size={12} /> },
   { id: "recent", label: "Recent", icon: <ArrowDownWideNarrow size={12} /> },
   { id: "alphabetical", label: "A–Z", icon: <span className="text-[10px] font-bold">A→Z</span> },
 ];

@@ -153,9 +153,9 @@ export function SuperAdminUsers() {
  <main className="mx-auto max-w-7xl px-5 py-6 md:py-10">
  <Link
  to="/super-admin/dashboard"
- className="mb-4 inline-flex items-center gap-2 text-sm font-medium text-zinc-600 transition hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-200"
+ className="mb-4 inline-flex items-center gap-2 text-lg font-medium text-zinc-600 transition hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-200"
  >
- <ArrowLeft size={14} /> Dashboard
+ <ArrowLeft size={20} /> Dashboard
  </Link>
 
  <div className="mb-6 flex flex-wrap items-end justify-between gap-4">

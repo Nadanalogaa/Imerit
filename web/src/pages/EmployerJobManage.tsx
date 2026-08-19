@@ -143,9 +143,9 @@ export function EmployerJobManage({ role }: { role: "employer" | "staff" }) {
         <Link
           to="#"
           onClick={(e) => { e.preventDefault(); setEditing(false); }}
-          className="mb-5 inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-xs font-semibold text-zinc-700 transition hover:bg-zinc-100 dark:border-zinc-700 dark:text-zinc-200 dark:hover:bg-zinc-800"
+          className="mb-5 inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-lg font-semibold text-zinc-700 transition hover:bg-zinc-100 dark:border-zinc-700 dark:text-zinc-200 dark:hover:bg-zinc-800"
         >
-          <ArrowLeft size={14} /> Back to job
+          <ArrowLeft size={20} /> Back to job
         </Link>
 
         <JobFormWizard
@@ -205,9 +205,9 @@ export function EmployerJobManage({ role }: { role: "employer" | "staff" }) {
     <Chrome>
       <Link
         to={listPath}
-        className="mb-5 inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-xs font-semibold text-zinc-700 transition hover:bg-zinc-100 dark:border-zinc-700 dark:text-zinc-200 dark:hover:bg-zinc-800"
+        className="mb-5 inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-lg font-semibold text-zinc-700 transition hover:bg-zinc-100 dark:border-zinc-700 dark:text-zinc-200 dark:hover:bg-zinc-800"
       >
-        <ArrowLeft size={14} /> {role === "staff" ? "My jobs" : "My Jobs"}
+        <ArrowLeft size={20} /> {role === "staff" ? "My jobs" : "My Jobs"}
       </Link>
 
       {banner && (

@@ -103,9 +103,9 @@ export function StaffEmployerForm() {
       <main className="mx-auto max-w-2xl px-5 py-8 md:py-10">
         <Link
           to="/staff/employers"
-          className="mb-4 inline-flex items-center gap-1.5 text-xs font-semibold text-zinc-600 transition hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100"
+          className="mb-4 inline-flex items-center gap-1.5 text-lg font-semibold text-zinc-600 transition hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100"
         >
-          <ArrowLeft size={12} /> Employer Master
+          <ArrowLeft size={20} /> Employer Master
         </Link>
 
         <div className="rounded-3xl border border-zinc-200 bg-white p-6 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
