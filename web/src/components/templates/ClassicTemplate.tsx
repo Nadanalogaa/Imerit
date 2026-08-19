@@ -117,6 +117,11 @@ export function ClassicTemplate({ user, profile }: TemplateProps) {
  </p>
  <p className="text-[10px] text-[#27314D]">{e.passedOutYear ?? "—"}</p>
  </div>
+ {(e.degreeName || e.specialization) && (
+ <p className="text-[11px] text-[#1E3A8A]">
+ {[e.degreeName, e.specialization].filter(Boolean).join(" · ")}
+ </p>
+ )}
  {e.institution && <p className="text-[11px] text-[#27314D]">{e.institution}</p>}
  {e.percentage != null && <p className="text-[10.5px] italic text-[#27314D]">Score: {e.percentage}%</p>}
  {e.thesis && <p className="text-[11px] italic">"{e.thesis}"</p>}

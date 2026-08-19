@@ -31,6 +31,11 @@ export interface Education {
   passedOutYear?: number;
   thesis?: string; // phd
   courseName?: string; // other
+  /** Degree name — shown for post-secondary levels (diploma/ug/pg/mphil/phd).
+   *  E.g. "B.Tech", "M.Sc", "MBA". */
+  degreeName?: string;
+  /** Stream/specialisation — e.g. "Computer Science", "Marketing". */
+  specialization?: string;
   institution?: string;
   districtId?: string;
   pincode?: string;
@@ -313,6 +318,8 @@ export function fromApiProfile(api: ApiCandidateProfile): CandidateProfile {
       passedOutYear: e.passedOutYear ?? undefined,
       thesis: e.thesis ?? undefined,
       courseName: e.courseName ?? undefined,
+      degreeName: e.degreeName ?? undefined,
+      specialization: e.specialization ?? undefined,
       institution: e.institution ?? undefined,
       districtId: e.districtId ?? undefined,
       pincode: e.pincode ?? undefined,
@@ -334,6 +341,8 @@ function toApiEducation(rows: Education[]): ApiEducation[] {
     passedOutYear: e.passedOutYear ?? null,
     thesis: e.thesis ?? null,
     courseName: e.courseName ?? null,
+    degreeName: e.degreeName ?? null,
+    specialization: e.specialization ?? null,
     institution: e.institution ?? null,
     districtId: e.districtId ?? null,
     pincode: e.pincode ?? null,

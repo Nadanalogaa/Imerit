@@ -166,6 +166,11 @@ export function CreativeTemplate({ user, profile }: TemplateProps) {
  </p>
  <p className="text-[10px] font-bold text-amber-600">{e.passedOutYear ?? "—"}</p>
  </div>
+ {(e.degreeName || e.specialization) && (
+ <p className="text-[11px] font-medium text-violet-700">
+ {[e.degreeName, e.specialization].filter(Boolean).join(" · ")}
+ </p>
+ )}
  {e.institution && <p className="text-[11px] text-zinc-600">{e.institution}</p>}
  {e.percentage != null && <p className="text-[10.5px] text-zinc-500">{e.percentage}%</p>}
  {e.thesis && <p className="text-[11px] italic text-zinc-500">"{e.thesis}"</p>}

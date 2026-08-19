@@ -149,6 +149,11 @@ export function TechMonoTemplate({ user, profile }: TemplateProps) {
  <span className="text-cyan-300">
  {e.level === "other" && e.courseName ? e.courseName : EDU_LABELS[e.level]}
  </span>{" "}
+ {(e.degreeName || e.specialization) && (
+ <span className="text-amber-300">
+ {[e.degreeName, e.specialization].filter(Boolean).join(" · ")}{" "}
+ </span>
+ )}
  {e.institution && <span className="text-zinc-500">@ {e.institution}</span>}
  {e.percentage != null && <span className="text-emerald-400"> · {e.percentage}%</span>}
  </p>
