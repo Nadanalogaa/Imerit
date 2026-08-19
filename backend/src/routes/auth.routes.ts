@@ -429,22 +429,24 @@ router.get(
 );
 
 /**
- * PATCH /auth/me — self-service update for the two identity fields
- * users can safely change from Account Settings: their display name
- * and mobile number. Email stays immutable (it's the account key) and
- * role changes require admin.
+ * PATCH /auth/me — self-service update for the identity fields users
+ * change from Account Settings: display name, mobile, email, and role.
  *
- * Body: { name?: string; mobile?: string | null }
- *   - `mobile: null` explicitly clears the stored number.
- *   - `mobile: ""` is treated the same as null.
+ * Body: { name?: string; mobile?: string | null; email?: string; role?: string }
+ *   - `mobile: null` / `mobile: ""` clears the number.
  *   - Missing keys are left alone (Prisma partial update semantics).
+ *   - `email` is normalised to lower-case and checked for uniqueness.
+ *   - `role` is CONSTRAINED to non-privileged buckets: a caller can only
+ *     flip between CANDIDATE and EMPLOYER. Requests to become ADMIN,
+ *     SUPER_ADMIN, or STAFF are rejected — those require an admin route
+ *     so an employer can't self-promote by hitting /auth/me directly.
  */
 router.patch(
   "/auth/me",
   requireAuth,
   asyncHandler(async (req, res) => {
-    const body = req.body as { name?: unknown; mobile?: unknown };
-    const patch: { name?: string; mobile?: string | null } = {};
+    const body = req.body as { name?: unknown; mobile?: unknown; email?: unknown; role?: unknown };
+    const patch: { name?: string; mobile?: string | null; email?: string; role?: UserRole } = {};
     if (body.name !== undefined) {
       if (typeof body.name !== "string") {
         throw new HttpError(400, "name must be a string", "INVALID_NAME");
@@ -464,15 +466,50 @@ router.patch(
       } else if (typeof body.mobile !== "string") {
         throw new HttpError(400, "mobile must be a string or null", "INVALID_MOBILE");
       } else {
-        // Store only digits — strip spaces / punctuation. Length isn't
-        // enforced here because international numbers vary; the client's
-        // form uses inputMode="tel" for the OS-level UX.
         const digits = body.mobile.replace(/\D+/g, "");
         if (digits.length > 0 && digits.length < 7) {
           throw new HttpError(400, "Mobile number is too short", "MOBILE_TOO_SHORT");
         }
         patch.mobile = digits.length > 0 ? digits : null;
       }
+    }
+    if (body.email !== undefined) {
+      if (typeof body.email !== "string") {
+        throw new HttpError(400, "email must be a string", "INVALID_EMAIL");
+      }
+      const email = body.email.trim().toLowerCase();
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+        throw new HttpError(400, "Enter a valid email", "INVALID_EMAIL");
+      }
+      // Uniqueness — but let a no-op change (same email) pass through
+      // rather than 409'ing it.
+      const clash = await prisma.user.findFirst({
+        where: { email, id: { not: req.user!.sub }, deletedAt: null },
+        select: { id: true },
+      });
+      if (clash) throw new HttpError(409, "That email is already in use", "EMAIL_TAKEN");
+      patch.email = email;
+    }
+    if (body.role !== undefined) {
+      if (typeof body.role !== "string") {
+        throw new HttpError(400, "role must be a string", "INVALID_ROLE");
+      }
+      // Self-service role changes are limited to the two public
+      // buckets. Anything privileged (ADMIN / SUPER_ADMIN / STAFF)
+      // has to come from an admin endpoint so /auth/me is never a
+      // self-promotion vector.
+      const wanted = body.role.toUpperCase() as UserRole;
+      const allowed: UserRole[] = [UserRole.CANDIDATE, UserRole.EMPLOYER];
+      if (!allowed.includes(wanted)) {
+        throw new HttpError(403, "That role can only be changed by an admin", "ROLE_FORBIDDEN");
+      }
+      // Prevent a currently-privileged account from downgrading itself
+      // through this endpoint — same reason (admin routes only).
+      const privileged: UserRole[] = [UserRole.ADMIN, UserRole.SUPER_ADMIN, UserRole.STAFF];
+      if (privileged.includes(req.user!.role)) {
+        throw new HttpError(403, "Privileged accounts must change role through the admin console", "ROLE_FORBIDDEN");
+      }
+      patch.role = wanted;
     }
     if (Object.keys(patch).length === 0) {
       // No-op requests get the current user back so the client's

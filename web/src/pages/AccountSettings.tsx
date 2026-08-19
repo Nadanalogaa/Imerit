@@ -108,9 +108,16 @@ function AccountIdentitySection() {
   const [editing, setEditing] = useState(false);
   const [name, setName] = useState(user.name);
   const [mobile, setMobile] = useState(user.mobile ?? "");
+  const [email, setEmail] = useState(user.email);
+  const [role, setRole] = useState<"candidate" | "employer">(
+    user.role === "candidate" || user.role === "employer" ? user.role : "employer",
+  );
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
+  // Role edit is limited to the two public buckets (candidate/employer);
+  // privileged accounts (admin/super_admin/staff) never see the editor.
+  const canEditRole = user.role === "candidate" || user.role === "employer";
 
   // Employer accounts get a locked Company row sourced from
   // EmployerProfile.companyName — the User.name column is the CONTACT
@@ -130,6 +137,8 @@ function AccountIdentitySection() {
   const startEdit = () => {
     setName(user.name);
     setMobile(user.mobile ?? "");
+    setEmail(user.email);
+    if (canEditRole) setRole(user.role as "candidate" | "employer");
     setError(null);
     setSuccess(null);
     setEditing(true);
@@ -144,8 +153,13 @@ function AccountIdentitySection() {
     setError(null);
     setSuccess(null);
     const trimmedName = name.trim();
+    const trimmedEmail = email.trim().toLowerCase();
     if (trimmedName.length < 2) {
       setError("Name must be at least 2 characters.");
+      return;
+    }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmedEmail)) {
+      setError("Enter a valid email address.");
       return;
     }
     setSaving(true);
@@ -153,6 +167,10 @@ function AccountIdentitySection() {
       await authApi.updateMe({
         name: trimmedName,
         mobile: mobile.trim() === "" ? null : mobile.trim(),
+        email: trimmedEmail,
+        // Only send role when we actually let the user edit it — avoids
+        // a 403 for privileged accounts that shouldn't be changing role.
+        ...(canEditRole ? { role: role === "candidate" ? "CANDIDATE" as const : "EMPLOYER" as const } : {}),
       });
       // Pull the fresh user row back through the store so every hook
       // that reads `useAuth(s => s.currentUser)` re-renders.
@@ -168,7 +186,13 @@ function AccountIdentitySection() {
             ? "Name must be at least 2 characters."
             : code === "NAME_TOO_LONG"
               ? "Name is too long."
-              : "Could not save. Try again.",
+              : code === "EMAIL_TAKEN"
+                ? "That email is already used by another account."
+                : code === "INVALID_EMAIL"
+                  ? "Enter a valid email address."
+                  : code === "ROLE_FORBIDDEN"
+                    ? "That role can only be changed by an admin."
+                    : "Could not save. Try again.",
       );
     } finally {
       setSaving(false);
@@ -185,7 +209,8 @@ function AccountIdentitySection() {
           <div>
             <h2 className="text-base font-semibold">Account</h2>
             <p className="mt-0.5 text-xs text-zinc-600 dark:text-zinc-400">
-              Update your contact name or mobile number. Email{user.role === "employer" ? ", role and company name" : " and role"} are locked.
+              Update your contact name, mobile, email{canEditRole ? " or role" : ""}.
+              {user.role === "employer" ? " Company name is locked — only Super Admin can change it." : ""}
             </p>
           </div>
         </div>
@@ -211,6 +236,39 @@ function AccountIdentitySection() {
               placeholder={user.role === "employer" ? "e.g. Priya Ramesh" : "Your full name"}
             />
             <TextField label="Mobile" value={mobile} onChange={setMobile} placeholder="9876543210" inputMode="tel" />
+          </div>
+          <div className="grid gap-3 sm:grid-cols-2">
+            <TextField
+              label="Email"
+              value={email}
+              onChange={setEmail}
+              placeholder="you@example.com"
+              inputMode="email"
+              type="email"
+            />
+            {canEditRole ? (
+              <div>
+                <label className="mb-1 block text-xs font-medium text-zinc-700 dark:text-zinc-300">Role</label>
+                <select
+                  value={role}
+                  onChange={(e) => setRole(e.target.value as "candidate" | "employer")}
+                  className="h-11 w-full rounded-lg border border-zinc-200 bg-white px-3.5 text-sm text-zinc-900 focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500/15 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-100"
+                >
+                  <option value="candidate">Candidate</option>
+                  <option value="employer">Employer</option>
+                </select>
+              </div>
+            ) : (
+              <div>
+                <label className="mb-1 block text-xs font-medium text-zinc-700 dark:text-zinc-300">Role</label>
+                <div className="flex h-11 items-center rounded-lg border border-zinc-200 bg-zinc-100 px-3.5 text-sm capitalize text-zinc-700 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-300">
+                  {user.role.replace("_", " ")}
+                </div>
+                <p className="mt-1 text-[11px] text-zinc-500 dark:text-zinc-400">
+                  Privileged roles are changed through the admin console.
+                </p>
+              </div>
+            )}
           </div>
           {user.role === "employer" && (
             <LockedCompanyRow value={company} />
