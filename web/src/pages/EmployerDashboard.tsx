@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { motion, type Variants } from "framer-motion";
 import {
@@ -17,6 +18,8 @@ import { useProfile } from "../store/profile";
 import { useSubscriptions } from "../store/subscriptions";
 import { useJobs, daysUntilExpiry, isExpired } from "../store/jobs";
 import { Navbar } from "../components/Navbar";
+import { apiEnabled } from "../lib/api";
+import { employerProfileApi } from "../lib/api/profile";
 
 export function EmployerDashboard() {
  const user = useAuth((s) => s.currentUser)!;
@@ -28,6 +31,23 @@ export function EmployerDashboard() {
  );
  const myJobs = useJobs((s) => s.postedBy)(user.id);
  const firstName = user.name.split(" ")[0];
+
+ // The canonical company name lives on EmployerProfile.companyName —
+ // NOT on the User row. `user.company` is only set for the legacy
+ // localStorage path, so fetch the profile on mount and prefer its
+ // companyName for the greeting + status rail. Falls back to
+ // user.company (localStorage) then user.name so pre-API sessions
+ // still render something sensible.
+ const [profileCompany, setProfileCompany] = useState<string | undefined>(user.company);
+ useEffect(() => {
+   if (!apiEnabled) return;
+   let alive = true;
+   employerProfileApi.getMine()
+     .then(({ profile }) => { if (alive) setProfileCompany(profile.companyName || undefined); })
+     .catch(() => { /* leave the fallback in place */ });
+   return () => { alive = false; };
+ }, []);
+ const companyLabel = profileCompany?.trim() || undefined;
 
  // Aggregate posting stats — active count + soonest-expiring live job.
  const activeJobs = myJobs.filter((j) => !isExpired(j));
@@ -69,10 +89,10 @@ export function EmployerDashboard() {
  <span className="inline-flex items-center gap-1.5 rounded-full bg-gradient-to-r from-sky-500/10 to-cyan-500/10 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-widest text-sky-700 dark:text-sky-300">
  <Sparkles size={11} />
  Employer Dashboard
- {user.company && (
+ {companyLabel && (
  <>
  <span className="text-sky-400/60 dark:text-sky-500/60">·</span>
- <span className="max-w-[16rem] truncate normal-case tracking-normal">{user.company}</span>
+ <span className="max-w-[16rem] truncate normal-case tracking-normal">{companyLabel}</span>
  </>
  )}
  </span>
@@ -82,7 +102,7 @@ export function EmployerDashboard() {
     baseline. `leading-none` + `translate-y-[2px]` on the emoji fixes
     the visual drift emojis inherit from their default line box. */}
  <h1 className="mt-1.5 flex items-center gap-2 text-2xl font-semibold leading-tight tracking-tight md:text-3xl">
- <span className="truncate">{user.company || `Hi ${firstName}`}</span>
+ <span className="truncate">{companyLabel || `Hi ${firstName}`}</span>
  <motion.span
  animate={{ rotate: [0, 14, -8, 14, -4, 10, 0] }}
  transition={{ duration: 1.5, ease: "easeInOut", repeat: 1, repeatDelay: 1 }}
@@ -97,12 +117,12 @@ export function EmployerDashboard() {
  {user.emailVerified ? <CheckCircle2 size={14} /> : <Clock size={14} />}
  Account {user.emailVerified ? "verified" : "pending"}
  </span>
- {user.company && (
+ {companyLabel && (
  <>
  <span className="text-zinc-300 dark:text-zinc-700">·</span>
  <span className="inline-flex items-center gap-1.5 font-semibold text-zinc-700 dark:text-zinc-200">
  <Building2 size={14} className="text-sky-500" />
- Hello {firstName} 
+ Hello {firstName}
  </span>
  </>
  )}
