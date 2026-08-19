@@ -41,20 +41,42 @@ class IndustryDepartmentPicker extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final isDark = ref.watch(themeProvider) == ThemeMode.dark;
     final industries = industriesForField(field);
+    // Departments now narrow to the picked industry (matches the
+    // 2026-08 web change). No industry picked → full list, and the
+    // placeholder becomes an "industry first" hint so the visitor
+    // knows the dropdown will get smarter once they scope.
+    final departments = departmentsForIndustry(industry);
+    final effectiveDepartmentHint = (industry == null || industry!.isEmpty)
+        ? 'Pick an industry first…'
+        : departmentHint;
     final industryField = _dropdown(
       isDark: isDark,
       label: industryLabel,
       hint: industryHint,
       value: industries.contains(industry) ? industry : null,
       items: industries,
-      onChanged: onIndustry,
+      onChanged: (v) {
+        // Auto-clear a now-invalid department when the industry
+        // switches to one that doesn't offer it — matches web.
+        final nextDepartments = departmentsForIndustry(v);
+        if (department != null && !nextDepartments.contains(department)) {
+          onDepartment(null);
+        }
+        onIndustry(v);
+      },
     );
     final departmentField = _dropdown(
+      // Keyed on the current items list — DropdownButtonFormField's
+      // `initialValue` is only read on first frame, so we force a
+      // fresh instance whenever the industry (and therefore the
+      // options list) shifts. Otherwise the visible selection can
+      // stick to a value no longer present in `items`.
+      key: ValueKey('dept-${departments.length}-$industry'),
       isDark: isDark,
       label: departmentLabel,
-      hint: departmentHint,
-      value: kDepartments.contains(department) ? department : null,
-      items: kDepartments,
+      hint: effectiveDepartmentHint,
+      value: departments.contains(department) ? department : null,
+      items: departments,
       onChanged: onDepartment,
     );
     if (dense) {
@@ -77,6 +99,7 @@ class IndustryDepartmentPicker extends ConsumerWidget {
   }
 
   Widget _dropdown({
+    Key? key,
     required bool isDark,
     required String label,
     required String hint,
@@ -85,6 +108,7 @@ class IndustryDepartmentPicker extends ConsumerWidget {
     required ValueChanged<String?> onChanged,
   }) {
     return Column(
+      key: key,
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(

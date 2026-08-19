@@ -74,6 +74,8 @@ class Education {
     this.institution,
     this.districtId,
     this.pincode,
+    this.degreeName,
+    this.specialization,
   });
 
   final EducationLevel level;
@@ -88,6 +90,12 @@ class Education {
   // studied each level (10th in Madurai, UG in Chennai, etc.).
   final String? districtId;
   final String? pincode;
+  // Post-secondary detail — mirror of the web `Education.degreeName` +
+  // `specialization` columns (2026-08 migration, backend commit 7ae828c).
+  // Only surfaced by the UI for diploma/ug/pg/mphil/phd levels; 10th /
+  // 12th / other keep these null.
+  final String? degreeName;
+  final String? specialization;
 
   Education copyWith({
     bool? enabled,
@@ -98,6 +106,8 @@ class Education {
     String? institution,
     String? districtId,
     String? pincode,
+    String? degreeName,
+    String? specialization,
   }) =>
       Education(
         level: level,
@@ -109,6 +119,8 @@ class Education {
         institution: institution ?? this.institution,
         districtId: districtId ?? this.districtId,
         pincode: pincode ?? this.pincode,
+        degreeName: degreeName ?? this.degreeName,
+        specialization: specialization ?? this.specialization,
       );
 
   Map<String, dynamic> toJson() => {
@@ -121,6 +133,8 @@ class Education {
         if (institution != null) 'institution': institution,
         if (districtId != null) 'districtId': districtId,
         if (pincode != null) 'pincode': pincode,
+        if (degreeName != null) 'degreeName': degreeName,
+        if (specialization != null) 'specialization': specialization,
       };
 
   static Education fromJson(Map<String, dynamic> j) => Education(
@@ -133,6 +147,8 @@ class Education {
         institution: j['institution'] as String?,
         districtId: j['districtId'] as String?,
         pincode: j['pincode'] as String?,
+        degreeName: j['degreeName'] as String?,
+        specialization: j['specialization'] as String?,
       );
 }
 

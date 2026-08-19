@@ -128,9 +128,25 @@ class SavedJobsPage extends ConsumerWidget {
                                     overflow: TextOverflow.ellipsis,
                                     style: TextStyle(fontSize: 13.5, fontWeight: FontWeight.w700, color: isDark ? Colors.white : const Color(0xFF09090B)),
                                   ),
+                                  // Company subtitle — sky-tinted semibold
+                                  // on its own line. Matches web (ec0245d).
+                                  if (j.employerName.trim().isNotEmpty)
+                                    Padding(
+                                      padding: const EdgeInsets.only(top: 2),
+                                      child: Text(
+                                        j.employerName,
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                        style: TextStyle(
+                                          fontSize: 11,
+                                          fontWeight: FontWeight.w600,
+                                          color: isDark ? const Color(0xFF7DD3FC) : const Color(0xFF0369A1),
+                                        ),
+                                      ),
+                                    ),
                                   const SizedBox(height: 2),
                                   Text(
-                                    '${j.employerName} · ${j.location} · ${fieldLabel[j.field]}',
+                                    '${j.location} · ${fieldLabel[j.field]}',
                                     maxLines: 1,
                                     overflow: TextOverflow.ellipsis,
                                     style: TextStyle(fontSize: 11, color: isDark ? Colors.white.withValues(alpha: 0.6) : const Color(0xFF52525B)),

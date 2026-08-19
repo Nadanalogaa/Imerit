@@ -50,15 +50,7 @@ class EducationStepWidget extends ConsumerWidget {
 
   void _toggle(EducationLevel level) {
     final cur = _findOrEmpty(level);
-    _set(level, Education(
-      level: level,
-      enabled: !cur.enabled,
-      percentage: cur.percentage,
-      passedOutYear: cur.passedOutYear,
-      thesis: cur.thesis,
-      courseName: cur.courseName,
-      institution: cur.institution,
-    ));
+    _set(level, cur.copyWith(enabled: !cur.enabled));
   }
 
   @override
@@ -258,15 +250,7 @@ class _LevelCard extends StatelessWidget {
                                 onChanged: (v) {
                                   final n = double.tryParse(v);
                                   if (v.isNotEmpty && n != null && n > 100) return;
-                                  onChange(Education(
-                                    level: edu.level,
-                                    enabled: edu.enabled,
-                                    percentage: v.isEmpty ? null : n,
-                                    passedOutYear: edu.passedOutYear,
-                                    thesis: edu.thesis,
-                                    courseName: edu.courseName,
-                                    institution: edu.institution,
-                                  ));
+                                  onChange(_rebuild(edu, percentage: v.isEmpty ? null : n));
                                 },
                                 keyboardType: const TextInputType.numberWithOptions(decimal: true),
                                 formatters: [FilteringTextInputFormatter.allow(RegExp(r'[0-9.]'))],
@@ -280,15 +264,7 @@ class _LevelCard extends StatelessWidget {
                                 isDark: isDark,
                                 value: edu.passedOutYear?.toString() ?? '',
                                 onChanged: (v) {
-                                  onChange(Education(
-                                    level: edu.level,
-                                    enabled: edu.enabled,
-                                    percentage: edu.percentage,
-                                    passedOutYear: v.isEmpty ? null : int.tryParse(v),
-                                    thesis: edu.thesis,
-                                    courseName: edu.courseName,
-                                    institution: edu.institution,
-                                  ));
+                                  onChange(_rebuild(edu, passedOutYear: v.isEmpty ? null : int.tryParse(v)));
                                 },
                                 keyboardType: TextInputType.number,
                                 formatters: [
@@ -306,17 +282,48 @@ class _LevelCard extends StatelessWidget {
                           isDark: isDark,
                           value: edu.institution ?? '',
                           onChanged: (v) {
-                            onChange(Education(
-                              level: edu.level,
-                              enabled: edu.enabled,
-                              percentage: edu.percentage,
-                              passedOutYear: edu.passedOutYear,
-                              thesis: edu.thesis,
-                              courseName: edu.courseName,
-                              institution: v.isEmpty ? null : v,
-                            ));
+                            onChange(_rebuild(edu, institution: v.isEmpty ? null : v));
                           },
                         ),
+                        // Degree name + specialisation for post-secondary
+                        // levels only. Skipped for 10th / 12th (single-
+                        // stream schooling) and "other" (which has its
+                        // own courseName field). Mirrors web
+                        // EducationStep (7ae828c).
+                        if (edu.level == EducationLevel.diploma ||
+                            edu.level == EducationLevel.ug ||
+                            edu.level == EducationLevel.pg ||
+                            edu.level == EducationLevel.mphil ||
+                            edu.level == EducationLevel.phd) ...[
+                          const SizedBox(height: 10),
+                          Row(
+                            children: [
+                              Expanded(
+                                child: _MiniField(
+                                  label: 'Degree name',
+                                  hint: _degreeHintFor(edu.level),
+                                  isDark: isDark,
+                                  value: edu.degreeName ?? '',
+                                  onChanged: (v) {
+                                    onChange(_rebuild(edu, degreeName: v.isEmpty ? null : v));
+                                  },
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: _MiniField(
+                                  label: 'Specialization',
+                                  hint: 'e.g. Computer Science',
+                                  isDark: isDark,
+                                  value: edu.specialization ?? '',
+                                  onChanged: (v) {
+                                    onChange(_rebuild(edu, specialization: v.isEmpty ? null : v));
+                                  },
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
                         if (edu.level == EducationLevel.phd) ...[
                           const SizedBox(height: 10),
                           _MiniField(
@@ -325,15 +332,7 @@ class _LevelCard extends StatelessWidget {
                             isDark: isDark,
                             value: edu.thesis ?? '',
                             onChanged: (v) {
-                              onChange(Education(
-                                level: edu.level,
-                                enabled: edu.enabled,
-                                percentage: edu.percentage,
-                                passedOutYear: edu.passedOutYear,
-                                thesis: v.isEmpty ? null : v,
-                                courseName: edu.courseName,
-                                institution: edu.institution,
-                              ));
+                              onChange(_rebuild(edu, thesis: v.isEmpty ? null : v));
                             },
                           ),
                         ],
@@ -345,15 +344,7 @@ class _LevelCard extends StatelessWidget {
                             isDark: isDark,
                             value: edu.courseName ?? '',
                             onChanged: (v) {
-                              onChange(Education(
-                                level: edu.level,
-                                enabled: edu.enabled,
-                                percentage: edu.percentage,
-                                passedOutYear: edu.passedOutYear,
-                                thesis: edu.thesis,
-                                courseName: v.isEmpty ? null : v,
-                                institution: edu.institution,
-                              ));
+                              onChange(_rebuild(edu, courseName: v.isEmpty ? null : v));
                             },
                           ),
                         ],
@@ -365,6 +356,58 @@ class _LevelCard extends StatelessWidget {
         ],
       ),
     );
+  }
+}
+
+/// Return a new [Education] with a single field patched. Keeps every
+/// other field (including districtId / pincode / degreeName /
+/// specialization) verbatim so an edit to one control can't silently
+/// drop the rest. Sentinel `_kUnset` distinguishes "leave alone" from
+/// "explicitly null" for nullable fields.
+Education _rebuild(
+  Education edu, {
+  Object? enabled = _kUnset,
+  Object? percentage = _kUnset,
+  Object? passedOutYear = _kUnset,
+  Object? thesis = _kUnset,
+  Object? courseName = _kUnset,
+  Object? institution = _kUnset,
+  Object? degreeName = _kUnset,
+  Object? specialization = _kUnset,
+}) {
+  return Education(
+    level: edu.level,
+    enabled: identical(enabled, _kUnset) ? edu.enabled : (enabled as bool),
+    percentage: identical(percentage, _kUnset) ? edu.percentage : (percentage as double?),
+    passedOutYear: identical(passedOutYear, _kUnset) ? edu.passedOutYear : (passedOutYear as int?),
+    thesis: identical(thesis, _kUnset) ? edu.thesis : (thesis as String?),
+    courseName: identical(courseName, _kUnset) ? edu.courseName : (courseName as String?),
+    institution: identical(institution, _kUnset) ? edu.institution : (institution as String?),
+    districtId: edu.districtId,
+    pincode: edu.pincode,
+    degreeName: identical(degreeName, _kUnset) ? edu.degreeName : (degreeName as String?),
+    specialization: identical(specialization, _kUnset) ? edu.specialization : (specialization as String?),
+  );
+}
+
+const Object _kUnset = Object();
+
+/// Level-appropriate placeholder text for the "Degree name" field.
+/// Mirrors the web hints in EducationStep.tsx.
+String _degreeHintFor(EducationLevel level) {
+  switch (level) {
+    case EducationLevel.diploma:
+      return 'e.g. Polytechnic Diploma';
+    case EducationLevel.ug:
+      return 'e.g. B.Tech';
+    case EducationLevel.pg:
+      return 'e.g. M.Sc';
+    case EducationLevel.mphil:
+      return 'e.g. M.Phil';
+    case EducationLevel.phd:
+      return 'e.g. Ph.D';
+    default:
+      return '';
   }
 }
 

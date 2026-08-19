@@ -125,16 +125,27 @@ class AuthApi {
     return ApiUser.fromJson(res['user'] as Map<String, dynamic>);
   }
 
-  /// Patch the signed-in user's editable identity fields (name /
-  /// mobile). Empty mobile clears the field server-side. Backend
-  /// returns the fresh user row so the caller can seed local caches.
-  Future<ApiUser> updateMe({String? name, String? mobile}) async {
-    final res = await _client.patch<Map<String, dynamic>>('/auth/me', {
-      if (name != null) 'name': name,
-      // Explicit-null wins over "field not present" — sending null
-      // clears the mobile server-side, which matches the web contract.
-      if (mobile != null) 'mobile': mobile.isEmpty ? null : mobile,
-    });
+  /// Patch the signed-in user's editable identity fields. Backend
+  /// accepts `name`, `mobile`, `email`, and `role` — the last two
+  /// were opened up in the 2026-08 self-service settings update.
+  /// `role` is constrained server-side to CANDIDATE / EMPLOYER
+  /// (privileged tiers stay admin-only). Empty mobile clears the
+  /// field server-side. Backend returns the fresh user row so the
+  /// caller can seed local caches.
+  Future<ApiUser> updateMe({
+    String? name,
+    String? mobile,
+    String? email,
+    String? role, // "CANDIDATE" | "EMPLOYER"
+  }) async {
+    final body = <String, dynamic>{};
+    if (name != null) body['name'] = name;
+    // Explicit-null wins over "field not present" — sending null
+    // clears the mobile server-side, which matches the web contract.
+    if (mobile != null) body['mobile'] = mobile.isEmpty ? null : mobile;
+    if (email != null) body['email'] = email;
+    if (role != null) body['role'] = role;
+    final res = await _client.patch<Map<String, dynamic>>('/auth/me', body);
     return ApiUser.fromJson(res['user'] as Map<String, dynamic>);
   }
 

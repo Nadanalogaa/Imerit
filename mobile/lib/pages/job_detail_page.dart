@@ -249,15 +249,20 @@ class _JobDetailPageState extends ConsumerState<JobDetailPage> {
                                 ),
                               ),
                               const SizedBox(height: 4),
-                              Text(
-                                job.employerName,
-                                style: TextStyle(
-                                  fontSize: 13,
-                                  color: isDark
-                                      ? Colors.white.withValues(alpha: 0.6)
-                                      : const Color(0xFF52525B),
+                              // Company name — sky-tinted semibold, its
+                              // own line under the title. Mirrors web
+                              // JobDetail (ec0245d).
+                              if (job.employerName.trim().isNotEmpty)
+                                Text(
+                                  job.employerName,
+                                  style: TextStyle(
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w600,
+                                    color: isDark
+                                        ? const Color(0xFF7DD3FC)
+                                        : const Color(0xFF0369A1),
+                                  ),
                                 ),
-                              ),
                             ],
                           ),
                         ),

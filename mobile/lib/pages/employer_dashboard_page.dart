@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import '../api/api_client.dart';
+import '../api/profile_api.dart';
 import '../store/auth_provider.dart';
 import '../store/profile_provider.dart';
 import '../store/subscriptions_provider.dart';
@@ -9,11 +11,38 @@ import '../widgets/brand_logo.dart';
 import '../widgets/notification_bell.dart';
 import '../widgets/theme_toggle.dart';
 
-class EmployerDashboardPage extends ConsumerWidget {
+class EmployerDashboardPage extends ConsumerStatefulWidget {
   const EmployerDashboardPage({super.key});
+  @override
+  ConsumerState<EmployerDashboardPage> createState() => _EmployerDashboardPageState();
+}
+
+class _EmployerDashboardPageState extends ConsumerState<EmployerDashboardPage> {
+  /// Freshly-fetched `EmployerProfile.companyName`. Preferred over the
+  /// cached `user.company` because self-registered employers don't ship
+  /// `company` on the /auth/me payload — the value only lives on their
+  /// employer-profile row. Mirrors the 2026-08 web dashboard change.
+  String? _companyName;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) => _fetchCompany());
+  }
+
+  Future<void> _fetchCompany() async {
+    if (!apiEnabled) return;
+    try {
+      final profile = await ProfileApi.instance.getMyEmployerProfile();
+      if (!mounted) return;
+      setState(() => _companyName = (profile['companyName'] as String?)?.trim());
+    } catch (_) {
+      // Non-fatal — fall back to user.company / firstName below.
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final isDark = ref.watch(themeProvider) == ThemeMode.dark;
     final user = ref.watch(authProvider);
 
@@ -23,6 +52,12 @@ class EmployerDashboardPage extends ConsumerWidget {
     }
 
     final firstName = user.name.split(' ').first;
+    // Prefer the freshly-fetched EmployerProfile.companyName; fall back
+    // to the cached user.company (populated on staff-provisioned rows)
+    // so a slow /employer/profile call doesn't blank the greeting.
+    final resolvedCompany = _companyName?.isNotEmpty == true
+        ? _companyName
+        : (user.company?.isNotEmpty == true ? user.company : null);
     final allProfiles = ref.watch(profileProvider);
     final completedCount = allProfiles.values.where((p) => p.selectedTemplateId != null).length;
     final totalCandidates = ref.watch(authProvider.notifier).allUsers().where((u) => u.role == Role.candidate).length;
@@ -119,14 +154,14 @@ class EmployerDashboardPage extends ConsumerWidget {
                             const Icon(Icons.auto_awesome_rounded, size: 12, color: Color(0xFF0369A1)),
                             const SizedBox(width: 6),
                             const Text('EMPLOYER DASHBOARD', style: TextStyle(fontSize: 10, letterSpacing: 1.5, fontWeight: FontWeight.w800, color: Color(0xFF0369A1))),
-                            if (user.company != null && user.company!.trim().isNotEmpty) ...[
+                            if (resolvedCompany != null) ...[
                               const SizedBox(width: 6),
                               const Text('·', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w800, color: Color(0xFF0369A1))),
                               const SizedBox(width: 6),
                               ConstrainedBox(
                                 constraints: const BoxConstraints(maxWidth: 160),
                                 child: Text(
-                                  user.company!,
+                                  resolvedCompany,
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
                                   style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w700, color: Color(0xFF0369A1)),
@@ -145,9 +180,7 @@ class EmployerDashboardPage extends ConsumerWidget {
                         children: [
                           Flexible(
                             child: Text(
-                              (user.company != null && user.company!.trim().isNotEmpty)
-                                  ? user.company!
-                                  : 'Hi $firstName',
+                              resolvedCompany ?? 'Hi $firstName',
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                               style: TextStyle(fontSize: 28, fontWeight: FontWeight.w700, letterSpacing: -0.6, color: isDark ? Colors.white : const Color(0xFF09090B)),

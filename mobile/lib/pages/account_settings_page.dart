@@ -4,15 +4,19 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../api/api_client.dart';
 import '../api/auth_api.dart';
+import '../api/profile_api.dart';
 import '../store/auth_provider.dart';
 import '../widgets/inline_set_password.dart';
 
-/// Signed-in user's account settings — password management + basic
-/// identity summary. Same pattern as web's /settings/account.
+/// Signed-in user's account settings — identity summary (name, mobile,
+/// email, role) + password management. Same pattern as web's
+/// /settings/account.
 ///
-/// Renders one of two forms based on user.hasPassword:
-///   - has one → change-password form (old + new)
-///   - has none → embedded InlineSetPassword widget (set for first time)
+/// Employer accounts additionally see a read-only Company row sourced
+/// from `EmployerProfile.companyName`. The row is intentionally locked
+/// because as of 2026-08 only Super Admin can change an employer's
+/// company name — backend `PATCH /employer/profile` silently drops the
+/// field for everyone else.
 class AccountSettingsPage extends ConsumerWidget {
   const AccountSettingsPage({super.key});
 
@@ -34,8 +38,9 @@ class AccountSettingsPage extends ConsumerWidget {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             // Identity summary — read-only by default, flips to an
-            // inline edit form for name + mobile when the pencil icon
-            // is tapped. Mirrors web's AccountIdentitySection.
+            // inline edit form for name / mobile / email / role when
+            // the pencil icon is tapped. Mirrors web's
+            // AccountIdentitySection.
             const _AccountIdentitySection(),
             const SizedBox(height: 20),
             // Password section
@@ -97,20 +102,45 @@ class AccountSettingsPage extends ConsumerWidget {
 }
 
 class _Field extends StatelessWidget {
-  const _Field({required this.label, required this.value});
+  const _Field({required this.label, required this.value, this.locked = false, this.lockHint});
   final String label;
   final String value;
+  final bool locked;
+  final String? lockHint;
   @override
   Widget build(BuildContext context) => Padding(
         padding: const EdgeInsets.only(top: 8),
-        child: Row(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            SizedBox(
-              width: 120,
-              child: Text(label,
-                  style: TextStyle(fontSize: 10, fontWeight: FontWeight.w700, letterSpacing: 1.5, color: Colors.grey[600])),
+            Row(
+              children: [
+                SizedBox(
+                  width: 120,
+                  child: Text(label,
+                      style: TextStyle(fontSize: 10, fontWeight: FontWeight.w700, letterSpacing: 1.5, color: Colors.grey[600])),
+                ),
+                Expanded(
+                  child: Row(
+                    children: [
+                      if (locked) ...[
+                        const Icon(Icons.lock_rounded, size: 12, color: Color(0xFF71717A)),
+                        const SizedBox(width: 6),
+                      ],
+                      Expanded(child: Text(value, style: const TextStyle(fontSize: 13))),
+                    ],
+                  ),
+                ),
+              ],
             ),
-            Expanded(child: Text(value, style: const TextStyle(fontSize: 13))),
+            if (locked && lockHint != null)
+              Padding(
+                padding: const EdgeInsets.only(top: 4, left: 120),
+                child: Text(
+                  lockHint!,
+                  style: TextStyle(fontSize: 11, color: Colors.grey[600], fontStyle: FontStyle.italic),
+                ),
+              ),
           ],
         ),
       );
@@ -212,12 +242,14 @@ class _ChangePasswordFormState extends ConsumerState<_ChangePasswordForm> {
       );
 }
 
-/// "Account" card — read-only view by default, flips to an inline
-/// edit form when the pencil icon in the header is tapped. Only
-/// `name` and `mobile` are editable (email = account key; role
-/// changes are admin-only). On save we hit PATCH /auth/me and then
-/// `authProvider.refreshFromServer()` so every widget bound to the
-/// signed-in user re-renders with the new values.
+/// "Account" card — read-only view by default, flips to an inline edit
+/// form when the pencil icon in the header is tapped. As of 2026-08 the
+/// visitor can also self-update `email` (email format validated, backend
+/// returns 409 EMAIL_TAKEN / 400 INVALID_EMAIL on conflict) and `role`
+/// (constrained to CANDIDATE / EMPLOYER; privileged tiers hide the
+/// dropdown). Employer accounts additionally see a locked Company row
+/// sourced from EmployerProfile.companyName — only Super Admin can
+/// change that value now, matching the web behaviour.
 class _AccountIdentitySection extends ConsumerStatefulWidget {
   const _AccountIdentitySection();
   @override
@@ -228,20 +260,57 @@ class _AccountIdentitySectionState extends ConsumerState<_AccountIdentitySection
   bool _editing = false;
   final _name = TextEditingController();
   final _mobile = TextEditingController();
+  final _email = TextEditingController();
+  String _role = 'CANDIDATE';
   bool _saving = false;
   String? _error;
   String? _success;
+  String? _companyName; // sourced from /employer/profile for employers
+  bool _companyLoading = false;
+
+  static const _companyLockHint = 'Only Super Admin can change your company name. Contact your account manager to update it.';
+
+  @override
+  void initState() {
+    super.initState();
+    // Kick off the employer-profile fetch after the first frame so
+    // `ref` is safe to read.
+    WidgetsBinding.instance.addPostFrameCallback((_) => _maybeFetchCompany());
+  }
+
+  Future<void> _maybeFetchCompany() async {
+    final user = ref.read(authProvider);
+    if (user == null || user.role != Role.employer || !apiEnabled) return;
+    setState(() => _companyLoading = true);
+    try {
+      final profile = await ProfileApi.instance.getMyEmployerProfile();
+      if (!mounted) return;
+      setState(() => _companyName = (profile['companyName'] as String?)?.trim());
+    } catch (_) {
+      // Non-fatal — fall back to the cached `user.company` (which
+      // staff-provisioned rows carry). Leaving _companyName null means
+      // the row uses the fallback path in build().
+    } finally {
+      if (mounted) setState(() => _companyLoading = false);
+    }
+  }
 
   @override
   void dispose() {
     _name.dispose();
     _mobile.dispose();
+    _email.dispose();
     super.dispose();
   }
 
   void _startEdit(User user) {
     _name.text = user.name;
     _mobile.text = user.mobile ?? '';
+    _email.text = user.email;
+    // The role dropdown only offers CANDIDATE / EMPLOYER — mirror the
+    // current role into that shape (privileged roles keep the pill and
+    // never see the dropdown).
+    _role = user.role == Role.employer ? 'EMPLOYER' : 'CANDIDATE';
     setState(() {
       _error = null;
       _success = null;
@@ -256,21 +325,36 @@ class _AccountIdentitySectionState extends ConsumerState<_AccountIdentitySection
     });
   }
 
+  bool _isPrivileged(Role r) =>
+      r == Role.admin || r == Role.superAdmin || r == Role.staff;
+
   Future<void> _save() async {
     setState(() { _error = null; _success = null; });
-    final trimmed = _name.text.trim();
-    if (trimmed.length < 2) {
+    final user = ref.read(authProvider);
+    if (user == null) return;
+    final trimmedName = _name.text.trim();
+    final trimmedEmail = _email.text.trim();
+    if (trimmedName.length < 2) {
       setState(() => _error = 'Name must be at least 2 characters.');
+      return;
+    }
+    if (!RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$').hasMatch(trimmedEmail)) {
+      setState(() => _error = 'Enter a valid email.');
       return;
     }
     setState(() => _saving = true);
     try {
+      // Only send `role` when it's actually a public role AND we're
+      // showing the dropdown — privileged accounts leave role alone.
+      final sendRole = !_isPrivileged(user.role) ? _role : null;
       await AuthApi.instance.updateMe(
-        name: trimmed,
+        name: trimmedName,
         mobile: _mobile.text.trim(),
+        email: trimmedEmail == user.email ? null : trimmedEmail,
+        role: sendRole == null || sendRole == _apiRoleFor(user.role) ? null : sendRole,
       );
       // Pull the fresh user row back through the provider so any widget
-      // bound to `authProvider` re-renders with the new name/mobile.
+      // bound to `authProvider` re-renders with the new values.
       await ref.read(authProvider.notifier).refreshFromServer();
       HapticFeedback.mediumImpact();
       if (!mounted) return;
@@ -280,6 +364,9 @@ class _AccountIdentitySectionState extends ConsumerState<_AccountIdentitySection
             'MOBILE_TOO_SHORT' => 'Mobile number looks too short.',
             'NAME_TOO_SHORT' => 'Name must be at least 2 characters.',
             'NAME_TOO_LONG' => 'Name is too long.',
+            'INVALID_EMAIL' => 'Enter a valid email.',
+            'EMAIL_TAKEN' => 'Another account already uses that email.',
+            'ROLE_FORBIDDEN' => "That role change isn't allowed.",
             _ => 'Could not save. Try again.',
           });
     } catch (_) {
@@ -289,10 +376,33 @@ class _AccountIdentitySectionState extends ConsumerState<_AccountIdentitySection
     }
   }
 
+  /// Uppercase wire value for a Role — used to compare against `_role`
+  /// so we don't send a no-op role change.
+  String _apiRoleFor(Role r) {
+    switch (r) {
+      case Role.employer:
+        return 'EMPLOYER';
+      case Role.candidate:
+        return 'CANDIDATE';
+      case Role.admin:
+        return 'ADMIN';
+      case Role.superAdmin:
+        return 'SUPER_ADMIN';
+      case Role.staff:
+        return 'STAFF';
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final user = ref.watch(authProvider);
     if (user == null) return const SizedBox.shrink();
+    final isEmployer = user.role == Role.employer;
+    // Prefer the freshly-fetched EmployerProfile.companyName; fall
+    // back to the cached user.company for offline / not-yet-loaded.
+    final resolvedCompany = _companyName?.isNotEmpty == true
+        ? _companyName
+        : (user.company?.isNotEmpty == true ? user.company : null);
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -329,8 +439,27 @@ class _AccountIdentitySectionState extends ConsumerState<_AccountIdentitySection
             const SizedBox(height: 10),
             _EditField(label: 'Mobile', controller: _mobile, hint: '9876543210', keyboardType: TextInputType.phone),
             const SizedBox(height: 10),
-            _Field(label: 'EMAIL (LOCKED)', value: user.email),
-            _Field(label: 'ROLE (LOCKED)', value: user.role.name.replaceAll('superAdmin', 'super admin')),
+            _EditField(label: 'Email', controller: _email, hint: 'you@example.com', keyboardType: TextInputType.emailAddress),
+            const SizedBox(height: 10),
+            // Role dropdown — only CANDIDATE / EMPLOYER, per backend.
+            // Privileged accounts (admin / super_admin / staff) keep
+            // their role read-only.
+            if (!_isPrivileged(user.role))
+              _RoleDropdown(
+                value: _role,
+                onChanged: (v) => setState(() => _role = v ?? _role),
+              )
+            else
+              _Field(label: 'ROLE', value: user.role.name.replaceAll('superAdmin', 'super admin')),
+            if (isEmployer) ...[
+              const SizedBox(height: 10),
+              _Field(
+                label: 'COMPANY',
+                value: _companyLoading && resolvedCompany == null ? 'Loading…' : (resolvedCompany ?? '—'),
+                locked: true,
+                lockHint: _companyLockHint,
+              ),
+            ],
             if (_error != null)
               Padding(padding: const EdgeInsets.only(top: 6), child: Text(_error!, style: const TextStyle(color: Color(0xFFEF4444), fontSize: 12))),
             const SizedBox(height: 12),
@@ -359,6 +488,13 @@ class _AccountIdentitySectionState extends ConsumerState<_AccountIdentitySection
           ] else ...[
             _Field(label: 'ROLE', value: user.role.name.replaceAll('superAdmin', 'super admin')),
             if (user.mobile != null) _Field(label: 'MOBILE', value: user.mobile!),
+            if (isEmployer)
+              _Field(
+                label: 'COMPANY',
+                value: _companyLoading && resolvedCompany == null ? 'Loading…' : (resolvedCompany ?? '—'),
+                locked: true,
+                lockHint: _companyLockHint,
+              ),
             _Field(label: 'MEMBER SINCE', value: DateTime.tryParse(user.createdAt)?.toLocal().toString().split(' ')[0] ?? user.createdAt),
             if (_success != null)
               Padding(padding: const EdgeInsets.only(top: 8), child: Text(_success!, style: const TextStyle(color: Color(0xFF059669), fontSize: 12))),
@@ -391,6 +527,40 @@ class _EditField extends StatelessWidget {
             border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
             focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: const BorderSide(color: Color(0xFFF97316), width: 1.5)),
           ),
+        ),
+      ],
+    );
+  }
+}
+
+/// Role dropdown for the account edit form. Only exposes the two public
+/// roles the backend allows a self-service PATCH to select — CANDIDATE
+/// and EMPLOYER — because staff / admin / super-admin can only be
+/// created by a privileged actor.
+class _RoleDropdown extends StatelessWidget {
+  const _RoleDropdown({required this.value, required this.onChanged});
+  final String value;
+  final ValueChanged<String?> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Padding(padding: EdgeInsets.only(bottom: 4), child: Text('Role', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w500))),
+        DropdownButtonFormField<String>(
+          initialValue: value,
+          isExpanded: true,
+          decoration: InputDecoration(
+            contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+            border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+            focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: const BorderSide(color: Color(0xFFF97316), width: 1.5)),
+          ),
+          items: const [
+            DropdownMenuItem(value: 'CANDIDATE', child: Text('Candidate')),
+            DropdownMenuItem(value: 'EMPLOYER', child: Text('Employer')),
+          ],
+          onChanged: onChanged,
         ),
       ],
     );

@@ -82,6 +82,21 @@ class EmployerJobApplicantsPage extends ConsumerWidget {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(job.title, style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: isDark ? Colors.white : const Color(0xFF09090B))),
+                            // Company name subtitle — sky-tinted
+                            // semibold, always visible. Mirrors web
+                            // EmployerJobApplicants (ec0245d).
+                            if (job.employerName.trim().isNotEmpty)
+                              Padding(
+                                padding: const EdgeInsets.only(top: 2),
+                                child: Text(
+                                  job.employerName,
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w600,
+                                    color: isDark ? const Color(0xFF7DD3FC) : const Color(0xFF0369A1),
+                                  ),
+                                ),
+                              ),
                             Text('${job.location} · ${fieldLabel[job.field]}', style: TextStyle(fontSize: 11.5, color: isDark ? Colors.white.withValues(alpha: 0.6) : const Color(0xFF52525B))),
                           ],
                         ),

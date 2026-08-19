@@ -1088,17 +1088,21 @@ class _MatchedJobCard extends StatelessWidget {
                             color: isDark ? Colors.white : const Color(0xFF09090B),
                           ),
                         ),
-                        Text(
-                          job.employerName,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: TextStyle(
-                            fontSize: 10.5,
-                            color: isDark
-                                ? Colors.white.withValues(alpha: 0.6)
-                                : const Color(0xFF52525B),
+                        // Company name — sky-tinted semibold, always
+                        // visible. Mirrors web compact strip card (ec0245d).
+                        if (job.employerName.trim().isNotEmpty)
+                          Text(
+                            job.employerName,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              fontSize: 10.5,
+                              fontWeight: FontWeight.w600,
+                              color: isDark
+                                  ? const Color(0xFF7DD3FC)
+                                  : const Color(0xFF0369A1),
+                            ),
                           ),
-                        ),
                       ],
                     ),
                   ),

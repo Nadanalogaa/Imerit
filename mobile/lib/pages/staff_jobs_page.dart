@@ -207,9 +207,20 @@ class _JobCard extends StatelessWidget {
                   style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w800, color: Color(0xFF09090B)),
                   overflow: TextOverflow.ellipsis,
                 ),
+                // Company name subtitle — sky-tinted semibold, own line.
+                // Mirrors web StaffJobs (ec0245d).
+                if (job.employerName.trim().isNotEmpty)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 2),
+                    child: Text(
+                      job.employerName,
+                      style: const TextStyle(fontSize: 11.5, fontWeight: FontWeight.w600, color: Color(0xFF0369A1)),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
                 const SizedBox(height: 2),
                 Text(
-                  '${job.employerName} · ${job.location}',
+                  job.location,
                   style: const TextStyle(fontSize: 11.5, color: Color(0xFF52525B)),
                   overflow: TextOverflow.ellipsis,
                 ),

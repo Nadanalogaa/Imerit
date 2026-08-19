@@ -663,26 +663,36 @@ class _JobCard extends StatelessWidget {
                   ),
                   const SizedBox(width: 12),
                   Expanded(
-                    // Title + employer name are now inline on one row —
-                    // matches the 2026-08 web change that pulled the company
-                    // out of a separate line for a denser scan.
-                    child: RichText(
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                      text: TextSpan(
-                        style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: isDark ? Colors.white : const Color(0xFF09090B)),
-                        children: [
-                          TextSpan(text: job.title),
-                          TextSpan(
-                            text: '  ·  ${job.employerName}',
-                            style: TextStyle(
-                              fontSize: 11.5,
-                              fontWeight: FontWeight.w600,
-                              color: isDark ? Colors.white.withValues(alpha: 0.6) : const Color(0xFF52525B),
+                    // Two-line header: position on line 1, company on
+                    // line 2 as a bold sky-tinted subtitle. The prior
+                    // inline "title · company" got clipped on narrow
+                    // cards whenever the title was long — moved onto
+                    // its own line so the hiring org is always visible.
+                    // Mirrors the 2026-08 web JobBrowse change (ec0245d).
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          job.title,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: isDark ? Colors.white : const Color(0xFF09090B)),
+                        ),
+                        if (job.employerName.trim().isNotEmpty)
+                          Padding(
+                            padding: const EdgeInsets.only(top: 2),
+                            child: Text(
+                              job.employerName,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w600,
+                                color: isDark ? const Color(0xFF7DD3FC) : const Color(0xFF0369A1),
+                              ),
                             ),
                           ),
-                        ],
-                      ),
+                      ],
                     ),
                   ),
                   SaveJobButton(jobId: job.id, jobTitle: job.title, size: SaveJobButtonSize.small),
@@ -768,7 +778,17 @@ class _JobPopup extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(job.title, maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: isDark ? Colors.white : const Color(0xFF09090B))),
-                    Text(job.employerName, maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(fontSize: 11.5, color: isDark ? Colors.white.withValues(alpha: 0.6) : const Color(0xFF52525B))),
+                    if (job.employerName.trim().isNotEmpty)
+                      Text(
+                        job.employerName,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          fontSize: 11.5,
+                          fontWeight: FontWeight.w600,
+                          color: isDark ? const Color(0xFF7DD3FC) : const Color(0xFF0369A1),
+                        ),
+                      ),
                   ],
                 ),
               ),

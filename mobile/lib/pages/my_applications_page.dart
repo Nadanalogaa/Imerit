@@ -173,9 +173,25 @@ class _AppCard extends StatelessWidget {
                       overflow: TextOverflow.ellipsis,
                       style: TextStyle(fontSize: 13.5, fontWeight: FontWeight.w700, color: isDark ? Colors.white : const Color(0xFF09090B)),
                     ),
+                    // Company on its own line, sky-tinted semibold —
+                    // matches web (ec0245d).
+                    if (job.employerName.trim().isNotEmpty)
+                      Padding(
+                        padding: const EdgeInsets.only(top: 2),
+                        child: Text(
+                          job.employerName,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w600,
+                            color: isDark ? const Color(0xFF7DD3FC) : const Color(0xFF0369A1),
+                          ),
+                        ),
+                      ),
                     const SizedBox(height: 2),
                     Text(
-                      '${job.employerName} · ${job.location}',
+                      job.location,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: TextStyle(fontSize: 11, color: isDark ? Colors.white.withValues(alpha: 0.6) : const Color(0xFF52525B)),
