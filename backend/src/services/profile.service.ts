@@ -284,13 +284,27 @@ export async function getOrCreateEmployerProfile(userId: string) {
   });
 }
 
-/** Apply a partial update to the caller's employer profile. */
+/** Apply a partial update to the caller's employer profile. When the
+ *  companyName changes, also relabel every existing (non-deleted) job
+ *  this employer owns so the denormalized `Job.employerName` snapshot
+ *  stays in sync — otherwise browse cards keep showing the old label
+ *  until the employer reposts. */
 export async function patchEmployerProfile(
   userId: string,
   data: Prisma.EmployerProfileUpdateInput,
 ) {
   await getOrCreateEmployerProfile(userId);
-  return prisma.employerProfile.update({ where: { userId }, data });
+  return prisma.$transaction(async (tx) => {
+    const updated = await tx.employerProfile.update({ where: { userId }, data });
+    const nextName = updated.companyName?.trim();
+    if (nextName) {
+      await tx.job.updateMany({
+        where: { employerId: userId, deletedAt: null },
+        data: { employerName: nextName },
+      });
+    }
+    return updated;
+  });
 }
 
 export type ExperienceWithProjects = Experience & { projects: ExperienceProject[] };

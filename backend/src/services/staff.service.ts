@@ -316,6 +316,14 @@ export async function updateEmployerByStaff(args: UpdateEmployerArgs) {
         create: { userId: target.id, companyName: company ?? "" },
         update: { companyName: company ?? "" },
       });
+      // Keep the denormalized Job.employerName snapshot in sync so
+      // browse cards + candidate views relabel immediately.
+      if (company) {
+        await tx.job.updateMany({
+          where: { employerId: target.id, deletedAt: null },
+          data: { employerName: company },
+        });
+      }
     }
     return { user: updated };
   });
