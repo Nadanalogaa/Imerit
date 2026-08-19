@@ -35,8 +35,8 @@ export function ContactUs() {
 
  return (
  <section
- id="contact"
- className="relative w-full overflow-hidden bg-zinc-950 py-14 md:py-20"
+  id="contact"
+ className="relative w-full overflow-hidden bg-zinc-950 py-14 scroll-mt-[60px] md:py-20"
  >
  <div className="absolute inset-0 -z-10">
  <div className="absolute inset-0 bg-gradient-to-br from-zinc-950 via-zinc-900 to-zinc-950" />

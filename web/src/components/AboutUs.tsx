@@ -1,6 +1,6 @@
 export function AboutUs() {
  return (
- <section id="about" className="relative px-6 py-14 md:py-20">
+ <section id="about" className="relative px-6 py-14 scroll-mt-[60px] md:py-20">
  <div className="mx-auto grid max-w-6xl items-center gap-12 md:grid-cols-2">
  {/* Image */}
  <div className="relative">

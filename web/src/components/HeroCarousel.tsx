@@ -80,19 +80,20 @@ export function HeroCarousel() {
  return () => clearInterval(t);
  }, [paused]);
 
- return (
- <section
- id="home"
- // One viewport tall on common laptops, never less than 620px on md+.
- // Flex column splits the section into a flexible top (slider copy) and
- // a natural-height bottom (role panels) so both fit above the fold.
- // Section overshoots the viewport by 30-40px on most laptops so the
- // next section's white intro padding is pushed below the fold. 60 was
- // chosen so the hero stays full-height even when the user dismisses
- // the welcome strip (only the navbar remains above us).
- className="relative flex w-full flex-col overflow-hidden min-h-[calc(100svh-60px)]"
- onMouseEnter={() => setPaused(true)}
- onMouseLeave={() => setPaused(false)}
+  return (
+  <>
+  {/* One viewport tall on common laptops, never less than 620px on md+.
+      Flex column splits the section into a flexible top (slider copy) and
+      a natural-height bottom (role panels) so both fit above the fold.
+      Section overshoots the viewport by 30-40px on most laptops so the
+      next section's white intro padding is pushed below the fold. 60 was
+      chosen so the hero stays full-height even when the user dismisses
+      the welcome strip (only the navbar remains above us). */}
+  <section
+  id="home"
+  className="relative flex w-full flex-col overflow-hidden min-h-[calc(100svh-60px)] scroll-mt-[60px]"
+  onMouseEnter={() => setPaused(true)}
+  onMouseLeave={() => setPaused(false)}
  >
  {/* Full-bleed background slider */}
  <div className="absolute inset-0">
@@ -205,6 +206,7 @@ export function HeroCarousel() {
  </svg>
  </button>
  </section>
+ </>
  );
 }
 

@@ -168,14 +168,15 @@ export function Navbar() {
   const isActive = (to: string) => to === activeTo;
 
   return (
-    <header
-      className={[
-        "sticky top-0 z-50 transition-all",
-        scrolled
-          ? "border-b border-zinc-200/60 bg-white/80 backdrop-blur-xl /60 dark:bg-zinc-950/80"
-          : "border-b border-transparent bg-white/50 backdrop-blur-md dark:bg-zinc-950/50",
-      ].join(" ")}
-    >
+    <>
+      <header
+        className={[
+          "fixed inset-x-0 top-0 z-50 transition-all",
+          scrolled
+            ? "border-b border-zinc-200/60 bg-white/80 backdrop-blur-xl dark:bg-zinc-950/80"
+            : "border-b border-transparent bg-white/50 backdrop-blur-md dark:bg-zinc-950/50",
+        ].join(" ")}
+      >
       <div className="mx-auto flex max-w-7xl items-center justify-between px-5 py-3 md:px-8">
         <Brand to={logoHref} size="md" />
 
@@ -266,7 +267,7 @@ export function Navbar() {
       </div>
 
       {open && (
-        <nav className="border-t border-zinc-200/60 bg-white/95 px-5 py-3 backdrop-blur-xl lg:hidden /60 dark:bg-zinc-950/95">
+        <nav className="border-t border-zinc-200/60 bg-white/95 px-5 py-3 backdrop-blur-xl lg:hidden dark:bg-zinc-950/95">
           {appLinks
             ? appLinks.map((l) => {
                 const active = isActive(l.to);
@@ -336,6 +337,8 @@ export function Navbar() {
             )}
         </nav>
       )}
-    </header>
+      </header>
+      <div aria-hidden="true" className="h-[60px]" />
+    </>
   );
 }
