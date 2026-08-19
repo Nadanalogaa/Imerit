@@ -89,7 +89,7 @@ const ITEMS: Item[] = [
 
 export function WhyUs() {
  return (
- <section id="why" className="relative px-6 pt-10 pb-14 md:pt-12 md:pb-20">
+ <section id="why" className="relative px-6 pt-10 pb-14 scroll-mt-[60px] md:pt-12 md:pb-20">
  <div className="absolute inset-0 -z-10 bg-gradient-to-b from-zinc-50 to-white dark:from-zinc-900/50 dark:to-zinc-950" />
 
  <div className="mx-auto max-w-6xl">

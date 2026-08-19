@@ -86,6 +86,8 @@ const educationRowSchema = z.object({
   passedOutYear: z.number().int().min(1950).max(2100).nullable().optional(),
   thesis: z.string().max(1000).nullable().optional(),
   courseName: z.string().max(120).nullable().optional(),
+  degreeName: z.string().trim().max(160).nullable().optional(),
+  specialization: z.string().trim().max(160).nullable().optional(),
   institution: z.string().max(200).nullable().optional(),
   districtId: z.string().max(64).nullable().optional(),
   pincode: z.string().regex(/^\d{6}$/u).nullable().optional(),

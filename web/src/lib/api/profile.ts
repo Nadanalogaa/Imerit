@@ -23,6 +23,10 @@ export interface ApiEducation {
   passedOutYear?: number | null;
   thesis?: string | null;
   courseName?: string | null;
+  /** Degree name (e.g. "B.Tech", "M.Sc") — post-secondary levels only. */
+  degreeName?: string | null;
+  /** Stream / specialisation (e.g. "Computer Science", "Marketing"). */
+  specialization?: string | null;
   institution?: string | null;
   districtId?: string | null;
   pincode?: string | null;

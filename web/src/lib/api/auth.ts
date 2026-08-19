@@ -74,11 +74,11 @@ export const authApi = {
 
   /**
    * Self-service patch of the caller's identity fields. Backend accepts
-   * `name` and `mobile`; email + role stay immutable through this
-   * endpoint. Send `mobile: null` (or empty string) to clear a stored
-   * number.
+   * `name`, `mobile`, `email`, and `role`. `role` is constrained to
+   * CANDIDATE / EMPLOYER — privileged tiers are admin-only. Send
+   * `mobile: null` (or empty string) to clear a stored number.
    */
-  updateMe: (patch: { name?: string; mobile?: string | null }) =>
+  updateMe: (patch: { name?: string; mobile?: string | null; email?: string; role?: ApiPublicRole }) =>
     api<{ user: ApiUser }>("/auth/me", { method: "PATCH", json: patch }),
 
   refresh: () => api<{ ok: true }>("/auth/refresh", { method: "POST" }),

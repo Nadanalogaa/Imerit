@@ -1,10 +1,11 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { Eye, EyeOff, KeyRound, Pencil, ShieldCheck, User as UserIcon, X } from "lucide-react";
+import { Building2, Eye, EyeOff, KeyRound, Lock, Pencil, ShieldCheck, User as UserIcon, X } from "lucide-react";
 import { Navbar } from "../components/Navbar";
 import { authApi } from "../lib/api/auth";
+import { employerProfileApi } from "../lib/api/profile";
 import { useAuth } from "../store/auth";
-import { ApiError } from "../lib/api";
+import { ApiError, apiEnabled } from "../lib/api";
 import { TextField } from "../components/TextField";
 
 /**
@@ -107,13 +108,37 @@ function AccountIdentitySection() {
   const [editing, setEditing] = useState(false);
   const [name, setName] = useState(user.name);
   const [mobile, setMobile] = useState(user.mobile ?? "");
+  const [email, setEmail] = useState(user.email);
+  const [role, setRole] = useState<"candidate" | "employer">(
+    user.role === "candidate" || user.role === "employer" ? user.role : "employer",
+  );
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
+  // Role edit is limited to the two public buckets (candidate/employer);
+  // privileged accounts (admin/super_admin/staff) never see the editor.
+  const canEditRole = user.role === "candidate" || user.role === "employer";
+
+  // Employer accounts get a locked Company row sourced from
+  // EmployerProfile.companyName — the User.name column is the CONTACT
+  // PERSON's name (which some employers unfortunately filled with the
+  // company name at signup), and only super-admin can change the
+  // canonical company on /admin/employers/:id.
+  const [company, setCompany] = useState<string | undefined>(undefined);
+  useEffect(() => {
+    if (user.role !== "employer" || !apiEnabled) return;
+    let alive = true;
+    employerProfileApi.getMine()
+      .then(({ profile }) => { if (alive) setCompany(profile.companyName?.trim() || undefined); })
+      .catch(() => { /* leave blank */ });
+    return () => { alive = false; };
+  }, [user.role]);
 
   const startEdit = () => {
     setName(user.name);
     setMobile(user.mobile ?? "");
+    setEmail(user.email);
+    if (canEditRole) setRole(user.role as "candidate" | "employer");
     setError(null);
     setSuccess(null);
     setEditing(true);
@@ -128,8 +153,13 @@ function AccountIdentitySection() {
     setError(null);
     setSuccess(null);
     const trimmedName = name.trim();
+    const trimmedEmail = email.trim().toLowerCase();
     if (trimmedName.length < 2) {
       setError("Name must be at least 2 characters.");
+      return;
+    }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmedEmail)) {
+      setError("Enter a valid email address.");
       return;
     }
     setSaving(true);
@@ -137,6 +167,10 @@ function AccountIdentitySection() {
       await authApi.updateMe({
         name: trimmedName,
         mobile: mobile.trim() === "" ? null : mobile.trim(),
+        email: trimmedEmail,
+        // Only send role when we actually let the user edit it — avoids
+        // a 403 for privileged accounts that shouldn't be changing role.
+        ...(canEditRole ? { role: role === "candidate" ? "CANDIDATE" as const : "EMPLOYER" as const } : {}),
       });
       // Pull the fresh user row back through the store so every hook
       // that reads `useAuth(s => s.currentUser)` re-renders.
@@ -152,7 +186,13 @@ function AccountIdentitySection() {
             ? "Name must be at least 2 characters."
             : code === "NAME_TOO_LONG"
               ? "Name is too long."
-              : "Could not save. Try again.",
+              : code === "EMAIL_TAKEN"
+                ? "That email is already used by another account."
+                : code === "INVALID_EMAIL"
+                  ? "Enter a valid email address."
+                  : code === "ROLE_FORBIDDEN"
+                    ? "That role can only be changed by an admin."
+                    : "Could not save. Try again.",
       );
     } finally {
       setSaving(false);
@@ -169,7 +209,8 @@ function AccountIdentitySection() {
           <div>
             <h2 className="text-base font-semibold">Account</h2>
             <p className="mt-0.5 text-xs text-zinc-600 dark:text-zinc-400">
-              Update your display name or mobile number. Email + role are locked.
+              Update your contact name, mobile, email{canEditRole ? " or role" : ""}.
+              {user.role === "employer" ? " Company name is locked — only Super Admin can change it." : ""}
             </p>
           </div>
         </div>
@@ -188,13 +229,50 @@ function AccountIdentitySection() {
       {editing ? (
         <div className="flex flex-col gap-3">
           <div className="grid gap-3 sm:grid-cols-2">
-            <TextField label="Name" value={name} onChange={setName} placeholder="Your full name" />
+            <TextField
+              label={user.role === "employer" ? "Contact person name" : "Name"}
+              value={name}
+              onChange={setName}
+              placeholder={user.role === "employer" ? "e.g. Priya Ramesh" : "Your full name"}
+            />
             <TextField label="Mobile" value={mobile} onChange={setMobile} placeholder="9876543210" inputMode="tel" />
           </div>
-          <dl className="grid gap-3 text-sm sm:grid-cols-2">
-            <Field label="Email (locked)" value={user.email} className="text-zinc-500 dark:text-zinc-400" />
-            <Field label="Role (locked)" value={user.role.replace("_", " ")} className="capitalize text-zinc-500 dark:text-zinc-400" />
-          </dl>
+          <div className="grid gap-3 sm:grid-cols-2">
+            <TextField
+              label="Email"
+              value={email}
+              onChange={setEmail}
+              placeholder="you@example.com"
+              inputMode="email"
+              type="email"
+            />
+            {canEditRole ? (
+              <div>
+                <label className="mb-1 block text-xs font-medium text-zinc-700 dark:text-zinc-300">Role</label>
+                <select
+                  value={role}
+                  onChange={(e) => setRole(e.target.value as "candidate" | "employer")}
+                  className="h-11 w-full rounded-lg border border-zinc-200 bg-white px-3.5 text-sm text-zinc-900 focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500/15 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-100"
+                >
+                  <option value="candidate">Candidate</option>
+                  <option value="employer">Employer</option>
+                </select>
+              </div>
+            ) : (
+              <div>
+                <label className="mb-1 block text-xs font-medium text-zinc-700 dark:text-zinc-300">Role</label>
+                <div className="flex h-11 items-center rounded-lg border border-zinc-200 bg-zinc-100 px-3.5 text-sm capitalize text-zinc-700 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-300">
+                  {user.role.replace("_", " ")}
+                </div>
+                <p className="mt-1 text-[11px] text-zinc-500 dark:text-zinc-400">
+                  Privileged roles are changed through the admin console.
+                </p>
+              </div>
+            )}
+          </div>
+          {user.role === "employer" && (
+            <LockedCompanyRow value={company} />
+          )}
           {error && <p className="text-xs text-rose-500">{error}</p>}
           <div className="mt-1 flex items-center gap-2">
             <button
@@ -218,7 +296,7 @@ function AccountIdentitySection() {
       ) : (
         <>
           <dl className="grid gap-3 text-sm sm:grid-cols-2">
-            <Field label="Name" value={user.name} />
+            <Field label={user.role === "employer" ? "Contact person" : "Name"} value={user.name} />
             <Field label="Email" value={user.email} />
             {user.mobile && <Field label="Mobile" value={user.mobile} />}
             <Field label="Role" value={user.role.replace("_", " ")} className="capitalize" />
@@ -227,6 +305,11 @@ function AccountIdentitySection() {
               value={new Date(user.createdAt).toLocaleDateString(undefined, { year: "numeric", month: "long", day: "numeric" })}
             />
           </dl>
+          {user.role === "employer" && (
+            <div className="mt-3">
+              <LockedCompanyRow value={company} />
+            </div>
+          )}
           {success && <p className="mt-3 text-xs text-emerald-600 dark:text-emerald-400">{success}</p>}
         </>
       )}
@@ -329,6 +412,29 @@ function FieldPassword({
           {show ? <EyeOff size={14} /> : <Eye size={14} />}
         </button>
       </div>
+    </div>
+  );
+}
+
+/**
+ * Locked "Company" row for the employer account settings. The value is
+ * the canonical `EmployerProfile.companyName` — Super Admin owns it, so
+ * we render it disabled with a padlock and a "Contact your account
+ * manager" hint. Employers see it always; other roles never render.
+ */
+function LockedCompanyRow({ value }: { value?: string }) {
+  return (
+    <div>
+      <label className="mb-1.5 flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
+        <Building2 size={11} /> Company (locked)
+      </label>
+      <div className="flex h-11 items-center gap-2 rounded-lg border border-zinc-200 bg-zinc-100 px-3.5 text-sm text-zinc-700 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-300">
+        <Lock size={12} className="text-zinc-400" />
+        <span className="truncate">{value?.trim() || "—"}</span>
+      </div>
+      <p className="mt-1 text-[11px] text-zinc-500 dark:text-zinc-400">
+        Only Super Admin can change your company name. Contact your account manager to update it.
+      </p>
     </div>
   );
 }

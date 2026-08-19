@@ -202,6 +202,15 @@ export async function updateEmployerByAdmin(args: AdminUpdateEmployerArgs) {
         create: { userId: target.id, companyName: company },
         update: { companyName: company },
       });
+      // Relabel the denormalized Job.employerName snapshots so browse
+      // cards + candidate views reflect the corrected company name
+      // immediately, without waiting for a repost.
+      if (company) {
+        await tx.job.updateMany({
+          where: { employerId: target.id, deletedAt: null },
+          data: { employerName: company },
+        });
+      }
     }
 
     await tx.auditLog.create({

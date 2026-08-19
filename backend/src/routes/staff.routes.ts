@@ -172,14 +172,16 @@ router.patch(
   "/staff/employers/:id",
   ...staffGuard,
   asyncHandler(async (req, res) => {
-    const body = req.body as { name?: unknown; mobile?: unknown; company?: unknown };
+    // Company is intentionally NOT accepted here — only super-admin
+    // can change an employer's company name (PATCH /admin/employers/:id).
+    // We silently drop it if legacy clients still send it.
+    const body = req.body as { name?: unknown; mobile?: unknown };
     const { user } = await updateEmployerByStaff({
       staffId: req.user!.sub,
       employerId: paramId(req.params.id),
       patch: {
         name: typeof body.name === "string" ? body.name : undefined,
         mobile: body.mobile === undefined ? undefined : (typeof body.mobile === "string" ? body.mobile : null),
-        company: body.company === undefined ? undefined : (typeof body.company === "string" ? body.company : null),
       },
     });
     res.json({ user });
@@ -212,16 +214,24 @@ router.post(
   asyncHandler(async (req, res) => {
     // staffCreateJobSchema guarantees employerId is a non-empty string.
     const body = req.body as { employerId: string } & Parameters<typeof createJob>[0]["data"];
-    const employer = await prisma.user.findUnique({ where: { id: body.employerId } });
+    const employer = await prisma.user.findUnique({
+      where: { id: body.employerId },
+      include: { employerProfile: { select: { companyName: true } } },
+    });
     if (!employer || employer.deletedAt) throw new HttpError(404, "Employer not found", "EMPLOYER_NOT_FOUND");
     if (employer.role !== UserRole.EMPLOYER) throw new HttpError(400, "Target is not an employer account", "NOT_EMPLOYER");
 
     // Strip employerId from the pass-through — it's a request-body field,
     // not a job-model field. The createJob service will merge the rest.
     const { employerId: _emp, ...jobData } = body;
+    // Snapshot the COMPANY name (not the contact person's name) so
+    // browse cards show the org. Falls back to user.name only when
+    // the employer's profile has no company set yet.
+    const employerName =
+      employer.employerProfile?.companyName?.trim() || employer.name;
     const job = await createJob({
       employerId: employer.id,
-      employerName: employer.name,
+      employerName,
       postedByStaffId: req.user!.sub,
       data: jobData as Parameters<typeof createJob>[0]["data"],
     });

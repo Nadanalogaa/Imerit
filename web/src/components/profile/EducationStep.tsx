@@ -96,12 +96,21 @@ function LevelCard({
  onToggle: () => void;
  onChange: (p: Partial<Education>) => void;
 }) {
+ // Flipped to true once the height-expand animation completes so the
+ // body can render `overflow: visible` — needed for the searchable
+ // DistrictSelect popover to escape the card. See the motion.div below.
+ const [bodyOpen, setBodyOpen] = useState(false);
  return (
+ // `overflow-hidden` used to live here so the height-collapse
+ // animation clipped cleanly, but it also clipped the searchable
+ // DistrictSelect dropdown inside the enabled body. The height
+ // animation on the inner motion.div now owns the clipping so
+ // popovers in the body escape the card and render freely.
  <motion.div
  layout
  transition={{ duration: 0.25, ease: "easeOut" }}
  className={[
- "overflow-hidden rounded-xl transition",
+ "rounded-xl transition",
  enabled
  ? "bg-brand-50/60 dark:bg-brand-500/10"
  : "border border-zinc-200 bg-white hover:border-zinc-300 dark:border-zinc-700 dark:bg-zinc-900 dark:hover:border-zinc-600",
@@ -133,6 +142,13 @@ function LevelCard({
  animate={{ height: "auto", opacity: 1 }}
  exit={{ height: 0, opacity: 0 }}
  transition={{ duration: 0.25, ease: "easeOut" }}
+ // Clip during the height animation so the collapse looks
+ // tidy; once the "open" animation completes, flip overflow
+ // to visible so absolutely-positioned popovers inside (the
+ // searchable DistrictSelect) can spill out of the card.
+ style={{ overflow: bodyOpen ? "visible" : "hidden" }}
+ onAnimationStart={() => setBodyOpen(false)}
+ onAnimationComplete={() => setBodyOpen(true)}
  >
  <div className="grid gap-3 border-t border-zinc-200/70 px-4 py-4 sm:grid-cols-2 lg:grid-cols-3 dark:border-zinc-700/70">
  <NumField
@@ -165,6 +181,25 @@ function LevelCard({
  onChange={(v) => onChange({ pincode: v.replace(/\D/g, "").slice(0, 6) || undefined })}
  placeholder="e.g. 600001"
  />
+ {/* Degree name + specialisation for post-secondary levels.
+     Skipped for 10th / 12th (single-stream schooling) and
+     "other" (which already has its own courseName field). */}
+ {(meta.id === "diploma" || meta.id === "ug" || meta.id === "pg" || meta.id === "mphil" || meta.id === "phd") && (
+ <>
+ <TextInput
+ label="Degree name"
+ value={edu?.degreeName ?? ""}
+ onChange={(v) => onChange({ degreeName: v || undefined })}
+ placeholder={meta.id === "diploma" ? "e.g. Polytechnic Diploma" : meta.id === "ug" ? "e.g. B.Tech" : meta.id === "pg" ? "e.g. M.Sc" : meta.id === "mphil" ? "e.g. M.Phil" : "e.g. Ph.D"}
+ />
+ <TextInput
+ label="Specialization / Stream"
+ value={edu?.specialization ?? ""}
+ onChange={(v) => onChange({ specialization: v || undefined })}
+ placeholder="e.g. Computer Science, Marketing"
+ />
+ </>
+ )}
  {meta.id === "phd" && (
  <div className="sm:col-span-3">
  <TextInput

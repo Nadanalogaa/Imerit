@@ -169,6 +169,11 @@ export function ModernTemplate({ user, profile }: TemplateProps) {
  </p>
  <p className="text-[10px] text-zinc-400">{e.passedOutYear ?? "—"}</p>
  </div>
+ {(e.degreeName || e.specialization) && (
+ <p className="text-[11px] text-zinc-700">
+ {[e.degreeName, e.specialization].filter(Boolean).join(" · ")}
+ </p>
+ )}
  {e.institution && <p className="text-[11px] text-zinc-600">{e.institution}</p>}
  {e.percentage != null && <p className="text-[10.5px] text-zinc-500">{e.percentage}%</p>}
  {e.thesis && <p className="mt-0.5 text-[11px] italic text-zinc-500">"{e.thesis}"</p>}

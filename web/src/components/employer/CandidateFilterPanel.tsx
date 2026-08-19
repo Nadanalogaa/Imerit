@@ -25,7 +25,7 @@ import {
   type CandidateFilterState,
   type CandidateSort,
 } from "../../lib/employerFilters";
-import { DEPARTMENTS, industriesForField } from "../../lib/industryTaxonomy";
+import { departmentsForIndustry, industriesForField } from "../../lib/industryTaxonomy";
 
 const EDUCATION_LABELS: Record<EducationLevel, string> = {
   "10th": "10th",
@@ -332,7 +332,14 @@ export function CandidateFilterPanel({
         >
           <select
             value={state.industry ?? ""}
-            onChange={(e) => onChange({ ...state, industry: e.target.value || undefined })}
+            onChange={(e) => {
+              const industry = e.target.value || undefined;
+              const validDepts = departmentsForIndustry(industry);
+              const department = state.department && validDepts.includes(state.department)
+                ? state.department
+                : undefined;
+              onChange({ ...state, industry, department });
+            }}
             className="h-10 w-full rounded-lg border border-zinc-200 bg-white px-3 text-sm text-zinc-900 focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500/15 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-100"
           >
             <option value="">All industries</option>
@@ -354,7 +361,7 @@ export function CandidateFilterPanel({
             className="h-10 w-full rounded-lg border border-zinc-200 bg-white px-3 text-sm text-zinc-900 focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500/15 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-100"
           >
             <option value="">All departments</option>
-            {DEPARTMENTS.map((label) => (
+            {departmentsForIndustry(state.industry ?? undefined).map((label) => (
               <option key={label} value={label}>{label}</option>
             ))}
           </select>

@@ -181,6 +181,11 @@ export function CorporateTemplate({ user, profile }: TemplateProps) {
  </p>
  <p className="text-[10px] text-slate-500">{e.passedOutYear ?? "—"}</p>
  </div>
+ {(e.degreeName || e.specialization) && (
+ <p className="text-[11px] font-medium text-slate-700">
+ {[e.degreeName, e.specialization].filter(Boolean).join(" · ")}
+ </p>
+ )}
  {e.institution && <p className="text-[11px] text-slate-600">{e.institution}</p>}
  {e.percentage != null && <p className="text-[10.5px] text-slate-500">Score: {e.percentage}%</p>}
  {e.thesis && <p className="mt-0.5 text-[11px] italic text-slate-500">"{e.thesis}"</p>}

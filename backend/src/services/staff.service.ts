@@ -292,7 +292,8 @@ export async function createEmployerByStaff(args: CreateEmployerByStaffArgs & { 
 interface UpdateEmployerArgs {
   staffId: string;
   employerId: string;
-  patch: { name?: string; mobile?: string | null; company?: string | null };
+  /** Company is intentionally excluded — super-admin-only field. */
+  patch: { name?: string; mobile?: string | null };
 }
 
 export async function updateEmployerByStaff(args: UpdateEmployerArgs) {
@@ -306,17 +307,10 @@ export async function updateEmployerByStaff(args: UpdateEmployerArgs) {
       },
       select: employerSelect,
     });
-    if (args.patch.company !== undefined) {
-      const company = args.patch.company?.trim() || null;
-      // Upsert the profile so we can set/change the company name from the
-      // staff-side edit form without requiring the employer to have logged
-      // in and created their profile first.
-      await tx.employerProfile.upsert({
-        where: { userId: target.id },
-        create: { userId: target.id, companyName: company ?? "" },
-        update: { companyName: company ?? "" },
-      });
-    }
+    // Company name is intentionally NOT accepted on the staff edit
+    // path. Only super-admin can change it once an employer exists
+    // (see updateEmployerByAdmin). Staff still SET it during creation
+    // — that's a separate route (POST /staff/employers).
     return { user: updated };
   });
 }
