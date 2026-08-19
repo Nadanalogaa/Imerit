@@ -158,14 +158,22 @@ router.post(
   requireRole(UserRole.EMPLOYER),
   validate({ body: createJobSchema }),
   asyncHandler(async (req, res) => {
-    const employer = await prisma.user.findUnique({ where: { id: req.user!.sub } });
+    const employer = await prisma.user.findUnique({
+      where: { id: req.user!.sub },
+      include: { employerProfile: { select: { companyName: true } } },
+    });
     if (!employer) throw new HttpError(404, "Employer not found", "USER_NOT_FOUND");
 
-    // We snapshot the employer's name into the job row so list views never
-    // need an extra join. Frontend's existing JobCard renders the field as-is.
+    // Snapshot the COMPANY name onto the job row (not the person's name)
+    // so browse cards and candidate views show "Rudraa HR Solutions",
+    // not "Sathiya Narayanan". Falls back to the user's name only when
+    // the employer profile has no company set yet.
+    const employerName =
+      employer.employerProfile?.companyName?.trim() || employer.name;
+
     const job = await createJob({
       employerId: employer.id,
-      employerName: employer.name,
+      employerName,
       data: req.body as Parameters<typeof createJob>[0]["data"],
     });
     res.status(201).json({ job });

@@ -212,16 +212,24 @@ router.post(
   asyncHandler(async (req, res) => {
     // staffCreateJobSchema guarantees employerId is a non-empty string.
     const body = req.body as { employerId: string } & Parameters<typeof createJob>[0]["data"];
-    const employer = await prisma.user.findUnique({ where: { id: body.employerId } });
+    const employer = await prisma.user.findUnique({
+      where: { id: body.employerId },
+      include: { employerProfile: { select: { companyName: true } } },
+    });
     if (!employer || employer.deletedAt) throw new HttpError(404, "Employer not found", "EMPLOYER_NOT_FOUND");
     if (employer.role !== UserRole.EMPLOYER) throw new HttpError(400, "Target is not an employer account", "NOT_EMPLOYER");
 
     // Strip employerId from the pass-through — it's a request-body field,
     // not a job-model field. The createJob service will merge the rest.
     const { employerId: _emp, ...jobData } = body;
+    // Snapshot the COMPANY name (not the contact person's name) so
+    // browse cards show the org. Falls back to user.name only when
+    // the employer's profile has no company set yet.
+    const employerName =
+      employer.employerProfile?.companyName?.trim() || employer.name;
     const job = await createJob({
       employerId: employer.id,
-      employerName: employer.name,
+      employerName,
       postedByStaffId: req.user!.sub,
       data: jobData as Parameters<typeof createJob>[0]["data"],
     });
