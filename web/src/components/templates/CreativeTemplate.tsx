@@ -182,8 +182,28 @@ export function CreativeTemplate({ user, profile }: TemplateProps) {
  )}
  </main>
 
- {/* Right sidebar */}
+ {/* Right sidebar — contact + preferred locations pinned at the top
+     so the CV reader always sees how to reach the candidate and
+     where they want to work, even before scrolling. */}
  <aside className="col-span-4 flex flex-col gap-5">
+ <CreativeSection title="Contact" color="from-rose-500 to-orange-500" compact>
+ <ul className="space-y-1 text-[11px] text-zinc-700">
+ <li className="break-all"><span className="font-semibold text-rose-700">Email:</span> {user.email}</li>
+ {user.mobile && (
+ <li><span className="font-semibold text-rose-700">Mobile:</span> +91 {user.mobile}</li>
+ )}
+ {profile.alternateMobile && (
+ <li><span className="font-semibold text-rose-700">Alt:</span> +91 {profile.alternateMobile}</li>
+ )}
+ </ul>
+ </CreativeSection>
+
+ {preferredLocation && (
+ <CreativeSection title="Preferred Work Locations" color="from-emerald-500 to-teal-500" compact>
+ <p className="text-[11.5px] font-semibold text-emerald-700">{preferredLocation}</p>
+ </CreativeSection>
+ )}
+
  {skills.length > 0 && (
  <CreativeSection title="Skills" color="from-cyan-500 to-sky-500" compact>
  <div className="flex flex-wrap gap-1.5">
@@ -202,12 +222,6 @@ export function CreativeTemplate({ user, profile }: TemplateProps) {
  {profile.type === "fresher" && profile.field === "it" && profile.itSpecialization && (
  <CreativeSection title="Specialization" color="from-violet-500 to-fuchsia-500" compact>
  <p className="text-zinc-700">{profile.itSpecialization}</p>
- </CreativeSection>
- )}
-
- {profile.alternateMobile && (
- <CreativeSection title="Alt Contact" color="from-emerald-500 to-teal-500" compact>
- <p>+91 {profile.alternateMobile}</p>
  </CreativeSection>
  )}
 
