@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { GraduationCap, Plus, ChevronDown } from "lucide-react";
 import type { Education, EducationLevel } from "../../store/profile";
 import { Checkbox } from "../Checkbox";
+import { degreesForLevel, specializationsForDegree } from "../../lib/degreeTaxonomy";
 import { useLocations } from "../../store/locations";
 
 interface LevelMeta {
@@ -183,20 +184,36 @@ function LevelCard({
  />
  {/* Degree name + specialisation for post-secondary levels.
      Skipped for 10th / 12th (single-stream schooling) and
-     "other" (which already has its own courseName field). */}
+     "other" (which already has its own courseName field).
+     Both are dropdowns with a curated Tamil Nadu / Indian
+     education-board list; picking "Other" flips the field to a
+     free-text input. Specialisation options narrow based on the
+     picked degree. */}
  {(meta.id === "diploma" || meta.id === "ug" || meta.id === "pg" || meta.id === "mphil" || meta.id === "phd") && (
  <>
- <TextInput
+ <SelectWithOther
  label="Degree name"
  value={edu?.degreeName ?? ""}
- onChange={(v) => onChange({ degreeName: v || undefined })}
- placeholder={meta.id === "diploma" ? "e.g. Polytechnic Diploma" : meta.id === "ug" ? "e.g. B.Tech" : meta.id === "pg" ? "e.g. M.Sc" : meta.id === "mphil" ? "e.g. M.Phil" : "e.g. Ph.D"}
+ options={degreesForLevel(meta.id)}
+ placeholder="Select a degree"
+ onChange={(next) => {
+ // Clear a stale specialisation when the new degree doesn't
+ // offer it — same auto-clear pattern used by industry ↔
+ // department elsewhere.
+ const validSpecs = specializationsForDegree(next || undefined, meta.id);
+ const patch: Partial<Education> = { degreeName: next || undefined };
+ if (edu?.specialization && !validSpecs.includes(edu.specialization)) {
+ patch.specialization = undefined;
+ }
+ onChange(patch);
+ }}
  />
- <TextInput
+ <SelectWithOther
  label="Specialization / Stream"
  value={edu?.specialization ?? ""}
- onChange={(v) => onChange({ specialization: v || undefined })}
- placeholder="e.g. Computer Science, Marketing"
+ options={specializationsForDegree(edu?.degreeName, meta.id)}
+ placeholder={edu?.degreeName ? "Select a specialization" : "Pick a degree first"}
+ onChange={(next) => onChange({ specialization: next || undefined })}
  />
  </>
  )}
@@ -434,6 +451,86 @@ function DistrictSelect({
           </div>
         )}
       </div>
+    </div>
+  );
+}
+
+/**
+ * Dropdown with a curated pick-list + a free-text escape hatch. When
+ * the user picks "Other" from the dropdown the component flips to a
+ * plain TextInput so they can type a custom value; picking a real
+ * option from the dropdown again flips back. Emits the actual value
+ * (never the literal "Other").
+ *
+ * Reused by the Education step for Degree name + Specialization so
+ * both fields feel consistent — dropdown-first, free-text-if-needed.
+ */
+function SelectWithOther({
+  label,
+  value,
+  options,
+  placeholder,
+  onChange,
+}: {
+  label: string;
+  value: string;
+  options: readonly string[];
+  placeholder?: string;
+  onChange: (v: string) => void;
+}) {
+  // "Other" mode is on when the value isn't empty AND isn't one of the
+  // canonical options (or the user explicitly picked "Other" in the
+  // dropdown and hasn't typed anything yet).
+  const [otherMode, setOtherMode] = useState(
+    Boolean(value && !options.includes(value) && value !== "Other"),
+  );
+  // If the parent value changes to a canonical option, flip back out
+  // of Other mode automatically.
+  useEffect(() => {
+    if (value && options.includes(value)) setOtherMode(false);
+  }, [value, options]);
+
+  // In dropdown mode the selected <option> value is either the
+  // matching canonical option, "Other" when we're in free-text mode,
+  // or empty when nothing is set.
+  const selectValue = otherMode ? "Other" : value && options.includes(value) ? value : "";
+
+  return (
+    <div>
+      <label className="mb-1.5 block text-[12px] font-semibold text-zinc-700 dark:text-zinc-300">
+        {label}
+      </label>
+      <select
+        value={selectValue}
+        onChange={(e) => {
+          const next = e.target.value;
+          if (next === "Other") {
+            setOtherMode(true);
+            // Clear any prior canonical value so the free-text input
+            // opens empty — the candidate is about to type a custom one.
+            if (value && options.includes(value)) onChange("");
+          } else {
+            setOtherMode(false);
+            onChange(next);
+          }
+        }}
+        className="h-11 w-full rounded-lg border border-zinc-300 bg-white px-3.5 text-sm focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500/15 dark:border-zinc-700 dark:bg-zinc-950"
+      >
+        <option value="">{placeholder ?? "Select…"}</option>
+        {options.map((opt) => (
+          <option key={opt} value={opt}>{opt}</option>
+        ))}
+      </select>
+      {otherMode && (
+        <input
+          type="text"
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          placeholder="Type your own…"
+          autoFocus
+          className="mt-2 h-11 w-full rounded-lg border border-zinc-300 bg-white px-3.5 text-sm focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500/15 dark:border-zinc-700 dark:bg-zinc-950"
+        />
+      )}
     </div>
   );
 }

@@ -1,9 +1,33 @@
 import type { CandidateProfile } from "../../store/profile";
 import type { User } from "../../store/auth";
+import { useLocations } from "../../store/locations";
 
 export interface TemplateProps {
   user: User;
   profile: CandidateProfile;
+}
+
+/**
+ * Resolve the preferred-location display label for a resume template.
+ * Prefers the multi-select `preferredDistricts` (canonical source) and
+ * joins the district names; falls back to the legacy free-text
+ * `preferredLocation` string if the multi-select is empty.
+ *
+ * Templates render this instead of reading `profile.preferredLocation`
+ * directly so a candidate who picked districts but never had the
+ * legacy string populated still sees their preferred locations on the
+ * one-page CV.
+ */
+export function usePreferredLocationLabel(profile: CandidateProfile): string {
+  const districts = useLocations((s) => s.districts);
+  const ids = profile.preferredDistricts ?? [];
+  if (ids.length) {
+    const names = ids
+      .map((id) => districts.find((d) => d.id === id)?.name)
+      .filter((n): n is string => Boolean(n));
+    if (names.length) return names.join(", ");
+  }
+  return profile.preferredLocation ?? "";
 }
 
 export const EDU_LABELS: Record<string, string> = {

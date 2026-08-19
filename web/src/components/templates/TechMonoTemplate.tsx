@@ -1,9 +1,10 @@
 import type { TemplateProps } from "./types";
-import { EDU_LABELS, formatPeriod, fullName, highlightedSkills, shortRole } from "./types";
+import { EDU_LABELS, formatPeriod, fullName, highlightedSkills, shortRole, usePreferredLocationLabel } from "./types";
 
 export function TechMonoTemplate({ user, profile }: TemplateProps) {
  const skills = highlightedSkills(profile);
  const eduList = profile.education.filter((e) => e.enabled);
+ const preferredLocation = usePreferredLocationLabel(profile);
  const initials = (user.name || "")
  .split(" ")
  .slice(0, 2)
@@ -34,7 +35,7 @@ export function TechMonoTemplate({ user, profile }: TemplateProps) {
  <div className="mt-4 grid gap-1 text-[11px] sm:grid-cols-2">
  <Mono label="email" value={user.email} />
  {user.mobile && <Mono label="phone" value={`+91 ${user.mobile}`} />}
- {profile.preferredLocation && <Mono label="loc" value={profile.preferredLocation} />}
+ {preferredLocation && <Mono label="loc" value={preferredLocation} />}
  {profile.yearsOfExperience !== undefined && profile.yearsOfExperience > 0 && (
  <Mono label="exp" value={`${profile.yearsOfExperience}y`} />
  )}

@@ -1,9 +1,10 @@
 import type { TemplateProps } from "./types";
-import { EDU_LABELS, formatPeriod, fullName, highlightedSkills, shortRole } from "./types";
+import { EDU_LABELS, formatPeriod, fullName, highlightedSkills, shortRole, usePreferredLocationLabel } from "./types";
 
 export function CreativeTemplate({ user, profile }: TemplateProps) {
  const skills = highlightedSkills(profile);
  const eduList = profile.education.filter((e) => e.enabled);
+ const preferredLocation = usePreferredLocationLabel(profile);
  const initials = (user.name || "")
  .split(" ")
  .slice(0, 2)
@@ -38,7 +39,7 @@ export function CreativeTemplate({ user, profile }: TemplateProps) {
  <div className="mt-3 flex flex-wrap gap-2 text-[10px]">
  <Pill>✉ {user.email}</Pill>
  {user.mobile && <Pill>☎ +91 {user.mobile}</Pill>}
- {profile.preferredLocation && <Pill>◉ {profile.preferredLocation}</Pill>}
+ {preferredLocation && <Pill>◉ {preferredLocation}</Pill>}
  </div>
  </div>
  </div>

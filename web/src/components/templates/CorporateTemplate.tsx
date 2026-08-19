@@ -1,9 +1,10 @@
 import type { TemplateProps } from "./types";
-import { EDU_LABELS, formatPeriod, fullName, highlightedSkills, shortRole } from "./types";
+import { EDU_LABELS, formatPeriod, fullName, highlightedSkills, shortRole, usePreferredLocationLabel } from "./types";
 
 export function CorporateTemplate({ user, profile }: TemplateProps) {
  const skills = highlightedSkills(profile);
  const eduList = profile.education.filter((e) => e.enabled);
+ const preferredLocation = usePreferredLocationLabel(profile);
  const initials = (user.name || "")
  .split(" ")
  .slice(0, 2)
@@ -35,8 +36,13 @@ export function CorporateTemplate({ user, profile }: TemplateProps) {
  <p className="break-all text-slate-300">{user.email}</p>
  {user.mobile && <p className="text-slate-300">+91 {user.mobile}</p>}
  {profile.alternateMobile && <p className="text-slate-400">+91 {profile.alternateMobile}</p>}
- {profile.preferredLocation && <p className="text-slate-300">📍 {profile.preferredLocation}</p>}
  </SidebarSection>
+
+ {preferredLocation && (
+ <SidebarSection title="Preferred Location">
+ <p className="text-slate-200">📍 {preferredLocation}</p>
+ </SidebarSection>
+ )}
 
  {skills.length > 0 && (
  <SidebarSection title="Top Skills">

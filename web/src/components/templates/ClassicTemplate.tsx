@@ -1,9 +1,10 @@
 import type { TemplateProps } from "./types";
-import { EDU_LABELS, formatPeriod, fullName, highlightedSkills, shortRole } from "./types";
+import { EDU_LABELS, formatPeriod, fullName, highlightedSkills, shortRole, usePreferredLocationLabel } from "./types";
 
 export function ClassicTemplate({ user, profile }: TemplateProps) {
  const skills = highlightedSkills(profile);
  const eduList = profile.education.filter((e) => e.enabled);
+ const preferredLocation = usePreferredLocationLabel(profile);
 
  return (
  <div className="font-serif" style={{ background: "#FBF7EE", color: "#0B1B3A" }}>
@@ -18,7 +19,7 @@ export function ClassicTemplate({ user, profile }: TemplateProps) {
  <Line label="✉" value={user.email} />
  {user.mobile && <Line label="☎" value={`+91 ${user.mobile}`} />}
  {profile.alternateMobile && <Line label="☎" value={`+91 ${profile.alternateMobile}`} />}
- {profile.preferredLocation && <Line label="◉" value={profile.preferredLocation} />}
+ {preferredLocation && <Line label="◉" value={preferredLocation} />}
  </div>
  </div>
  {profile.photoDataUrl && (
@@ -156,9 +157,9 @@ export function ClassicTemplate({ user, profile }: TemplateProps) {
  </Section>
  )}
 
- {profile.preferredLocation && (
+ {preferredLocation && (
  <Section title="Preferred Location">
- <p>{profile.preferredLocation}</p>
+ <p>{preferredLocation}</p>
  </Section>
  )}
 

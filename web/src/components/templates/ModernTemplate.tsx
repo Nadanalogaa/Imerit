@@ -1,9 +1,10 @@
 import type { TemplateProps } from "./types";
-import { EDU_LABELS, formatPeriod, fullName, highlightedSkills, shortRole } from "./types";
+import { EDU_LABELS, formatPeriod, fullName, highlightedSkills, shortRole, usePreferredLocationLabel } from "./types";
 
 export function ModernTemplate({ user, profile }: TemplateProps) {
  const skills = highlightedSkills(profile);
  const eduList = profile.education.filter((e) => e.enabled);
+ const preferredLocation = usePreferredLocationLabel(profile);
  const initials = (user.name || "")
  .split(" ")
  .slice(0, 2)
@@ -31,8 +32,13 @@ export function ModernTemplate({ user, profile }: TemplateProps) {
  <p className="break-all">{user.email}</p>
  {user.mobile && <p>+91 {user.mobile}</p>}
  {profile.alternateMobile && <p className="text-zinc-400">+91 {profile.alternateMobile}</p>}
- {profile.preferredLocation && <p className="mt-1.5 inline-flex items-center gap-1 text-zinc-500">📍 {profile.preferredLocation}</p>}
  </Block>
+
+ {preferredLocation && (
+ <Block title="Preferred Location">
+ <p className="inline-flex items-center gap-1 text-zinc-700">📍 {preferredLocation}</p>
+ </Block>
+ )}
 
  {skills.length > 0 && (
  <Block title="Skills">
