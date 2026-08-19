@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { BrowserRouter, Routes, Route, Navigate, useParams } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate, useLocation, useParams } from "react-router-dom";
 import { Landing } from "./pages/Landing";
 import { useAuth, HOME_PATH } from "./store/auth";
 import { useProfile } from "./store/profile";
@@ -89,6 +89,7 @@ export default function App() {
 
   return (
     <BrowserRouter>
+      <ScrollToTop />
       <ToastHost />
       <Routes>
         <Route path="/" element={<LandingOrDashboard />} />
@@ -339,6 +340,16 @@ export default function App() {
       </Routes>
     </BrowserRouter>
   );
+}
+
+function ScrollToTop() {
+  const { pathname } = useLocation();
+
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [pathname]);
+
+  return null;
 }
 
 function NavigateWithParams({ to }: { to: string }) {
