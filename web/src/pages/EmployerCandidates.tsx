@@ -407,7 +407,7 @@ export function EmployerCandidates() {
             {filteredCount} Candidate{filteredCount === 1 ? "" : "s"} in View
             {filtered.hasSignal && filtered.matched.length > 0 ? (
               <span className="ml-2 rounded-full bg-emerald-100 px-2.5 py-1 align-middle text-[13px] font-bold text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300">
-                {filtered.matched.length} match
+                {filtered.matched.length} relevant
               </span>
             ) : null}
           </h1>
@@ -572,7 +572,7 @@ export function EmployerCandidates() {
                       fullWidth: true,
                       listElement: (
                         <SectionSeparator
-                          label="Best matches"
+                          label="Most relevant"
                           count={filtered.matched.length}
                           tone="brand"
                         />
@@ -979,22 +979,35 @@ function CandidatePopup({ user, profile, hasSub }: { user: User; profile: Candid
 
 function MatchBadge({ score }: { score: number }) {
   const pct = Math.round(score * 100);
-  const tone =
-    pct >= 80
-      ? "from-emerald-500 to-emerald-600 shadow-emerald-500/30"
-      : pct >= 50
-        ? "from-amber-500 to-orange-500 shadow-orange-500/30"
-        : "from-zinc-400 to-zinc-500 shadow-zinc-500/20";
+  // Same three-band tone system as the candidate-side match pill so
+  // employer and candidate see identical visuals for identical scores.
+  // Bands mirror `matcher.ts`: ≥75 high, ≥50 medium, else low.
+  const band: "high" | "medium" | "low" = pct >= 75 ? "high" : pct >= 50 ? "medium" : "low";
+  const tone = {
+    high: {
+      bg: "bg-emerald-100 dark:bg-emerald-500/15",
+      text: "text-emerald-700 dark:text-emerald-300",
+      ring: "ring-emerald-500/30",
+    },
+    medium: {
+      bg: "bg-amber-100 dark:bg-amber-500/15",
+      text: "text-amber-700 dark:text-amber-300",
+      ring: "ring-amber-500/30",
+    },
+    low: {
+      bg: "bg-zinc-100 dark:bg-zinc-800",
+      text: "text-zinc-600 dark:text-zinc-400",
+      ring: "ring-zinc-500/20",
+    },
+  }[band];
   return (
-    <span
-      className={[
-        "inline-flex shrink-0 rounded-full bg-gradient-to-r px-2 py-0.5 text-[10px] font-bold text-white shadow-sm tabular-nums",
-        tone,
-      ].join(" ")}
-      title={`${pct}% skill match`}
+    <div
+      className={["flex flex-col items-center rounded-xl px-2 py-1 ring-1 tabular-nums", tone.bg, tone.ring].join(" ")}
+      title={`${pct}% relevant`}
     >
-      {pct}%
-    </span>
+      <span className={["text-sm font-bold leading-none", tone.text].join(" ")}>{pct}%</span>
+      <span className={["text-[8px] font-semibold uppercase tracking-wider leading-tight", tone.text].join(" ")}>Relevant</span>
+    </div>
   );
 }
 

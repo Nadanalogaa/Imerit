@@ -348,7 +348,7 @@ export function JobBrowse() {
  {filteredCount} {filteredCount === 1 ? "job" : "jobs"} in view
  {filtered.hasSignal && filtered.matched.length > 0 ? (
  <span className="ml-2 rounded-full bg-emerald-100 px-2 py-0.5 align-middle text-[11.5px] font-bold text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300">
- {filtered.matched.length} match
+ {filtered.matched.length} relevant
  </span>
  ) : null}
  </p>
@@ -399,7 +399,7 @@ export function JobBrowse() {
  // it degenerates to plain Newest and would double up with the
  // explicit "Newest" entry below.
  options={[
- ...(profile ? [{ id: "smart", label: "Best match" }] : []),
+ ...(profile ? [{ id: "smart", label: "Most relevant" }] : []),
  ...(anchorCoords ? [{ id: "nearest", label: "Nearest first" }] : []),
  { id: "newest", label: "Newest" },
  ]}
@@ -478,7 +478,7 @@ export function JobBrowse() {
  <div className="mb-3 flex flex-wrap items-center gap-3 rounded-lg border border-emerald-200/70 bg-emerald-50/60 px-3 py-2 text-[12px] dark:border-emerald-500/30 dark:bg-emerald-500/10">
  <span className="inline-flex items-center gap-1.5 text-emerald-700 dark:text-emerald-400">
  <Sparkles size={13} />
- {anchorCoords ? `Near your ${anchor === "current" ? "home" : "preferred location"}` : "Sorted by match"}
+ {anchorCoords ? `Near your ${anchor === "current" ? "home" : "preferred location"}` : "Sorted by relevance"}
  </span>
  {anchorCoords && (
  <div className="inline-flex items-center gap-1.5">
@@ -496,7 +496,7 @@ export function JobBrowse() {
  </div>
  )}
  <div className="ml-auto">
- <Checkbox checked={bestOnly} onChange={setBestOnly} label="Best matches only" tone="emerald" size="sm" />
+ <Checkbox checked={bestOnly} onChange={setBestOnly} label="Most relevant only" tone="emerald" size="sm" />
  </div>
  </div>
  )}
@@ -550,7 +550,7 @@ export function JobBrowse() {
  id: "__separator_best__",
  fullWidth: true,
  listElement: (
- <SectionSeparator label="Best matches" count={filtered.matched.length} tone="brand" />
+ <SectionSeparator label="Most relevant" count={filtered.matched.length} tone="brand" />
  ),
  });
  filtered.matched.forEach((x, i) => rows.push({ ...rowFor(x, i), id: `best_${x.job.id}` }));
