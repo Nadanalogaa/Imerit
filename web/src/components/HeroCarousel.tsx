@@ -172,7 +172,7 @@ export function HeroCarousel() {
  <RoleCard
  icon={<Briefcase size={22} />}
  title="I'm an Employer"
- tagline="Job posting is absolutely free — unlimited vacancies. No time limit."
+ tagline="Job posting is free — unlimited vacancies, live for 45 days. Repost with one click."
  bullets={[
  { icon: <MapPin size={11} />, label: "Browse District-Wise Candidates" },
  { icon: <Target size={11} />, label: "A Simple Subscription to Find the Right Talent" },

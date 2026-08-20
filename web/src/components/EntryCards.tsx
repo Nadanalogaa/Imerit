@@ -81,7 +81,7 @@ export function EntryCards() {
  I'm an Employer
  </h3>
  <p className="mt-3 text-zinc-600 dark:text-zinc-400">
- Job posting is absolutely free — unlimited vacancies. No time limit.
+ Job posting is free — unlimited vacancies, live for 45 days. Repost with one click.
  </p>
 
  <div className="mt-5 space-y-2.5">
