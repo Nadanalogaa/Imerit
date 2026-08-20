@@ -112,6 +112,13 @@ function FooterLink({ to, children }: { to: string; children: React.ReactNode })
 function FooterHash({ to, children }: { to: string; children: React.ReactNode }) {
  const location = useLocation();
  const href = location.pathname === "/" ? to : { pathname: "/", hash: to };
+ if (location.pathname === "/") {
+   return (
+     <a href={to} className={linkClass}>
+       {children}
+     </a>
+   );
+ }
  return (
  <Link to={href} className={linkClass}>
  {children}
