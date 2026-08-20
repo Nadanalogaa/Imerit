@@ -16,8 +16,7 @@ export function Footer() {
  <div>
  <Brand size="lg" />
  <p className="mt-5 max-w-md text-sm leading-relaxed text-zinc-400">
- Tamil Nadu's modern recruitment platform — connecting students and professionals across every field with the right opportunities, near home.
- </p>
+Tamil Nadu’s Modern Recruitment Platform — Connecting Students and Professionals Across All Fields with the Right Opportunities, Closer to Home. </p>
 
  {/* Quick contact line */}
  <div className="mt-5 flex flex-col gap-2 text-xs text-zinc-400">
@@ -76,6 +75,7 @@ export function Footer() {
  <FooterLink to="/legal/terms">Terms of Service</FooterLink>
  <FooterLink to="/legal/refund">Refund Policy</FooterLink>
  <FooterLink to="/legal/privacy">DPDP Compliance</FooterLink>
+<FooterLink to="/legal/disclaimer">Disclaimer</FooterLink>
  </Col>
  </div>
 

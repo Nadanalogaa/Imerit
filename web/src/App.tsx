@@ -56,7 +56,7 @@ import { LegalRefund } from "./pages/LegalRefund";
 import { LegalPrivacy } from "./pages/LegalPrivacy";
 import { RequireAuth, RedirectIfAuthed } from "./components/RequireAuth";
 import { ToastHost } from "./components/ToastHost";
-
+import { LegalDisclaimer } from "./pages/LegalDisclaimer";
 export default function App() {
   // Restore the session on first paint when VITE_API_URL is set — pings
   // /auth/me, swaps any stale localStorage user for the canonical record.
@@ -337,6 +337,7 @@ export default function App() {
         <Route path="/legal/terms" element={<LegalTerms />} />
         <Route path="/legal/refund" element={<LegalRefund />} />
         <Route path="/legal/privacy" element={<LegalPrivacy />} />
+        <Route path="/legal/disclaimer" element={<LegalDisclaimer />} />
       </Routes>
     </BrowserRouter>
   );
