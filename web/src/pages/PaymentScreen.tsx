@@ -41,6 +41,7 @@ export function PaymentScreen() {
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [paidRef, setPaidRef] = useState<string | null>(null);
+  const [agreedToDisclaimer, setAgreedToDisclaimer] = useState(false);
 
   if (!plan) {
     navigate("/candidate/dashboard", { replace: true });
@@ -188,10 +189,26 @@ export function PaymentScreen() {
                   <PayMethod label="Wallets" />
                 </div>
 
+                <label className="mt-4 flex items-start gap-2 text-[11px] text-zinc-600 dark:text-zinc-400">
+                  <input
+                    type="checkbox"
+                    checked={agreedToDisclaimer}
+                    onChange={(e) => setAgreedToDisclaimer(e.target.checked)}
+                    className="mt-0.5 h-3.5 w-3.5 shrink-0 rounded border-zinc-300 text-brand-600 focus:ring-brand-500 dark:border-zinc-600"
+                  />
+                  <span>
+                    I have read and understood the{" "}
+                    <Link to="/legal/disclaimer" target="_blank" className="underline">
+                      Subscription Fee, Payment Purpose, and Fraud Disclaimer
+                    </Link>
+                    , and I agree to proceed with the payment.
+                  </span>
+                </label>
+
                 <button
                   type="button"
                   onClick={onPay}
-                  disabled={processing}
+                    disabled={processing || !agreedToDisclaimer}
                   className="mt-6 inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-brand-500 to-brand-600 px-6 py-3.5 text-sm font-semibold text-white shadow-md shadow-brand-500/30 transition hover:shadow-lg hover:shadow-brand-500/40 disabled:opacity-70"
                 >
                   {processing ? (
