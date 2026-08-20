@@ -345,11 +345,14 @@ export function JobBrowse() {
  Openings Across Tamil Nadu
  </h1>
  <p className="mt-1 text-[13px] text-zinc-600 dark:text-zinc-400">
- {filteredCount} {filteredCount === 1 ? "job" : "jobs"} in view
+ {filteredCount} {filteredCount === 1 ? "Job" : "Jobs"} In View
  {filtered.hasSignal && filtered.matched.length > 0 ? (
- <span className="ml-2 rounded-full bg-emerald-100 px-2 py-0.5 align-middle text-[11.5px] font-bold text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300">
- {filtered.matched.length} relevant
- </span>
+ <>
+   <span className="mx-2 text-zinc-400 dark:text-zinc-600">·</span>
+   <span className="rounded-full bg-emerald-100 px-2 py-0.5 align-middle text-[11.5px] font-bold text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300">
+     {filtered.matched.length} Relevant
+   </span>
+ </>
  ) : null}
  </p>
  </div>
