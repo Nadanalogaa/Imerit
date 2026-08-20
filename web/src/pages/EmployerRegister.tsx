@@ -69,7 +69,7 @@ export function EmployerRegister() {
  >
  <form onSubmit={submit} className="flex flex-col gap-4">
 <TextField label="Employer / Company Name" value={company} onChange={setCompany} placeholder="e.g. Zoho Corporation" error={errors.company} />
- <TextField label="Your Name" value={name} onChange={setName} placeholder="e.g. Priya Iyer" error={errors.name} autoFocus />
+ <TextField label="Your Name" value={name} onChange={setName} placeholder="e.g. Priya" error={errors.name} autoFocus />
  <TextField
  label="Company Contact Number"
  value={mobile}

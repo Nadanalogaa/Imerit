@@ -35,14 +35,14 @@ export function SavedJobs() {
  Saved jobs
  </p>
  <h1 className="mt-2 text-2xl font-semibold tracking-tight md:text-3xl">
- {items.length} {items.length === 1 ? "job" : "jobs"} bookmarked
+ {items.length} {items.length === 1 ? "job" : "Jobs"} Bookmarked
  </h1>
  </header>
 
  {items.length === 0 ? (
  <div className="flex flex-col items-center rounded-3xl border border-dashed border-zinc-300 bg-white px-6 py-16 text-center dark:border-zinc-700 dark:bg-zinc-900">
  <Bookmark size={32} className="text-zinc-400" />
- <p className="mt-3 text-sm font-semibold">No saved jobs yet</p>
+ <p className="mt-3 text-sm font-semibold">No Saved Jobs Yet</p>
  <p className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">
  Tap the bookmark icon on any job to save it for later.
  </p>

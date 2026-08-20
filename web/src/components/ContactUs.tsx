@@ -78,9 +78,9 @@ export function ContactUs() {
  <ContactCard
  icon={<Lightbulb size={20} />}
  tone="amber"
- title="How can we improve?"
- line1="Your suggestions shape the platform."
- line2="Every message reaches the founding team."
+ title="How Can We Improve?"
+ line1="Your Suggestions Shape The Platform."
+ line2="Every Message Reaches The Founding Team."
  />
  <ContactCard
  icon={<Mail size={20} />}

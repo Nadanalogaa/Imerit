@@ -326,7 +326,7 @@ export function JobBrowse() {
  Browse jobs
  </p>
  <h1 className="mt-1 text-2xl font-semibold tracking-tight md:text-3xl">
- Openings across Tamil Nadu
+ Openings Across Tamil Nadu
  </h1>
  <p className="mt-1 text-[13px] text-zinc-600 dark:text-zinc-400">
  {filteredCount} {filteredCount === 1 ? "job" : "jobs"} in view

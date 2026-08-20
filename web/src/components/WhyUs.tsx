@@ -95,12 +95,12 @@ export function WhyUs() {
  <div className="mx-auto max-w-6xl">
  <div className="text-center">
  <p className="text-xs font-semibold uppercase tracking-widest text-brand-600 dark:text-brand-400">
- Why choose us
+ Our Advantage
  </p>
  <h2 className="mt-3 text-3xl font-semibold tracking-tight md:text-5xl">
- Beyond a traditional job portal —{" "}
+ Beyond a Traditional Job Portal —{" "}
  <span className="bg-gradient-to-r from-brand-500 to-amber-500 bg-clip-text text-transparent">
- built for a Zero-Unemployment Tamil Nadu
+ Built For a Zero-Unemployment Tamil Nadu
  </span>
  </h2>
  <p className="mt-4 mx-auto max-w-3xl text-zinc-600 dark:text-zinc-400">

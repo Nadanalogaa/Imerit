@@ -42,7 +42,7 @@ export function AboutUs() {
  href="#contact"
  className="mt-8 inline-flex items-center gap-2 rounded-full bg-zinc-900 px-5 py-3 text-sm font-semibold text-white transition hover:bg-zinc-700 dark:bg-white dark:text-zinc-900 dark:hover:bg-zinc-200"
  >
- Talk to our team
+ Talk To Our Team
  <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
  <path d="M5 12h14M12 5l7 7-7 7" />
  </svg>

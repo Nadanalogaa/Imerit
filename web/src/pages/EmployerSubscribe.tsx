@@ -33,7 +33,7 @@ export function EmployerSubscribe() {
  Employer subscription
  </p>
  <h1 className="mt-2 text-2xl font-semibold tracking-tight md:text-3xl">
- Choose your plan
+ Choose Your Plan
  </h1>
  <p className="mt-2 text-sm text-zinc-600 dark:text-zinc-400">
  Subscribe to Unlock Full Candidate Profiles and their Contact Details

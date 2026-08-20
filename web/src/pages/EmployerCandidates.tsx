@@ -394,7 +394,7 @@ export function EmployerCandidates() {
             Search candidates
           </p>
           <h1 className="mt-2 text-2xl font-semibold tracking-tight md:text-3xl">
-            {filteredCount} candidate{filteredCount === 1 ? "" : "s"} in view
+            {filteredCount} Candidate{filteredCount === 1 ? "" : "s"} in View
             {filtered.hasSignal && filtered.matched.length > 0 ? (
               <span className="ml-2 rounded-full bg-emerald-100 px-2.5 py-1 align-middle text-[13px] font-bold text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300">
                 {filtered.matched.length} match

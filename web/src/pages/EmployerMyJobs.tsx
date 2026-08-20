@@ -79,7 +79,7 @@ export function EmployerMyJobs() {
  <div className="mb-6 flex flex-col items-start justify-between gap-3 md:flex-row md:items-center">
  <div>
  <p className="text-xs font-semibold uppercase tracking-widest text-sky-600 dark:text-sky-400">My posted jobs</p>
- <h1 className="mt-2 text-2xl font-semibold tracking-tight md:text-3xl">{myJobs.length} {myJobs.length === 1 ? "job" : "jobs"}</h1>
+ <h1 className="mt-2 text-2xl font-semibold tracking-tight md:text-3xl">{myJobs.length} {myJobs.length === 1 ? "job" : "Jobs"}</h1>
  </div>
  <Link to="/employer/jobs/new" className="inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-sky-500 to-sky-700 px-4 py-2 text-sm font-semibold text-white shadow-md shadow-sky-500/30">
  <Plus size={14} /> Post a New Job

@@ -96,11 +96,11 @@ export function CandidateLogin() {
       tone="brand"
       bgImage="/images/background-04.jpg"
       panelTitle="Continue Your Job Search"
-      panelCopy="Jump back into your saved jobs, applications, and profile."
+      panelCopy="Quickly access your Saved Jobs, Applications, and Profile."
       highlights={[
         "One-click OTP or password sign-in",
         "Access saved jobs and applications",
-        "Same account across every device",
+        "One Account Across All Your Devices",
       ]}
       stats={[
         { value: "Fast", label: "sign in" },

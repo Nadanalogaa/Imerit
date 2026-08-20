@@ -37,10 +37,10 @@ export function MyApplications() {
 
  <header className="mb-6">
  <p className="text-xs font-semibold uppercase tracking-widest text-brand-600 dark:text-brand-400">
- My applications
+ My Applications
  </p>
  <h1 className="mt-2 text-2xl font-semibold tracking-tight md:text-3xl">
- {enriched.length} {enriched.length === 1 ? "application" : "applications"}
+ {enriched.length} {enriched.length === 1 ? "application" : "Applications"}
  </h1>
  </header>
 

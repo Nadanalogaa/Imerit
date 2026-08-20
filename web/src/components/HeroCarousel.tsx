@@ -17,22 +17,22 @@ const SLIDES: Slide[] = [
  <>
  Making Tamil Nadu a{" "}
  <span className="bg-gradient-to-r from-brand-400 to-amber-300 bg-clip-text text-transparent">
- 0% unemployment
+ 0% UnEmployment
  </span>{" "}
- state by 2031
+ State by 2031
  </>
  ),
  description:
- "To play a significant role in making Tamil Nadu a 0% unemployment state by 2031.",
+ "To play a ignificant role in making Tamil Nadu a 0% unemployment state by 2031.",
  },
  {
  bg: "/images/background-02.jpg",
  eyebrow: "The Mission",
  title: (
  <>
- Train, place, and{" "}
+ Train, Place, and{" "}
  <span className="bg-gradient-to-r from-emerald-300 to-cyan-300 bg-clip-text text-transparent">
- empower the youth
+ Empower the Youth
  </span>
  </>
  ),
@@ -46,9 +46,9 @@ const SLIDES: Slide[] = [
  <>
  From your{" "}
  <span className="bg-gradient-to-r from-pink-300 to-rose-300 bg-clip-text text-transparent">
- first internship
+ First Internship
  </span>{" "}
- to your next chapter
+ to Your Next Chapter
  </>
  ),
  description:
@@ -59,9 +59,9 @@ const SLIDES: Slide[] = [
  eyebrow: "Free to start. Simple to scale.",
  title: (
  <>
- Post free.{" "}
+ Post Free.{" "}
  <span className="bg-gradient-to-r from-violet-300 to-fuchsia-300 bg-clip-text text-transparent">
- Subscribe only when ready.
+ Subscribe Only When Ready.
  </span>
  </>
  ),

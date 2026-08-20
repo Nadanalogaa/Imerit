@@ -54,28 +54,28 @@ export function Footer() {
  </div>
 
  <Col title="Platform">
- <FooterLink to="/candidate">For candidates</FooterLink>
- <FooterLink to="/employer">For employers</FooterLink>
- <FooterHash to="#why">Why us</FooterHash>
- <FooterHash to="#about">About</FooterHash>
+ <FooterLink to="/candidate">For Candidates</FooterLink>
+ <FooterLink to="/employer">For Employers</FooterLink>
+ <FooterHash to="#why">Our Advantage</FooterHash>
+ <FooterHash to="#about">About Us</FooterHash>
  </Col>
 
  <Col title="Support">
- <FooterHash to="#contact">Contact us</FooterHash>
- <FooterLink to="/jobs">Browse jobs</FooterLink>
+ <FooterHash to="#contact">Contact Us</FooterHash>
+ <FooterLink to="/jobs">Browse Jobs</FooterLink>
  </Col>
 
  <Col title="Team access">
- <FooterLink to="/staff/login">Staff login</FooterLink>
- <FooterLink to="/admin">Admin login</FooterLink>
- <FooterLink to="/super-admin">Super admin</FooterLink>
+ <FooterLink to="/staff/login">Staff Login</FooterLink>
+ <FooterLink to="/admin">Admin Login</FooterLink>
+ <FooterLink to="/super-admin">Super Admin</FooterLink>
  </Col>
 
  <Col title="Legal">
- <FooterLink to="/legal/privacy">Privacy policy</FooterLink>
- <FooterLink to="/legal/terms">Terms of service</FooterLink>
- <FooterLink to="/legal/refund">Refund policy</FooterLink>
- <FooterLink to="/legal/privacy">DPDP compliance</FooterLink>
+ <FooterLink to="/legal/privacy">Privacy Policy</FooterLink>
+ <FooterLink to="/legal/terms">Terms of Service</FooterLink>
+ <FooterLink to="/legal/refund">Refund Policy</FooterLink>
+ <FooterLink to="/legal/privacy">DPDP Compliance</FooterLink>
  </Col>
  </div>
 
