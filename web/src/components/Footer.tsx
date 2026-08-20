@@ -1,4 +1,4 @@
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import { Heart, Mail, MapPin } from "lucide-react";
 import { Brand } from "./Brand";
 
@@ -110,10 +110,12 @@ function FooterLink({ to, children }: { to: string; children: React.ReactNode })
  );
 }
 function FooterHash({ to, children }: { to: string; children: React.ReactNode }) {
+ const location = useLocation();
+ const href = location.pathname === "/" ? to : { pathname: "/", hash: to };
  return (
- <a href={to} className={linkClass}>
+ <Link to={href} className={linkClass}>
  {children}
- </a>
+ </Link>
  );
 }
 
