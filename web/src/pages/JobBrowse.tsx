@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import {
@@ -30,6 +30,7 @@ import { matchScore, jobDistanceKm, BAND_COLORS, type MatchResult } from "../lib
 import { distanceKm, formatDistance } from "../lib/distance";
 import { Navigation, Home, Target } from "lucide-react";
 import { MapListLayout, type MapListItem } from "../components/MapListLayout";
+import { Pagination } from "../components/Pagination";
 import { SectionSeparator } from "../components/SectionSeparator";
 import { Checkbox } from "../components/Checkbox";
 import { FilterPanel, type FilterState, type FacetCounts, type PostedBucket } from "../components/FilterPanel";
@@ -81,6 +82,11 @@ export function JobBrowse() {
  });
  const [filtersOpen, setFiltersOpen] = useState(false); // mobile drawer
  const districts = useLocations((s) => s.districts);
+ // Client-side pagination — the score-sorted pool is short (≤100)
+ // so we page in the browser. Keeps "Best matches" ranking across
+ // the whole pool while capping visible list height.
+ const PAGE_SIZE = 20;
+ const [page, setPage] = useState(1);
 
  // Anchor: which of candidate's locations to use for distance.
  // hasDistinctPreferred is only true when the saved preferred is at a
@@ -294,6 +300,16 @@ export function JobBrowse() {
  // `others` now holds the full sorted pool (featured is a subset).
  const filteredCount = filtered.others.length;
 
+ // Reset to page 1 any time the underlying pool changes — searching,
+ // filtering or re-sorting should always land the user on the first
+ // page of the new results.
+ useEffect(() => { setPage(1); }, [filters, search, sortBy, radiusKm, bestOnly, anchor]);
+
+ // Slice the "All jobs" section down to the current page. Featured
+ // matches strip stays full — it's already capped to FEATURED_CAP.
+ const totalPages = Math.max(1, Math.ceil(filtered.others.length / PAGE_SIZE));
+ const pagedOthers = filtered.others.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+
  /** Total active facet selections — drives the chips bar + drawer badge. */
  const activeCount =
  filters.districts.length + filters.taluks.length + filters.types.length +
@@ -487,9 +503,10 @@ export function JobBrowse() {
 
  {/* Split: filter panel (lg+) | results */}
  <div className="grid gap-4 lg:grid-cols-[280px_1fr]">
- {/* Desktop sticky filter panel */}
+ {/* Desktop sticky filter panel — height-capped so tall facet
+     stacks scroll internally instead of overflowing below the fold. */}
  <div className="hidden lg:block">
- <div className="sticky top-24">
+ <div className="sticky top-24 max-h-[calc(100vh-8rem)] overflow-y-auto rounded-2xl">
  <FilterPanel state={filters} counts={counts} onChange={setFilters} />
  </div>
  </div>
@@ -544,9 +561,11 @@ export function JobBrowse() {
  <SectionSeparator label="All jobs" count={total} tone="zinc" />
  ),
  });
- filtered.others.forEach((x, i) => rows.push(rowFor(x, i)));
+ // Only the CURRENT PAGE of "All jobs" gets rendered — the
+ // Pagination footer below the map handles prev/next.
+ pagedOthers.forEach((x, i) => rows.push(rowFor(x, i)));
  } else {
- filtered.others.forEach((x, i) => rows.push(rowFor(x, i)));
+ pagedOthers.forEach((x, i) => rows.push(rowFor(x, i)));
  }
  return rows;
  })()}
@@ -559,6 +578,14 @@ export function JobBrowse() {
  </p>
  </div>
  }
+ />
+
+ <Pagination
+   page={page}
+   totalPages={totalPages}
+   totalItems={filtered.others.length}
+   pageSize={PAGE_SIZE}
+   onChange={setPage}
  />
  </div>
  </div>

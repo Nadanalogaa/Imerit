@@ -27,6 +27,7 @@ import { useJobs, isExpired } from "../store/jobs";
 import { useLocations } from "../store/locations";
 import { useSavedSearches, useShortlist } from "../store/employerPrefs";
 import { MapListLayout, type MapListItem } from "../components/MapListLayout";
+import { Pagination } from "../components/Pagination";
 import { SectionSeparator } from "../components/SectionSeparator";
 import { CandidateFilterPanel } from "../components/employer/CandidateFilterPanel";
 import { SavedSearchStrip } from "../components/employer/SavedSearchStrip";
@@ -58,6 +59,10 @@ export function EmployerCandidates() {
   const [search, setSearch] = useState("");
   const [filters, setFilters] = useState<CandidateFilterState>(emptyCandidateFilter);
   const [drawerOpen, setDrawerOpen] = useState(false); // mobile drawer
+  // Client-side pagination for the "All candidates" list. Featured
+  // strip (Best matches) stays full — it's small and already ranked.
+  const PAGE_SIZE = 20;
+  const [page, setPage] = useState(1);
 
   /* -------- server-fetched rows when VITE_API_URL is set ---------- */
 
@@ -349,6 +354,11 @@ export function EmployerCandidates() {
   // it doubles as the total-in-view count.
   const filteredCount = filtered.others.length;
 
+  // Reset to page 1 whenever the underlying result set changes.
+  useEffect(() => { setPage(1); }, [filters, search]);
+  const totalPages = Math.max(1, Math.ceil(filtered.others.length / PAGE_SIZE));
+  const pagedOthers = filtered.others.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+
   /* ---------------- save search ---------------- */
 
   const addSavedSearch = useSavedSearches((s) => s.add);
@@ -445,7 +455,10 @@ export function EmployerCandidates() {
 
         <div className="grid gap-6 lg:grid-cols-[280px_1fr]">
           <div className="hidden lg:block">
-            <div className="sticky top-4">
+            {/* Height-capped sticky panel — scrolls internally when the
+                facet stack is taller than the viewport, otherwise stays
+                pinned as before. */}
+            <div className="sticky top-4 max-h-[calc(100vh-6rem)] overflow-y-auto rounded-2xl">
               <CandidateFilterPanel
                 state={filters}
                 onChange={setFilters}
@@ -570,7 +583,8 @@ export function EmployerCandidates() {
                     );
                     // "All candidates" section — the full list (matches are a
                     // subset, they appear again here so the employer can scroll
-                    // one continuous catalogue).
+                    // one continuous catalogue). Only the current page renders;
+                    // the Pagination footer below the map handles prev/next.
                     rows.push({
                       id: "__separator_all__",
                       fullWidth: true,
@@ -582,17 +596,25 @@ export function EmployerCandidates() {
                         />
                       ),
                     });
-                    filtered.others.forEach((it, i) => rows.push(rowFor(it, i)));
+                    pagedOthers.forEach((it, i) => rows.push(rowFor(it, i)));
                   } else {
-                    // No signal at all — just show the plain full list, no
+                    // No signal at all — just show the plain paged list, no
                     // divider needed.
-                    filtered.others.forEach((it, i) => rows.push(rowFor(it, i)));
+                    pagedOthers.forEach((it, i) => rows.push(rowFor(it, i)));
                   }
                   return rows;
                 })()}
                 emptyState={<EmptyState />}
               />
             )}
+
+            <Pagination
+              page={page}
+              totalPages={totalPages}
+              totalItems={filtered.others.length}
+              pageSize={PAGE_SIZE}
+              onChange={setPage}
+            />
           </div>
         </div>
       </main>
