@@ -79,9 +79,9 @@ export function SuperAdminDashboard() {
  <p className="inline-flex items-center gap-1.5 rounded-full bg-gradient-to-r from-amber-500/15 to-yellow-500/10 px-3 py-1 text-xs font-semibold uppercase tracking-widest text-amber-700 dark:text-amber-300">
  <Crown size={13} /> System overview
  </p>
- <h1 className="mt-2 text-2xl font-semibold tracking-tight md:text-3xl">i-Tamil Recruit · all systems</h1>
+ <h1 className="mt-2 text-2xl font-semibold tracking-tight md:text-3xl">i-Tamil Recruit · All Systems</h1>
  <p className="mt-2 text-sm text-zinc-600 dark:text-zinc-400">
- Platform-wide metrics, admin management, plan management, and payment monitoring.
+ Platform-Wide Metrics, Admin Management, Plan Management, and Payment Monitoring.
  </p>
  </motion.div>
 
@@ -97,7 +97,7 @@ export function SuperAdminDashboard() {
  <div className="min-w-0 flex-1">
  <p className="text-xs font-bold uppercase tracking-widest text-violet-700 dark:text-violet-300">Admin accounts</p>
  <h2 className="mt-0.5 text-lg font-semibold tracking-tight text-zinc-900 dark:text-zinc-100">
- Invite or revoke admins
+ Invite or Revoke Admins
  </h2>
  <p className="text-xs text-zinc-600 dark:text-zinc-400">
  Create new admins via the same OTP flow — no shared passwords.
@@ -117,7 +117,7 @@ export function SuperAdminDashboard() {
  <div className="min-w-0 flex-1">
  <p className="text-xs font-bold uppercase tracking-widest text-amber-700 dark:text-amber-300">Pricing</p>
  <h2 className="mt-0.5 text-lg font-semibold tracking-tight text-zinc-900 dark:text-zinc-100">
- Edit subscription plans
+ Edit Subscription Plans
  </h2>
  <p className="text-xs text-zinc-600 dark:text-zinc-400">
  Tune candidate + employer prices, durations, GST, or add new tiers.
@@ -190,7 +190,7 @@ export function SuperAdminDashboard() {
  <UserCog size={18} />
  </div>
  <div>
- <p className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">Manage users</p>
+ <p className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">Manage Users</p>
  <p className="text-[11.5px] text-zinc-500 dark:text-zinc-400">Multi-select · delete · role filter</p>
  </div>
  </div>
@@ -220,7 +220,7 @@ export function SuperAdminDashboard() {
  <ShieldCheck size={18} />
  </div>
  <div>
- <p className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">Staff accounts</p>
+ <p className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">Staff Accounts</p>
  <p className="text-[11.5px] text-zinc-500 dark:text-zinc-400">Provision · deactivate</p>
  </div>
  </div>

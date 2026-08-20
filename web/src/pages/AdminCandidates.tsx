@@ -158,7 +158,7 @@ export function AdminCandidates() {
 
  <div className="mb-6 flex flex-col items-start justify-between gap-3 md:flex-row md:items-center">
  <div>
- <h1 className="text-2xl font-semibold tracking-tight md:text-3xl">{total} candidate{total === 1 ? "" : "s"}</h1>
+ <h1 className="text-2xl font-semibold tracking-tight md:text-3xl">{total} Candidate{total === 1 ? "" : "s"}</h1>
  <p className="mt-1 text-sm text-zinc-600 dark:text-zinc-400">
  {completedCount} on this page with a completed profile
  {apiEnabled && <span className="ml-2 inline-flex items-center gap-1 rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-bold uppercase text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300"><span className="h-1.5 w-1.5 animate-pulse rounded-full bg-emerald-500" /> Live</span>}

@@ -56,7 +56,7 @@ const APP_LINKS: Record<Role, { label: string; to: string }[]> = {
     // create both admin/super_admin AND staff accounts; the standalone
     // /super-admin/staff route is kept as an alias/bookmark target but
     // the primary nav entry points here now.
-    { label: "Admins & staff", to: "/super-admin/admins" },
+    { label: "Admins & Staff", to: "/super-admin/admins" },
     { label: "Plans", to: "/super-admin/plans" },
   ],
   // Staff has its own top-bar rendered inside every /staff/* page (see
@@ -67,8 +67,8 @@ const APP_LINKS: Record<Role, { label: string; to: string }[]> = {
   staff: [
     { label: "Dashboard", to: "/staff/dashboard" },
     { label: "Employers", to: "/staff/employers" },
-    { label: "Post job", to: "/staff/jobs/new" },
-    { label: "My jobs", to: "/staff/jobs" },
+    { label: "Post Job", to: "/staff/jobs/new" },
+    { label: "My Jobs", to: "/staff/jobs" },
   ],
 };
 

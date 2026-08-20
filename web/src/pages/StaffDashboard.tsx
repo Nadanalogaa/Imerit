@@ -41,7 +41,7 @@ export function StaffDashboard() {
             Staff · post jobs on behalf of employers
           </p>
           <h1 className="mt-2 text-2xl font-semibold tracking-tight md:text-3xl">
-            Hi {me.name.split(" ")[0]}, ready to publish?
+            Hi {me.name.split(" ")[0]}, Ready to Publish?
           </h1>
           <p className="mt-2 text-sm text-zinc-600 dark:text-zinc-400">
             Add employers to the master, pick one, and post a job. Credentials get generated
@@ -60,7 +60,7 @@ export function StaffDashboard() {
         <div className="mt-8 grid gap-4 md:grid-cols-2">
           <ActionCard
             to="/staff/jobs/new"
-            title="Post a job"
+            title="Post a Job"
             body="Pick an employer from the master (or create one on the fly) and publish a role."
             cta="Start posting"
             tone="brand"

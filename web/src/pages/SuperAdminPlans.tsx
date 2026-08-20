@@ -184,7 +184,7 @@ export function SuperAdminPlans() {
 
  <div className="mb-6">
  <p className="text-xs font-semibold uppercase tracking-widest text-amber-600 dark:text-amber-400">Pricing</p>
- <h1 className="mt-2 text-2xl font-semibold tracking-tight md:text-3xl">Subscription plans</h1>
+ <h1 className="mt-2 text-2xl font-semibold tracking-tight md:text-3xl">Subscription Plans</h1>
  <p className="mt-2 text-sm text-zinc-600 dark:text-zinc-400">
  Define the candidate + employer subscription tiers. Edits go live the next time a user visits a subscribe page. Plans linked to historical subscriptions are kept (deactivated, not deleted).
  </p>
@@ -194,7 +194,7 @@ export function SuperAdminPlans() {
  <motion.section initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="mb-8 rounded-3xl bg-white p-6 shadow-[0_4px_16px_rgba(15,23,42,0.06)] dark:shadow-[0_4px_16px_rgba(0,0,0,0.35)] dark:bg-zinc-900">
  <div className="mb-4 flex items-center gap-2">
  <Plus size={16} className="text-amber-600 dark:text-amber-400" />
- <h2 className="text-base font-semibold tracking-tight">Add a new plan</h2>
+ <h2 className="text-base font-semibold tracking-tight">Add a New Plan</h2>
  </div>
  <form onSubmit={onCreate} className="grid gap-3 sm:grid-cols-6">
  <Field className="sm:col-span-2" label="Key (machine ID)">

@@ -76,8 +76,8 @@ export function StaffJobs() {
               Jobs I've posted
             </p>
             <h1 className="mt-2 text-2xl font-semibold tracking-tight md:text-3xl">
-              {mine.length} job{mine.length === 1 ? "" : "s"} across{" "}
-              {new Set(mine.map((j) => j.employerId)).size} employer
+              {mine.length} Job{mine.length === 1 ? "" : "s"} Across{" "}
+              {new Set(mine.map((j) => j.employerId)).size} Employer
               {new Set(mine.map((j) => j.employerId)).size === 1 ? "" : "s"}
             </h1>
             {active.length !== mine.length && (

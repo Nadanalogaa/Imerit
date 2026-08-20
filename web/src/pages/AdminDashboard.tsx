@@ -84,7 +84,7 @@ export function AdminDashboard() {
  <div className="flex items-center justify-between gap-3">
  <div>
  <p className="text-xs font-semibold uppercase tracking-widest text-brand-600 dark:text-brand-400">Overview</p>
- <h1 className="mt-2 text-2xl font-semibold tracking-tight md:text-3xl">Admin dashboard</h1>
+ <h1 className="mt-2 text-2xl font-semibold tracking-tight md:text-3xl">Admin Dashboard</h1>
  <p className="mt-2 text-sm text-zinc-600 dark:text-zinc-400">
  Manage candidates and employers, moderate profiles, monitor activity.
  </p>

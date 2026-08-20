@@ -135,7 +135,7 @@ export function StaffEmployers() {
               Employer Master
             </p>
             <h1 className="mt-2 text-2xl font-semibold tracking-tight md:text-3xl">
-              {employers.length} employer{employers.length === 1 ? "" : "s"}
+              {employers.length} Employer{employers.length === 1 ? "" : "s"}
             </h1>
             <p className="mt-1 text-sm text-zinc-600 dark:text-zinc-400">
               Pick any of them when posting a job. Passwords are visible only for accounts you
@@ -147,13 +147,13 @@ export function StaffEmployers() {
               to="/staff/employers/new"
               className="inline-flex items-center gap-2 rounded-2xl bg-gradient-to-r from-teal-500 to-emerald-600 px-4 py-2.5 text-sm font-semibold text-white shadow-md shadow-emerald-500/30 transition hover:shadow-lg"
             >
-              <Plus size={14} /> Add employer
+              <Plus size={14} /> Add Employer
             </Link>
             <Link
               to="/staff/jobs/new"
               className="inline-flex items-center gap-2 rounded-2xl border border-zinc-200 bg-white px-4 py-2.5 text-sm font-semibold text-zinc-800 transition hover:border-brand-300 hover:text-brand-700 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-100 dark:hover:border-brand-500/40 dark:hover:text-brand-300"
             >
-              <Briefcase size={14} /> Post job
+              <Briefcase size={14} /> Post a Job
             </Link>
           </div>
         </div>

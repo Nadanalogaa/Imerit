@@ -58,21 +58,21 @@ export function StaffLogin() {
 
   return (
     <AuthLayout
-      title="Staff sign in"
+      title="Staff Sign In"
       subtitle="Sign in with the credentials your super-admin shared with you."
       tone="sky"
       bgImage="/images/background-04.jpg"
-      panelTitle="Post jobs on behalf of employers"
-      panelCopy="Manage the Employer Master and publish jobs for the companies you support. Staff accounts are provisioned by the super-admin."
+      panelTitle="Post Jobs On Behalf of Employers"
+      panelCopy="Manage the Employer Master and publish Jobs for the Companies you Support. Staff Accounts are Provisioned by the Super-Admin."
       highlights={[
         "Employer Master directory",
-        "Smart post-job with typeahead",
-        "One-tap password sharing",
+        "Smart Post-Job With Typeahead",
+        "One-Tap Password Sharing",
       ]}
     >
       <form onSubmit={submit} className="flex flex-col gap-4">
         <TextField
-          label="Staff email"
+          label="Staff Email"
           type="email"
           value={email}
           onChange={setEmail}

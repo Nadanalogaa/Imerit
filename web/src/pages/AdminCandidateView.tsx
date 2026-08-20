@@ -93,7 +93,7 @@ export function AdminCandidateView() {
  <main className="mx-auto max-w-7xl px-5 py-6 md:py-10 text-center">
  <p className="text-sm font-semibold text-rose-700 dark:text-rose-400">{loadError}</p>
  <Link to="/admin/candidates" className="mt-3 inline-flex items-center gap-2 text-lg font-semibold text-brand-600 hover:underline dark:text-brand-400">
- <ArrowLeft size={20} /> Back to candidates
+ <ArrowLeft size={20} /> Back to Candidates
  </Link>
  </main>
  </div>

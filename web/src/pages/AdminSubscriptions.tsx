@@ -68,7 +68,7 @@ export function AdminSubscriptions() {
 
  <div className="mb-6 flex flex-col items-start justify-between gap-3 md:flex-row md:items-center">
  <div>
- <h1 className="text-2xl font-semibold tracking-tight md:text-3xl">{subs.length} transactions</h1>
+ <h1 className="text-2xl font-semibold tracking-tight md:text-3xl">{subs.length} Transactions</h1>
  <p className="mt-1 text-sm text-zinc-600 dark:text-zinc-400">Payment monitoring + revenue overview</p>
  </div>
  <div className="flex flex-wrap gap-2">

@@ -199,7 +199,7 @@ export function SuperAdminAdmins() {
 
  <div className="mb-6">
  <p className="text-xs font-semibold uppercase tracking-widest text-violet-600 dark:text-violet-400">Privileged accounts</p>
- <h1 className="mt-2 text-2xl font-semibold tracking-tight md:text-3xl">Admins & super admins</h1>
+ <h1 className="mt-2 text-2xl font-semibold tracking-tight md:text-3xl">Admins & Super Admins</h1>
  <p className="mt-2 text-sm text-zinc-600 dark:text-zinc-400">
  Create new admin accounts here. They sign in via the same one-time email code flow as candidates — no separate password is set or shared.
  </p>
@@ -213,12 +213,12 @@ export function SuperAdminAdmins() {
  >
  <div className="mb-4 flex items-center gap-2">
  <UserPlus size={16} className="text-violet-600 dark:text-violet-400" />
- <h2 className="text-base font-semibold tracking-tight">Invite an admin</h2>
+ <h2 className="text-base font-semibold tracking-tight">Invite an Admin</h2>
  </div>
  <form onSubmit={onCreate} className="grid gap-3 md:grid-cols-[1fr_1fr_auto_auto]">
  <div>
- <label className="mb-1 block text-[11px] font-medium text-zinc-600 dark:text-zinc-400">Full name</label>
- <input value={newName} onChange={(e) => setNewName(e.target.value)} placeholder="e.g. Priya Iyer" className="w-full rounded-lg bg-white px-3 py-2.5 text-sm focus:border-violet-500 focus:outline-none focus:ring-2 focus:ring-violet-500/20 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800" />
+ <label className="mb-1 block text-[11px] font-medium text-zinc-600 dark:text-zinc-400">Full Name</label>
+ <input value={newName} onChange={(e) => setNewName(e.target.value)} placeholder="e.g. Priya" className="w-full rounded-lg bg-white px-3 py-2.5 text-sm focus:border-violet-500 focus:outline-none focus:ring-2 focus:ring-violet-500/20 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800" />
  </div>
  <div>
  <label className="mb-1 block text-[11px] font-medium text-zinc-600 dark:text-zinc-400">Email</label>
@@ -228,7 +228,7 @@ export function SuperAdminAdmins() {
  <label className="mb-1 block text-[11px] font-medium text-zinc-600 dark:text-zinc-400">Role</label>
  <select value={newRole} onChange={(e) => setNewRole(e.target.value as InviteRole)} className="w-full rounded-lg bg-white px-3 py-2.5 text-sm focus:border-violet-500 focus:outline-none focus:ring-2 focus:ring-violet-500/20 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800">
  <option value="ADMIN">Admin</option>
- <option value="SUPER_ADMIN">Super admin</option>
+ <option value="SUPER_ADMIN">Super Admin</option>
  <option value="STAFF">Staff (post jobs for employers)</option>
  </select>
  </div>
@@ -284,7 +284,7 @@ export function SuperAdminAdmins() {
  >
  <div className="mb-4 flex items-center gap-2">
  <Users2 size={16} className="text-teal-600 dark:text-teal-400" />
- <h2 className="text-base font-semibold tracking-tight">Staff accounts ({staffAccounts.length})</h2>
+ <h2 className="text-base font-semibold tracking-tight">Staff Accounts ({staffAccounts.length})</h2>
  </div>
  {staffAccounts.length === 0 ? (
  <p className="text-xs text-zinc-500 dark:text-zinc-400">

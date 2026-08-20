@@ -132,7 +132,7 @@ export function AdminLogin() {
  if (!apiEnabled) {
  /* ---------- Legacy mock UI (password-based) ---------- */
  return (
- <AuthLayout title="Internal access" subtitle="Sign in to the admin panel" bgImage="/images/background-04.jpg">
+ <AuthLayout title="Internal Access" subtitle="Sign in to the Admin Panel" bgImage="/images/background-04.jpg">
  <form onSubmit={submitLocal} className="flex flex-col gap-4">
  <TextField label="Email" value={email} onChange={setEmail} placeholder="admin@itr.com" inputMode="email" autoFocus />
  <div>
@@ -175,13 +175,13 @@ export function AdminLogin() {
  /* ---------- API UI (OTP-based) ---------- */
  return (
  <AuthLayout
- title="Internal access"
- subtitle={stage === "email" ? "Sign in to the admin panel with a one-time code." : `We sent a 6-digit code to ${email}`}
+ title="Internal Access"
+ subtitle={stage === "email" ? "Sign in to the Admin Panel With a One-Time Code." : `We Sent a 6-Digit Code to ${email}`}
  bgImage="/images/background-04.jpg"
  >
  {stage === "email" ? (
  <form onSubmit={submitEmail} className="flex flex-col gap-4">
- <TextField label="Admin email" value={email} onChange={setEmail} placeholder="admin@yourcompany.com" inputMode="email" autoFocus error={error ?? undefined} />
+ <TextField label="Admin Email" value={email} onChange={setEmail} placeholder="admin@yourcompany.com" inputMode="email" autoFocus error={error ?? undefined} />
  <button type="submit" disabled={submitting} className="mt-2 inline-flex items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-zinc-900 to-zinc-700 px-5 py-3 text-sm font-semibold text-white shadow-md transition hover:shadow-lg disabled:opacity-60 dark:from-zinc-100 dark:to-zinc-300 dark:text-zinc-900">
  <KeyRound size={16} /> {submitting ? "Sending OTP..." : "Send OTP"}
  </button>
