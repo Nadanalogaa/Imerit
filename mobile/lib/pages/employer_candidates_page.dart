@@ -16,6 +16,7 @@ import '../widgets/employer/recently_viewed_strip.dart';
 import '../widgets/employer/saved_search_strip.dart';
 import '../widgets/employer/shortlist_bar.dart';
 import '../widgets/map_list_view.dart';
+import '../widgets/pagination_footer.dart';
 import '../widgets/theme_toggle.dart';
 
 /// Employer-side candidate search — 2026-07 rewrite. Mirrors the candidate
@@ -34,10 +35,39 @@ class _EmployerCandidatesPageState extends ConsumerState<EmployerCandidatesPage>
   CandidateFilterState _filters = const CandidateFilterState();
   Key _listKey = UniqueKey();
 
+  /// Client-side pagination for the "All candidates" section — the featured
+  /// "Best matches" strip stays full because it's already capped at 5.
+  /// Mirrors `web/src/pages/EmployerCandidates.tsx` (PAGE_SIZE = 20).
+  static const int _pageSize = 20;
+  int _page = 1;
+  final _scrollController = ScrollController();
+
   @override
   void dispose() {
     _search.dispose();
+    _scrollController.dispose();
     super.dispose();
+  }
+
+  /// Reset to page 1 whenever the underlying result set changes — any
+  /// filter tweak, new search text, or sort change should snap the user
+  /// back to the first page.
+  void _resetPage() {
+    if (_page != 1) _page = 1;
+  }
+
+  /// Called from the pagination footer. Updates the page and animates the
+  /// outer CustomScrollView back to offset 0 so the user lands on the
+  /// first card of the new page.
+  void _onPageChanged(int next) {
+    setState(() => _page = next);
+    if (_scrollController.hasClients) {
+      _scrollController.animateTo(
+        0,
+        duration: const Duration(milliseconds: 320),
+        curve: Curves.easeOutCubic,
+      );
+    }
   }
 
   List<(User, CandidateProfile)> _pool() {
@@ -279,7 +309,12 @@ class _EmployerCandidatesPageState extends ConsumerState<EmployerCandidatesPage>
         onSave: (state) => _promptSaveSearch(state, pool),
       ),
     );
-    if (result != null) setState(() => _filters = result);
+    if (result != null) {
+      setState(() {
+        _filters = result;
+        _resetPage();
+      });
+    }
   }
 
   Future<void> _promptSaveSearch(CandidateFilterState state, List<(User, CandidateProfile)> pool) async {
@@ -385,6 +420,20 @@ class _EmployerCandidatesPageState extends ConsumerState<EmployerCandidatesPage>
     final total = ranked.others.length;
     final all = ranked.others;
     final showFeatured = ranked.hasSignal && ranked.matched.isNotEmpty;
+
+    // Client-side pagination — 20 per page on the "All candidates" list.
+    // Featured strip pulls straight from `ranked.matched` (capped at 5).
+    final totalPages = total == 0 ? 1 : ((total - 1) ~/ _pageSize) + 1;
+    final safePage = _page.clamp(1, totalPages);
+    if (safePage != _page) {
+      _page = safePage;
+    }
+    final startIdx = (safePage - 1) * _pageSize;
+    final endIdx = (safePage * _pageSize).clamp(0, total);
+    final pagedAll = startIdx >= endIdx
+        ? const <(User, CandidateProfile)>[]
+        : all.sublist(startIdx, endIdx);
+
     final weeklyApps = _weeklyApplicationCount();
     final shortlistIds = ref.watch(shortlistProvider)[employer.id] ?? const <String>[];
 
@@ -404,6 +453,7 @@ class _EmployerCandidatesPageState extends ConsumerState<EmployerCandidatesPage>
             onRefresh: _pullToRefresh,
             color: const Color(0xFF0EA5E9),
             child: CustomScrollView(
+              controller: _scrollController,
               slivers: [
                 SliverToBoxAdapter(
                   child: Padding(
@@ -456,14 +506,24 @@ class _EmployerCandidatesPageState extends ConsumerState<EmployerCandidatesPage>
                         const SizedBox(height: 14),
                         const RecentlyViewedStrip(),
                         SavedSearchStrip(
-                          onApply: (filters) => setState(() => _filters = filters),
+                          onApply: (filters) => setState(() {
+                            _filters = filters;
+                            _resetPage();
+                          }),
                         ),
-                        _SearchBar(controller: _search, onChanged: (_) => setState(() {}), isDark: isDark),
+                        _SearchBar(
+                          controller: _search,
+                          onChanged: (_) => setState(() => _resetPage()),
+                          isDark: isDark,
+                        ),
                         const SizedBox(height: 10),
                         _FilterRow(
                           filters: _filters,
                           onOpen: () => _openFilters(pool),
-                          onClearFacet: (next) => setState(() => _filters = next),
+                          onClearFacet: (next) => setState(() {
+                            _filters = next;
+                            _resetPage();
+                          }),
                           locations: ref.watch(locationsProvider),
                           isDark: isDark,
                         ),
@@ -479,12 +539,12 @@ class _EmployerCandidatesPageState extends ConsumerState<EmployerCandidatesPage>
                     padding: const EdgeInsets.symmetric(horizontal: 16),
                     // Featured strip layout when there's a soft signal +
                     // matches: [Best matches header] + N matched cards +
-                    // [All candidates header] + everyone. Otherwise plain
-                    // full list.
+                    // [All candidates header] + pagedAll. Otherwise plain
+                    // paged list.
                     sliver: SliverList.builder(
                       itemCount: showFeatured
-                          ? total + ranked.matched.length + 2 // + 2 dividers
-                          : total,
+                          ? pagedAll.length + ranked.matched.length + 2 // + 2 dividers
+                          : pagedAll.length,
                       itemBuilder: (context, i) {
                         Widget cardFor(int index, User user, CandidateProfile profile) {
                           final shortlisted = shortlistIds.contains(user.id);
@@ -543,12 +603,27 @@ class _EmployerCandidatesPageState extends ConsumerState<EmployerCandidatesPage>
                             );
                           }
                           final idx = i - (ranked.matched.length + 2);
-                          final (u, p) = all[idx];
+                          final (u, p) = pagedAll[idx];
                           return cardFor(idx, u, p);
                         }
-                        final (u, p) = all[i];
+                        final (u, p) = pagedAll[i];
                         return cardFor(i, u, p);
                       },
+                    ),
+                  ),
+                if (total > 0 && totalPages > 1)
+                  SliverToBoxAdapter(
+                    child: Padding(
+                      padding: const EdgeInsets.fromLTRB(16, 4, 16, 4),
+                      child: PaginationFooter(
+                        page: safePage,
+                        totalPages: totalPages,
+                        totalItems: total,
+                        pageSize: _pageSize,
+                        isDark: isDark,
+                        accent: const Color(0xFF0EA5E9),
+                        onChange: _onPageChanged,
+                      ),
                     ),
                   ),
                 if (total > 0)

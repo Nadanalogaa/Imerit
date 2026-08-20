@@ -9,6 +9,7 @@ import '../store/theme_provider.dart';
 import '../utils/skill_synonyms.dart';
 import '../widgets/job_filter_sheet.dart';
 import '../widgets/map_list_view.dart';
+import '../widgets/pagination_footer.dart';
 import '../widgets/save_job_button.dart';
 import '../widgets/theme_toggle.dart';
 
@@ -29,10 +30,40 @@ class _JobBrowsePageState extends ConsumerState<JobBrowsePage> {
   JobFilterState _filters = const JobFilterState();
   Key _listKey = UniqueKey();
 
+  /// Client-side pagination for the "All jobs" section — the featured
+  /// "Best matches" strip stays full because it's already capped at 5.
+  /// Mirrors `web/src/pages/JobBrowse.tsx` (PAGE_SIZE = 20).
+  static const int _pageSize = 20;
+  int _page = 1;
+  final _scrollController = ScrollController();
+
   @override
   void dispose() {
     _search.dispose();
+    _scrollController.dispose();
     super.dispose();
+  }
+
+  /// Reset to page 1 whenever the underlying result set changes — any
+  /// filter tweak or new search text should snap the user back to the
+  /// first page instead of leaving them stranded on page 4 of a
+  /// now-tiny result set.
+  void _resetPage() {
+    if (_page != 1) _page = 1;
+  }
+
+  /// Called from the pagination footer. Updates the page and animates the
+  /// outer CustomScrollView back to offset 0 so the user lands on the
+  /// first card of the new page.
+  void _onPageChanged(int next) {
+    setState(() => _page = next);
+    if (_scrollController.hasClients) {
+      _scrollController.animateTo(
+        0,
+        duration: const Duration(milliseconds: 320),
+        curve: Curves.easeOutCubic,
+      );
+    }
   }
 
   /// Rank + partition — mirror of web's JobBrowse.
@@ -139,7 +170,12 @@ class _JobBrowsePageState extends ConsumerState<JobBrowsePage> {
       backgroundColor: Colors.transparent,
       builder: (_) => JobFilterSheet(initial: _filters, jobs: ref.read(jobsProvider)),
     );
-    if (result != null) setState(() => _filters = result);
+    if (result != null) {
+      setState(() {
+        _filters = result;
+        _resetPage();
+      });
+    }
   }
 
   Future<void> _pullToRefresh() async {
@@ -164,6 +200,20 @@ class _JobBrowsePageState extends ConsumerState<JobBrowsePage> {
     final all = ranked.others;
     final showFeatured = ranked.hasSignal && ranked.matched.isNotEmpty;
 
+    // Client-side pagination — slice the "All jobs" list to 20 per page.
+    // The Best-matches strip pulls straight from `ranked.matched` so it
+    // always renders the full featured set (already capped at 5).
+    final totalPages = total == 0 ? 1 : ((total - 1) ~/ _pageSize) + 1;
+    final safePage = _page.clamp(1, totalPages);
+    if (safePage != _page) {
+      // Result-set shrank below the current page — pull the state back
+      // before we render so the footer highlights the correct slot.
+      _page = safePage;
+    }
+    final startIdx = (safePage - 1) * _pageSize;
+    final endIdx = (safePage * _pageSize).clamp(0, total);
+    final pagedAll = startIdx >= endIdx ? const <Job>[] : all.sublist(startIdx, endIdx);
+
     return Scaffold(
       backgroundColor: isDark ? const Color(0xFF09090B) : const Color(0xFFFAFAFA),
       appBar: AppBar(
@@ -181,6 +231,7 @@ class _JobBrowsePageState extends ConsumerState<JobBrowsePage> {
         onRefresh: _pullToRefresh,
         color: const Color(0xFFF97316),
         child: CustomScrollView(
+          controller: _scrollController,
           slivers: [
             SliverToBoxAdapter(
               child: Padding(
@@ -218,12 +269,19 @@ class _JobBrowsePageState extends ConsumerState<JobBrowsePage> {
                       ],
                     ),
                     const SizedBox(height: 14),
-                    _SearchBar(controller: _search, onChanged: (_) => setState(() {}), isDark: isDark),
+                    _SearchBar(
+                      controller: _search,
+                      onChanged: (_) => setState(() => _resetPage()),
+                      isDark: isDark,
+                    ),
                     const SizedBox(height: 10),
                     _FilterRow(
                       filters: _filters,
                       onOpen: _openFilters,
-                      onClearFacet: (next) => setState(() => _filters = next),
+                      onClearFacet: (next) => setState(() {
+                        _filters = next;
+                        _resetPage();
+                      }),
                       isDark: isDark,
                     ),
                   ],
@@ -238,8 +296,8 @@ class _JobBrowsePageState extends ConsumerState<JobBrowsePage> {
                 padding: const EdgeInsets.symmetric(horizontal: 16),
                 sliver: SliverList.builder(
                   itemCount: showFeatured
-                      ? total + ranked.matched.length + 2
-                      : total,
+                      ? pagedAll.length + ranked.matched.length + 2
+                      : pagedAll.length,
                   itemBuilder: (context, i) {
                     Widget jobRow(int index, Job job) => _StaggeredEntry(
                           index: index,
@@ -283,10 +341,25 @@ class _JobBrowsePageState extends ConsumerState<JobBrowsePage> {
                         );
                       }
                       final idx = i - (ranked.matched.length + 2);
-                      return jobRow(idx, all[idx]);
+                      return jobRow(idx, pagedAll[idx]);
                     }
-                    return jobRow(i, all[i]);
+                    return jobRow(i, pagedAll[i]);
                   },
+                ),
+              ),
+            if (total > 0 && totalPages > 1)
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 4, 16, 4),
+                  child: PaginationFooter(
+                    page: safePage,
+                    totalPages: totalPages,
+                    totalItems: total,
+                    pageSize: _pageSize,
+                    isDark: isDark,
+                    accent: const Color(0xFFF97316),
+                    onChange: _onPageChanged,
+                  ),
                 ),
               ),
             if (total > 0)
