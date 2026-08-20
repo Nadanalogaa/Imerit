@@ -211,13 +211,20 @@ export function MapListLayout({
  view === "split" ? "grid grid-cols-1 xl:grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)] xl:items-start" : "block",
  ].join(" ")}
  >
- {/* LIST */}
+ {/* LIST — in split view the list column gets its own internal
+     scroll and matches the map's fixed viewport height, so the
+     document itself never grows. Filters stay fully visible on
+     the left, map stays visible on the right, and only the list
+     scrolls inside its own column. Below xl (mobile / tablet)
+     the list falls back to natural document flow. */}
  {(view === "list" || view === "split") && (
  <div
  ref={listRef}
  className={[
  "min-w-0",
- view === "split" ? "pr-1" : "",
+ view === "split"
+   ? "xl:sticky xl:top-24 xl:h-[calc(100vh-12rem)] xl:overflow-y-auto xl:pr-2"
+   : "",
  ].join(" ")}
  >
  {!hasItems ? (

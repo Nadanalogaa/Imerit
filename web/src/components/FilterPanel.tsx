@@ -72,11 +72,17 @@ export function FilterPanel({ state, counts, onChange, onClose }: Props) {
   const districts = useLocations((s) => s.districts);
   const taluksOf = useLocations((s) => s.taluksOf);
 
+  // Only the top three facets open by default so the panel fits the
+  // viewport without an internal scrollbar on 720p and smaller. Users
+  // click a heading to expand the rest — Job type / Industry /
+  // Department / Experience / Posted.
   const [openSections, setOpenSections] = useState<Record<string, boolean>>({
     location: true,
     field: true,
-    type: true,
-    experience: true,
+    industry: false,
+    department: false,
+    type: false,
+    experience: false,
     posted: false,
   });
   const toggleSection = (key: string) => setOpenSections((o) => ({ ...o, [key]: !o[key] }));

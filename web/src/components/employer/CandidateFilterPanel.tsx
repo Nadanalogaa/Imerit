@@ -74,14 +74,17 @@ export function CandidateFilterPanel({
 }: Props) {
   const districts = useLocations((s) => s.districts);
 
+  // Only Skills / Sort / District open by default — keeps the panel
+  // compact so it fits the viewport without an internal scrollbar.
+  // Everything else is one click away.
   const [openSections, setOpenSections] = useState<Record<string, boolean>>({
     sort: true,
-    near: activeJobs.length > 0,
+    near: false,
     district: true,
-    field: true,
-    industry: true,
-    department: true,
-    type: true,
+    field: false,
+    industry: false,
+    department: false,
+    type: false,
     years: false,
     education: false,
     skills: true,
