@@ -100,7 +100,7 @@ export function WhyUs() {
  <h2 className="mt-3 text-3xl font-semibold tracking-tight md:text-5xl">
  Beyond a Traditional Job Portal —{" "}
  <span className="bg-gradient-to-r from-brand-500 to-amber-500 bg-clip-text text-transparent">
- Built For a Zero-Unemployment Tamil Nadu
+ Built For a Zero-UnEmployment Tamil Nadu
  </span>
  </h2>
  <p className="mt-4 mx-auto max-w-3xl text-zinc-600 dark:text-zinc-400">
