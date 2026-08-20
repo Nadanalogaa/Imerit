@@ -24,8 +24,13 @@ export function Pagination({
   pageSize: number;
   onChange: (nextPage: number) => void;
 }) {
-  if (totalPages <= 1) return null;
-  const clamped = Math.min(Math.max(1, page), totalPages);
+  // Hide entirely when the list is empty — the parent already renders
+  // its own empty-state. Single-page lists still show the "Showing X of
+  // Y" caption (without the button strip) so the visitor can see the
+  // pool size at a glance.
+  if (totalItems === 0) return null;
+  const clamped = Math.min(Math.max(1, page), Math.max(1, totalPages));
+  const singlePage = totalPages <= 1;
 
   const first = 1;
   const last = totalPages;
@@ -57,6 +62,7 @@ export function Pagination({
         Showing <span className="font-semibold text-zinc-900 dark:text-zinc-100">{shownFrom}–{shownTo}</span> of <span className="font-semibold text-zinc-900 dark:text-zinc-100">{totalItems}</span>
       </span>
 
+      {!singlePage && (
       <div className="flex flex-wrap items-center gap-1">
         <button
           type="button"
@@ -99,6 +105,7 @@ export function Pagination({
           Next <ChevronRight size={13} />
         </button>
       </div>
+      )}
     </nav>
   );
 }
