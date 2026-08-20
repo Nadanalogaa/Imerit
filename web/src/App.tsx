@@ -367,6 +367,9 @@ function NavigateWithParams({ to }: { to: string }) {
  */
 function LandingOrDashboard() {
   const user = useAuth((s) => s.currentUser);
-  if (user) return <Navigate to={HOME_PATH[user.role]} replace />;
+  const { hash } = useLocation();
+  // Let landing-page hash links like `/#contact` resolve even for signed-in
+  // users. Plain `/` still goes to the role dashboard as before.
+  if (user && !hash) return <Navigate to={HOME_PATH[user.role]} replace />;
   return <Landing />;
 }
