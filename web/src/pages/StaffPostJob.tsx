@@ -259,6 +259,16 @@ export function StaffPostJob() {
               error={pickerError}
             />
           }
+          // Gate every wizard step-advance on an employer being picked
+          // (or being in the middle of creating one inline). Without this
+          // the staff user could tab through the whole wizard and only
+          // discover the missing employer at submit-time.
+          beforeStepAdvance={() => {
+            if (!selectedEmployer && !(createMode && newEmp.email.trim() && newEmp.name.trim())) {
+              return "Pick an employer to post on behalf of — or fill the 'new employer' form above.";
+            }
+            return null;
+          }}
           onSubmit={handleSubmit}
         />
       </main>

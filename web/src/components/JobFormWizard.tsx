@@ -127,6 +127,13 @@ export interface JobFormWizardProps {
    *  falsy on the staff-side flows so staff creating a new employer
    *  can still type the name. */
   lockCompanyName?: boolean;
+  /** Optional guard the parent can wire to block wizard step advance
+   *  when its own state isn't ready — used by StaffPostJob to require
+   *  the employer picker before the first Next. Return a string to
+   *  block + surface it as a rose banner above the step; return null
+   *  to allow the advance. Called before the wizard's own per-step
+   *  validation runs, so the parent's error wins. */
+  beforeStepAdvance?: (nextStep: number) => string | null;
   /** True when the parent is in the middle of network I/O. The submit
    *  button label switches to a spinner-friendly label + disables the
    *  button so double-clicks can't fire the mutation twice. */
@@ -212,6 +219,7 @@ export function JobFormWizard({
   hideBrandStep = false,
   brandStepLogoOnly = false,
   lockCompanyName = false,
+  beforeStepAdvance,
   externalSubmitting = false,
 }: JobFormWizardProps) {
   const steps = hideBrandStep ? STEPS_NO_BRAND : STEPS_WITH_BRAND;
@@ -321,12 +329,30 @@ export function JobFormWizard({
   };
 
   const next = () => {
+    // Parent-level guards run first (e.g. StaffPostJob's employer
+    // picker). If the parent surfaces an error we abort before per-
+    // step validation so the parent's message isn't buried.
+    if (beforeStepAdvance) {
+      const parentError = beforeStepAdvance(step + 1);
+      if (parentError) {
+        setErrors({ __parent: parentError });
+        return;
+      }
+    }
     if (!validateStep(step)) return;
     setStep((s) => Math.min(s + 1, steps.length - 1));
   };
   const back = () => setStep((s) => Math.max(0, s - 1));
 
   const runSubmit = async () => {
+    if (beforeStepAdvance) {
+      const parentError = beforeStepAdvance(step);
+      if (parentError) {
+        setErrors({ __parent: parentError });
+        setSubmitError(parentError);
+        return;
+      }
+    }
     if (!validateStep(step)) return;
     setSubmitting(true);
     setSubmitError(null);
@@ -390,6 +416,12 @@ export function JobFormWizard({
       </div>
 
       <StepIndicator steps={steps} current={step} onStepClick={mode === "edit" ? setStep : undefined} />
+
+      {errors.__parent && (
+        <div className="mb-3 rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-xs font-semibold text-rose-700 dark:border-rose-500/30 dark:bg-rose-500/10 dark:text-rose-400">
+          {errors.__parent}
+        </div>
+      )}
 
       <AnimatePresence mode="wait">
         {step === 0 && (

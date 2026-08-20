@@ -3,6 +3,7 @@ import { get as load, set as save, KEYS } from "../lib/storage";
 import { apiEnabled } from "../lib/api";
 import { employerJobsApi, jobsApi, type ApiJob, type ApiJobExperience, type ApiJobField, type ApiJobType } from "../lib/api/jobs";
 import { staffApi } from "../lib/api/staff";
+import { useAuth } from "./auth";
 
 export type JobField = "it" | "non_it";
 export type JobType =
@@ -483,7 +484,13 @@ export const useJobs = create<JobsState>((set, get) => ({
     if ("industry" in patch) apiPatch.industry = patch.industry;
     if ("department" in patch) apiPatch.department = patch.department;
     if ("extraLocations" in patch) apiPatch.extraLocations = patch.extraLocations;
-    const { job } = await employerJobsApi.update(id, apiPatch);
+    // Staff editing a job they posted must hit the staff-scoped route —
+    // /employer/jobs/:id is EMPLOYER-role-only and returns 403 for staff.
+    // The staff route enforces `postedByStaffId === req.user.sub`.
+    const callerRole = useAuth.getState().currentUser?.role;
+    const { job } = callerRole === "staff"
+      ? await staffApi.updateJob(id, apiPatch)
+      : await employerJobsApi.update(id, apiPatch);
     const local = fromApiJob(job);
     const next = get().jobs.map((j) => (j.id === id ? local : j));
     save(STORAGE_KEY, next);

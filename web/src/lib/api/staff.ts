@@ -9,7 +9,7 @@
  */
 
 import { api } from "../api";
-import type { ApiJob } from "./jobs";
+import type { ApiJob, ApiJobStatus, CreateJobInput } from "./jobs";
 
 // ----------------------------------------------------------------
 // Shared shapes — mirror the backend `staffSelect` / `employerSelect`.
@@ -147,4 +147,16 @@ export const staffApi = {
     }>;
   }) =>
     api<{ job: ApiJob }>("/staff/jobs", { method: "POST", json: input }),
+
+  /**
+   * Edit a job the staff user originally posted. Backend checks
+   * `postedByStaffId === req.user.sub` so staff can only edit their
+   * own postings, not another staff member's. Same body shape as
+   * PATCH /employer/jobs/:id.
+   */
+  updateJob: (id: string, patch: Partial<CreateJobInput> & { status?: ApiJobStatus }) =>
+    api<{ job: ApiJob }>(`/staff/jobs/${encodeURIComponent(id)}`, {
+      method: "PATCH",
+      json: patch,
+    }),
 };

@@ -4,7 +4,7 @@ import { UserRole } from "@prisma/client";
 import { asyncHandler, HttpError } from "../middleware/error.js";
 import { requireAuth, requireRole } from "../middleware/auth.js";
 import { validate } from "../middleware/validate.js";
-import { staffCreateJobSchema } from "../schemas/jobs.schemas.js";
+import { staffCreateJobSchema, updateJobSchema } from "../schemas/jobs.schemas.js";
 import {
   createEmployerByStaff,
   createStaffAndNotify,
@@ -16,7 +16,7 @@ import {
   setStaffPassword,
   updateEmployerByStaff,
 } from "../services/staff.service.js";
-import { createJob } from "../services/jobs.service.js";
+import { createJob, updateJob } from "../services/jobs.service.js";
 import { prisma } from "../lib/prisma.js";
 
 const router = Router();
@@ -236,6 +236,37 @@ router.post(
       data: jobData as Parameters<typeof createJob>[0]["data"],
     });
     res.status(201).json({ job });
+  }),
+);
+
+// ------------------------------------------------------------------
+// Staff edits a job they previously posted on behalf of an employer.
+// The service's ownership check uses `employerId`; we pass the job's
+// stored employerId (not the staff user's own id, which would 403).
+// We also verify the staff user is the one who originally posted the
+// row via `postedByStaffId` — otherwise any staff account could edit
+// another staff member's postings.
+// ------------------------------------------------------------------
+router.patch(
+  "/staff/jobs/:id",
+  ...staffGuard,
+  validate({ body: updateJobSchema }),
+  asyncHandler(async (req, res) => {
+    const id = paramId(req.params.id);
+    const existing = await prisma.job.findUnique({
+      where: { id },
+      select: { employerId: true, postedByStaffId: true, deletedAt: true },
+    });
+    if (!existing || existing.deletedAt) throw new HttpError(404, "Job not found", "JOB_NOT_FOUND");
+    if (existing.postedByStaffId !== req.user!.sub) {
+      throw new HttpError(403, "You can only edit jobs you posted", "STAFF_NOT_OWNER");
+    }
+    const job = await updateJob({
+      employerId: existing.employerId,
+      id,
+      patch: req.body as Parameters<typeof updateJob>[0]["patch"],
+    });
+    res.json({ job });
   }),
 );
 
