@@ -91,7 +91,7 @@ export function AdminDashboard() {
  </div>
  {apiEnabled && (
  <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-100 px-3 py-1 text-[11px] font-bold uppercase tracking-widest text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-400">
- <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-emerald-500" /> Live data
+ <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-emerald-500" /> Live Data
  </span>
  )}
  </div>
@@ -111,7 +111,7 @@ export function AdminDashboard() {
  icon={<Users size={18} />}
  label="Candidates"
  value={candidatesCount}
- sub={`${completedCount} approved · ${pendingCount} pending`}
+ sub={`${completedCount} Approved · ${pendingCount} Pending`}
  accent="from-brand-500 to-amber-500"
  to="/admin/candidates"
  trend={trends?.candidateSignups}
@@ -122,7 +122,7 @@ export function AdminDashboard() {
  icon={<Building2 size={18} />}
  label="Employers"
  value={employersCount}
- sub="registered"
+ sub="Registered"
  accent="from-sky-500 to-cyan-500"
  to="/admin/employers"
  trend={trends?.employerSignups}
@@ -130,9 +130,9 @@ export function AdminDashboard() {
  <StatTile
  variants={itemV}
  icon={<UserPlus size={18} />}
- label="New signups"
+ label="New Signups"
  value={signups7d}
- sub="last 7 days"
+ sub="Last 7 Days"
  accent="from-violet-500 to-fuchsia-500"
  to="/admin/candidates"
  trend={trends
@@ -142,9 +142,9 @@ export function AdminDashboard() {
  <StatTile
  variants={itemV}
  icon={<FileSpreadsheet size={18} />}
- label="Revenue (local)"
+ label="Revenue (Local)"
  value={`₹${subs.reduce((s, x) => s + x.priceInr, 0).toLocaleString("en-IN")}`}
- sub={`${subs.length} subscriptions`}
+ sub={`${subs.length} Subscriptions`}
  accent="from-emerald-500 to-teal-500"
  to="/admin/subscriptions"
  />
@@ -154,7 +154,7 @@ export function AdminDashboard() {
  <motion.section variants={itemV} className="rounded-3xl bg-white p-6 shadow-[0_4px_16px_rgba(15,23,42,0.06)] dark:shadow-[0_4px_16px_rgba(0,0,0,0.35)] dark:bg-zinc-900">
  <div className="mb-4 flex items-center gap-2">
  <Activity size={16} className="text-brand-600 dark:text-brand-400" />
- <h2 className="text-base font-semibold tracking-tight">Live activity</h2>
+ <h2 className="text-base font-semibold tracking-tight">Live Activity</h2>
  <span className="text-[10px] text-zinc-500 dark:text-zinc-400">last {activity.length}</span>
  </div>
  {activity.length === 0 ? (
@@ -197,11 +197,11 @@ function ActionIcon({ action }: { action: string }) {
 
 function humanAction(action: string) {
  switch (action) {
- case "USER_CREATED": return "Account created";
- case "USER_LOGIN": return "Logged in";
- case "USER_LOGOUT": return "Logged out";
- case "PROFILE_APPROVED": return "Profile approved";
- case "PROFILE_REJECTED": return "Profile rejected";
+ case "USER_CREATED": return "Account Created";
+ case "USER_LOGIN": return "Logged In";
+ case "USER_LOGOUT": return "Logged Out";
+ case "PROFILE_APPROVED": return "Profile Approved";
+ case "PROFILE_REJECTED": return "Profile Rejected";
  default: return action.replace(/_/g, " ").toLowerCase();
  }
 }

@@ -193,7 +193,7 @@ export function AdminCandidates() {
  onChange={(e) => setStatusFilter(e.target.value as typeof statusFilter)}
  className="rounded-lg bg-white px-3 py-2.5 text-sm focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500/20 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800"
  >
- <option value="">All statuses</option>
+ <option value="">All Statuses</option>
  <option value="PENDING">Pending</option>
  <option value="APPROVED">Approved</option>
  <option value="REJECTED">Rejected</option>
@@ -361,7 +361,7 @@ function StatusBadge({ status, hasResume }: { status: ApiModerationStatus | "—
  return hasResume ? (
  <span className="inline-flex items-center gap-1 text-emerald-600 dark:text-emerald-400"><CheckCircle2 size={13} /> Complete</span>
  ) : (
- <span className="inline-flex items-center gap-1 text-amber-600 dark:text-amber-400"><Clock size={13} /> In progress</span>
+ <span className="inline-flex items-center gap-1 text-amber-600 dark:text-amber-400"><Clock size={13} /> In Progress</span>
  );
 }
 

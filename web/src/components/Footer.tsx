@@ -64,7 +64,7 @@ Tamil Nadu’s Modern Recruitment Platform — Connecting Students and Professio
  <FooterLink to="/jobs">Browse Jobs</FooterLink>
  </Col>
 
- <Col title="Team access">
+ <Col title="Team Access">
  <FooterLink to="/staff/login">Staff Login</FooterLink>
  <FooterLink to="/admin">Admin Login</FooterLink>
  <FooterLink to="/super-admin">Super Admin</FooterLink>

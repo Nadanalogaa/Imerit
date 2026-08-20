@@ -65,10 +65,10 @@ export function SuperAdminStaff() {
         <div className="mb-6 flex flex-wrap items-end justify-between gap-4">
           <div>
             <p className="text-xs font-semibold uppercase tracking-widest text-brand-600 dark:text-brand-400">
-              Staff accounts
+              Staff Accounts
             </p>
             <h1 className="mt-2 text-2xl font-semibold tracking-tight md:text-3xl">
-              {staff.length} staff · post jobs on behalf of employers
+              {staff.length} Staff · Post Jobs on Behalf of Employers
             </h1>
             <p className="mt-1 text-sm text-zinc-600 dark:text-zinc-400">
               Staff manage the Employer Master and post jobs. They can't reach admin or candidate
@@ -180,7 +180,7 @@ export function SuperAdminStaff() {
 
       {freshCreds && (
         <CredentialShareModal
-          title="Staff invited"
+          title="Staff Invited"
           subtitle={`${freshCreds.name} can now sign in at /staff/login`}
           email={freshCreds.email}
           password={freshCreds.password}

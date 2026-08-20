@@ -17,7 +17,7 @@ export function AboutUs() {
  {/* Copy */}
  <div>
  <p className="text-xs font-semibold uppercase tracking-widest text-brand-600 dark:text-brand-400">
- About us
+ About Us
  </p>
  <h2 className="mt-3 text-3xl font-semibold tracking-tight md:text-5xl">
  iTamil Recruit — for Tamil Nadu &amp; Puducherry
@@ -33,7 +33,7 @@ export function AboutUs() {
  </p>
 
  <dl className="mt-8 grid grid-cols-3 gap-4">
- <Stat label="Districts covered" value="38" />
+ <Stat label="Districts Covered" value="38" />
  <Stat label="Region" value="TN + Puducherry" />
  <Stat label="Languages" value="தமிழ் / EN" />
  </dl>

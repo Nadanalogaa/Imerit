@@ -267,7 +267,7 @@ export function SuperAdminPlans() {
  <Field className="sm:col-span-2" label="Label">
  <input value={e.label} onChange={(ev) => setEditing((cur) => ({ ...cur, [p.id]: { ...e, label: ev.target.value } }))} className={inputClass()} />
  </Field>
- <Field label="Duration (days)">
+ <Field label="Duration (Days)">
  <input type="number" min={1} value={e.durationDays} onChange={(ev) => setEditing((cur) => ({ ...cur, [p.id]: { ...e, durationDays: Number(ev.target.value) } }))} className={inputClass()} />
  </Field>
  <Field label="Price (₹)">
@@ -284,7 +284,7 @@ export function SuperAdminPlans() {
  />
  </div>
  </Field>
- <Field label="Sort order">
+ <Field label="Sort Order">
  <input type="number" min={0} value={e.sortOrder} onChange={(ev) => setEditing((cur) => ({ ...cur, [p.id]: { ...e, sortOrder: Number(ev.target.value) } }))} className={inputClass()} />
  </Field>
  <div className="sm:col-span-6 flex items-center justify-end gap-2">

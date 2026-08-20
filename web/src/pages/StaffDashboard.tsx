@@ -38,7 +38,7 @@ export function StaffDashboard() {
       <main className="mx-auto max-w-7xl px-5 py-8 md:py-10">
         <header className="mb-6">
           <p className="text-xs font-semibold uppercase tracking-widest text-teal-600 dark:text-teal-400">
-            Staff · post jobs on behalf of employers
+            Staff · Post Jobs on Behalf of Employers
           </p>
           <h1 className="mt-2 text-2xl font-semibold tracking-tight md:text-3xl">
             Hi {me.name.split(" ")[0]}, Ready to Publish?
@@ -51,10 +51,10 @@ export function StaffDashboard() {
         </header>
 
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-          <StatTile label="Employers in master" value={stats.employerCount} icon={<Building2 size={18} />} tone="sky" />
-          <StatTile label="Provisioned by me" value={stats.myEmployerCount} icon={<Users2 size={18} />} tone="teal" />
-          <StatTile label="Jobs I've posted" value={stats.jobsPosted} icon={<Briefcase size={18} />} tone="violet" />
-          <StatTile label="Active jobs" value={stats.activeJobs} icon={<Briefcase size={18} />} tone="emerald" />
+          <StatTile label="Employers in Master" value={stats.employerCount} icon={<Building2 size={18} />} tone="sky" />
+          <StatTile label="Provisioned by Me" value={stats.myEmployerCount} icon={<Users2 size={18} />} tone="teal" />
+          <StatTile label="Jobs I've Posted" value={stats.jobsPosted} icon={<Briefcase size={18} />} tone="violet" />
+          <StatTile label="Active Jobs" value={stats.activeJobs} icon={<Briefcase size={18} />} tone="emerald" />
         </div>
 
         <div className="mt-8 grid gap-4 md:grid-cols-2">
@@ -62,7 +62,7 @@ export function StaffDashboard() {
             to="/staff/jobs/new"
             title="Post a Job"
             body="Pick an employer from the master (or create one on the fly) and publish a role."
-            cta="Start posting"
+            cta="Start Posting"
             tone="brand"
             icon={<Plus size={20} />}
           />
@@ -70,7 +70,7 @@ export function StaffDashboard() {
             to="/staff/employers"
             title="Employer Master"
             body="Add, edit, or reset passwords for the employers you manage."
-            cta="Open master"
+            cta="Open Master"
             tone="sky"
             icon={<Building2 size={20} />}
           />

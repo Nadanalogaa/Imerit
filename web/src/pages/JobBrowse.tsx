@@ -339,7 +339,7 @@ export function JobBrowse() {
  <header className="mb-5 flex flex-col gap-3 md:flex-row md:items-end md:justify-between md:gap-4">
  <div>
  <p className="text-xs font-semibold uppercase tracking-widest text-brand-600 dark:text-brand-400">
- Browse jobs
+ Browse Jobs
  </p>
  <h1 className="mt-1 text-2xl font-semibold tracking-tight md:text-3xl">
  Openings Across Tamil Nadu
@@ -367,7 +367,7 @@ export function JobBrowse() {
  : "text-zinc-600 hover:bg-zinc-50 dark:text-zinc-400 dark:hover:bg-zinc-800",
  ].join(" ")}
  >
- <Home size={11} /> Near home
+ <Home size={11} /> Near Home
  </button>
  <button
  onClick={() => setAnchor("preferred")}
@@ -378,7 +378,7 @@ export function JobBrowse() {
  : "text-zinc-600 hover:bg-zinc-50 dark:text-zinc-400 dark:hover:bg-zinc-800",
  ].join(" ")}
  >
- <Target size={11} /> Near preferred
+ <Target size={11} /> Near Preferred
  </button>
  </div>
  )}
@@ -402,8 +402,8 @@ export function JobBrowse() {
  // it degenerates to plain Newest and would double up with the
  // explicit "Newest" entry below.
  options={[
- ...(profile ? [{ id: "smart", label: "Most relevant" }] : []),
- ...(anchorCoords ? [{ id: "nearest", label: "Nearest first" }] : []),
+ ...(profile ? [{ id: "smart", label: "Most Relevant" }] : []),
+ ...(anchorCoords ? [{ id: "nearest", label: "Nearest First" }] : []),
  { id: "newest", label: "Newest" },
  ]}
  />
@@ -471,7 +471,7 @@ export function JobBrowse() {
  onClick={clearAll}
  className="ml-1 text-[12px] font-semibold text-zinc-500 underline-offset-2 hover:underline dark:text-zinc-400"
  >
- Clear all
+ Clear All
  </button>
  </div>
  )}
@@ -481,7 +481,7 @@ export function JobBrowse() {
  <div className="mb-3 flex flex-wrap items-center gap-3 rounded-lg border border-emerald-200/70 bg-emerald-50/60 px-3 py-2 text-[12px] dark:border-emerald-500/30 dark:bg-emerald-500/10">
  <span className="inline-flex items-center gap-1.5 text-emerald-700 dark:text-emerald-400">
  <Sparkles size={13} />
- {anchorCoords ? `Near your ${anchor === "current" ? "home" : "preferred location"}` : "Sorted by relevance"}
+ {anchorCoords ? `Near Your ${anchor === "current" ? "Home" : "Preferred Location"}` : "Sorted by Relevance"}
  </span>
  {anchorCoords && (
  <div className="inline-flex items-center gap-1.5">
@@ -499,7 +499,7 @@ export function JobBrowse() {
  </div>
  )}
  <div className="ml-auto">
- <Checkbox checked={bestOnly} onChange={setBestOnly} label="Most relevant only" tone="emerald" size="sm" />
+ <Checkbox checked={bestOnly} onChange={setBestOnly} label="Most Relevant Only" tone="emerald" size="sm" />
  </div>
  </div>
  )}
@@ -515,14 +515,15 @@ export function JobBrowse() {
  </div>
 
  <div className="min-w-0">
- <MapListLayout
- markerTone="brand"
- anchor={
-  anchorCoords
- ? {
+            <MapListLayout
+              markerTone="brand"
+              scrollKey={page}
+              anchor={
+                anchorCoords
+                  ? {
  lat: anchorCoords.lat,
  lng: anchorCoords.lng,
- label: anchor === "current" ? "Your home" : "Your preferred location",
+ label: anchor === "current" ? "Your Home" : "Your Preferred Location",
  }
  : null
  }
@@ -545,15 +546,15 @@ export function JobBrowse() {
  ),
  popupElement: <JobPopup job={job} matchResult={result ?? undefined} distance={distance} />,
  });
- const rows: MapListItem[] = [];
- const showFeatured = filtered.hasSignal && filtered.matched.length > 0;
- const total = filtered.others.length;
+                  const rows: MapListItem[] = [];
+                  const showFeatured = filtered.hasSignal && filtered.matched.length > 0;
+                  const total = filtered.others.length;
  if (showFeatured) {
  rows.push({
  id: "__separator_best__",
  fullWidth: true,
  listElement: (
- <SectionSeparator label="Most relevant" count={filtered.matched.length} tone="brand" />
+ <SectionSeparator label="Most Relevant" count={filtered.matched.length} tone="brand" />
  ),
  });
  filtered.matched.forEach((x, i) => rows.push({ ...rowFor(x, i), id: `best_${x.job.id}` }));
@@ -561,7 +562,7 @@ export function JobBrowse() {
  id: "__separator_all__",
  fullWidth: true,
  listElement: (
- <SectionSeparator label="All jobs" count={total} tone="zinc" />
+ <SectionSeparator label="All Jobs" count={total} tone="zinc" />
  ),
  });
  // Only the CURRENT PAGE of "All jobs" gets rendered — the
@@ -569,29 +570,32 @@ export function JobBrowse() {
  pagedOthers.forEach((x, i) => rows.push(rowFor(x, i)));
  } else {
  pagedOthers.forEach((x, i) => rows.push(rowFor(x, i)));
- }
- return rows;
- })()}
- emptyState={
- <div className="flex flex-col items-center rounded-3xl border border-dashed border-zinc-300 bg-white px-6 py-16 text-center dark:border-zinc-700 dark:bg-zinc-900">
- <Search size={32} className="text-zinc-400" />
- <p className="mt-3 text-sm font-semibold">No jobs match your filters</p>
+                  }
+                  return rows;
+                })()}
+              footer={
+                filteredCount > 0 && totalPages > 1 ? (
+                  <Pagination
+                    page={page}
+                    totalPages={totalPages}
+                    totalItems={filtered.others.length}
+                    pageSize={PAGE_SIZE}
+                    onChange={setPage}
+                  />
+                ) : null
+              }
+              emptyState={
+                <div className="flex flex-col items-center rounded-3xl border border-dashed border-zinc-300 bg-white px-6 py-16 text-center dark:border-zinc-700 dark:bg-zinc-900">
+                  <Search size={32} className="text-zinc-400" />
+ <p className="mt-3 text-sm font-semibold">No Jobs Match Your Filters</p>
  <p className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">
  Try widening your search or clearing some filters.
  </p>
- </div>
- }
- />
-
- <Pagination
-   page={page}
-   totalPages={totalPages}
-   totalItems={filtered.others.length}
-   pageSize={PAGE_SIZE}
-   onChange={setPage}
- />
- </div>
- </div>
+                  </div>
+                }
+              />
+          </div>
+        </div>
 
  {/* Mobile filter drawer */}
  {filtersOpen && (
@@ -612,14 +616,14 @@ export function JobBrowse() {
  onClick={clearAll}
  className="text-[13px] font-semibold text-zinc-600 dark:text-zinc-400"
  >
- Clear all
+ Clear All
  </button>
  <button
  type="button"
  onClick={() => setFiltersOpen(false)}
  className="inline-flex items-center justify-center rounded-lg bg-gradient-to-r from-brand-500 to-brand-600 px-5 py-2 text-[13px] font-semibold text-white shadow-md shadow-brand-500/30"
  >
- Show {filteredCount} {filteredCount === 1 ? "job" : "jobs"}
+ Show {filteredCount} {filteredCount === 1 ? "Job" : "Jobs"}
  </button>
  </div>
  </div>
@@ -788,7 +792,7 @@ function JobCard({ job, matchResult, distance, delay }: { job: Job; matchResult?
  {FIELD_LABEL[job.field]}
  </Pill>
  <Pill icon={<Briefcase size={10} />} color="violet">{TYPE_LABEL[job.type]}</Pill>
- {isFresher && !isInternship && <Pill icon={<Sparkles size={10} />} color="emerald">Freshers welcome</Pill>}
+ {isFresher && !isInternship && <Pill icon={<Sparkles size={10} />} color="emerald">Freshers Welcome</Pill>}
  {isInternship && <Pill icon={<Sparkles size={10} />} color="rose">Internship</Pill>}
  </div>
 

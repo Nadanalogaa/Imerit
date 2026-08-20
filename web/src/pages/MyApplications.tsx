@@ -40,7 +40,7 @@ export function MyApplications() {
  My Applications
  </p>
  <h1 className="mt-2 text-2xl font-semibold tracking-tight md:text-3xl">
- {enriched.length} {enriched.length === 1 ? "application" : "Applications"}
+ {enriched.length} {enriched.length === 1 ? "Application" : "Applications"}
  </h1>
  </header>
 
@@ -91,7 +91,7 @@ function EmptyState() {
  return (
  <div className="flex flex-col items-center rounded-3xl border border-dashed border-zinc-300 bg-white px-6 py-16 text-center dark:border-zinc-700 dark:bg-zinc-900">
  <Briefcase size={32} className="text-zinc-400" />
- <p className="mt-3 text-sm font-semibold">You haven't applied to any jobs yet</p>
+ <p className="mt-3 text-sm font-semibold">You Haven't Applied to Any Jobs Yet</p>
  <p className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">
  Browse openings and tap Apply on any role you like.
  </p>
@@ -99,7 +99,7 @@ function EmptyState() {
  to="/candidate/jobs"
  className="mt-5 inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-brand-500 to-brand-600 px-5 py-2 text-sm font-semibold text-white shadow-md shadow-brand-500/30"
  >
- Browse jobs
+ Browse Jobs
  </Link>
  </div>
  );

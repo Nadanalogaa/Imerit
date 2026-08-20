@@ -113,7 +113,7 @@ export function EmployerJobApplicants() {
  <Navbar />
  <main className="mx-auto max-w-7xl px-5 py-6 md:py-6 md:py-10">
  <Link to="/employer/my-jobs" className="mb-6 inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-xs font-semibold text-zinc-700 transition hover:bg-zinc-100 dark:border-zinc-700 dark:text-zinc-200 dark:hover:bg-zinc-800">
- <ArrowLeft size={14} /> My posted jobs
+ <ArrowLeft size={14} /> My Posted Jobs
  </Link>
 
  <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="rounded-3xl bg-white p-6 shadow-[0_4px_16px_rgba(15,23,42,0.06)] dark:shadow-[0_4px_16px_rgba(0,0,0,0.35)] dark:bg-zinc-900 md:p-7">
@@ -133,9 +133,9 @@ export function EmployerJobApplicants() {
  </div>
 
  <div className="mt-4 flex flex-wrap gap-3 text-xs">
- <Stat icon={<Users size={13} />} label="Total applicants" value={applicants.length} />
- <Stat icon={<Sparkles size={13} />} label="Strong matches" value={strongCount} accent="emerald" />
- <Stat icon={<Sparkles size={13} />} label="Average matches" value={avgCount} accent="amber" />
+ <Stat icon={<Users size={13} />} label="Total Applicants" value={applicants.length} />
+ <Stat icon={<Sparkles size={13} />} label="Strong Matches" value={strongCount} accent="emerald" />
+ <Stat icon={<Sparkles size={13} />} label="Average Matches" value={avgCount} accent="amber" />
  {apiEnabled && <Stat icon={<Star size={13} />} label="Shortlisted+" value={shortlistedCount} accent="emerald" />}
  </div>
  {updateError && (
@@ -145,13 +145,13 @@ export function EmployerJobApplicants() {
 
  <div className="mt-6">
  <h2 className="mb-3 text-xs font-bold uppercase tracking-widest text-zinc-500 dark:text-zinc-400">
- Applicants — sorted by match
+ Applicants — Sorted by Match
  </h2>
 
  {applicants.length === 0 ? (
  <div className="flex flex-col items-center rounded-3xl border border-dashed border-zinc-300 bg-white px-6 py-12 text-center dark:border-zinc-700 dark:bg-zinc-900">
  <Users size={28} className="text-zinc-400" />
- <p className="mt-3 text-sm font-semibold">No applicants yet</p>
+ <p className="mt-3 text-sm font-semibold">No Applicants Yet</p>
  <p className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">
  Candidates with matching skills will see this job in their feed sorted by fit.
  </p>
@@ -212,7 +212,7 @@ export function EmployerJobApplicants() {
  {apiEnabled && hasSub && (
  <div className="flex flex-wrap items-center gap-2 rounded-2xl bg-zinc-50 px-3 py-2 dark:bg-zinc-950/50">
  <StatusChip status={a.status} />
- <span className="text-[10px] text-zinc-500 dark:text-zinc-400">Move to:</span>
+ <span className="text-[10px] text-zinc-500 dark:text-zinc-400">Move To:</span>
  <PipeBtn label="Shortlist" status="SHORTLISTED" current={a.status} onClick={() => setStatus(a.appId, "SHORTLISTED")} disabled={isUpdating} icon={<Star size={11} />} accent="sky" />
  <PipeBtn label="Interview" status="INTERVIEW" current={a.status} onClick={() => setStatus(a.appId, "INTERVIEW")} disabled={isUpdating} icon={<Calendar size={11} />} accent="violet" />
  <PipeBtn label="Hire" status="HIRED" current={a.status} onClick={() => setStatus(a.appId, "HIRED")} disabled={isUpdating} icon={<CheckCircle2 size={11} />} accent="emerald" />

@@ -77,7 +77,7 @@ export function SuperAdminDashboard() {
  <motion.div variants={containerV} initial="hidden" animate="visible" className="flex flex-col gap-6">
  <motion.div variants={itemV}>
  <p className="inline-flex items-center gap-1.5 rounded-full bg-gradient-to-r from-amber-500/15 to-yellow-500/10 px-3 py-1 text-xs font-semibold uppercase tracking-widest text-amber-700 dark:text-amber-300">
- <Crown size={13} /> System overview
+ <Crown size={13} /> System Overview
  </p>
  <h1 className="mt-2 text-2xl font-semibold tracking-tight md:text-3xl">i-Tamil Recruit · All Systems</h1>
  <p className="mt-2 text-sm text-zinc-600 dark:text-zinc-400">
@@ -95,7 +95,7 @@ export function SuperAdminDashboard() {
  <ShieldCheck size={20} />
  </div>
  <div className="min-w-0 flex-1">
- <p className="text-xs font-bold uppercase tracking-widest text-violet-700 dark:text-violet-300">Admin accounts</p>
+ <p className="text-xs font-bold uppercase tracking-widest text-violet-700 dark:text-violet-300">Admin Accounts</p>
  <h2 className="mt-0.5 text-lg font-semibold tracking-tight text-zinc-900 dark:text-zinc-100">
  Invite or Revoke Admins
  </h2>
@@ -143,7 +143,7 @@ export function SuperAdminDashboard() {
  icon={<Users size={18} />}
  label="Candidates"
  value={candidatesCount}
- sub={`${completedProfiles} with CV`}
+ sub={`${completedProfiles} With CV`}
  accent="from-brand-500 to-amber-500"
  to="/admin/candidates"
  trend={trends?.candidateSignups}
@@ -153,7 +153,7 @@ export function SuperAdminDashboard() {
  icon={<Building2 size={18} />}
  label="Employers"
  value={employersCount}
- sub="registered"
+ sub="Registered"
  accent="from-sky-500 to-cyan-500"
  to="/admin/employers"
  trend={trends?.employerSignups}
@@ -163,7 +163,7 @@ export function SuperAdminDashboard() {
  icon={<Briefcase size={18} />}
  label="Jobs"
  value={jobsCount}
- sub={`${apps.length} applications`}
+ sub={`${apps.length} Applications`}
  accent="from-violet-500 to-fuchsia-500"
  to="/admin/candidates"
  trend={trends?.jobsPosted}
@@ -171,9 +171,9 @@ export function SuperAdminDashboard() {
  <StatTile
  variants={itemV}
  icon={<TrendingUp size={18} />}
- label="Total revenue"
+ label="Total Revenue"
  value={`₹${totalRevenue.toLocaleString("en-IN")}`}
- sub={`${activeSubs} active subs`}
+ sub={`${activeSubs} Active Subs`}
  accent="from-emerald-500 to-teal-500"
  to="/admin/subscriptions"
  />
@@ -231,7 +231,7 @@ export function SuperAdminDashboard() {
  {/* Subscription mix */}
  <motion.div variants={itemV} className="rounded-3xl bg-white p-6 shadow-[0_4px_16px_rgba(15,23,42,0.06)] dark:shadow-[0_4px_16px_rgba(0,0,0,0.35)] dark:bg-zinc-900">
  <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-widest text-zinc-500 dark:text-zinc-400">
- <CreditCard size={14} /> Subscriptions by type
+ <CreditCard size={14} /> Subscriptions by Type
  </div>
  <div className="mt-4 grid gap-4 sm:grid-cols-3">
  <SubStat color="bg-brand-100 text-brand-700 dark:bg-brand-500/15 dark:text-brand-300" label="Candidate" count={subsByType.candidate} desc="₹333 / 45 days" />
@@ -243,7 +243,7 @@ export function SuperAdminDashboard() {
  {/* Plan list (read-only) */}
  <motion.div variants={itemV} className="rounded-3xl bg-white p-6 shadow-[0_4px_16px_rgba(15,23,42,0.06)] dark:shadow-[0_4px_16px_rgba(0,0,0,0.35)] dark:bg-zinc-900">
  <div className="mb-4 flex items-center gap-2 text-xs font-semibold uppercase tracking-widest text-zinc-500 dark:text-zinc-400">
- <ScrollText size={14} /> Plan catalogue
+ <ScrollText size={14} /> Plan Catalogue
  </div>
  <div className="overflow-x-auto">
  <table className="w-full text-left text-sm">

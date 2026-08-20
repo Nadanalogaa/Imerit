@@ -73,7 +73,7 @@ export function StaffJobs() {
         <div className="mb-6 flex flex-wrap items-end justify-between gap-4">
           <div>
             <p className="text-xs font-semibold uppercase tracking-widest text-teal-600 dark:text-teal-400">
-              Jobs I've posted
+              Jobs I've Posted
             </p>
             <h1 className="mt-2 text-2xl font-semibold tracking-tight md:text-3xl">
               {mine.length} Job{mine.length === 1 ? "" : "s"} Across{" "}
@@ -82,7 +82,7 @@ export function StaffJobs() {
             </h1>
             {active.length !== mine.length && (
               <p className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">
-                {active.length} active · {expired.length} expired
+                {active.length} Active · {expired.length} Expired
               </p>
             )}
           </div>
@@ -90,7 +90,7 @@ export function StaffJobs() {
             to="/staff/jobs/new"
             className="inline-flex items-center gap-2 rounded-2xl bg-gradient-to-r from-brand-500 to-brand-700 px-4 py-2.5 text-sm font-semibold text-white shadow-md shadow-brand-500/30 transition hover:shadow-lg"
           >
-            <Plus size={14} /> Post job
+            <Plus size={14} /> Post Job
           </Link>
         </div>
 
@@ -107,7 +107,7 @@ export function StaffJobs() {
         {mine.length === 0 ? (
           <div className="flex flex-col items-center rounded-3xl border border-dashed border-zinc-300 bg-white px-6 py-16 text-center dark:border-zinc-700 dark:bg-zinc-900">
             <Briefcase size={32} className="text-zinc-400" />
-            <p className="mt-3 text-sm font-semibold">Nothing posted yet</p>
+            <p className="mt-3 text-sm font-semibold">Nothing Posted Yet</p>
             <p className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">
               Post a job on behalf of an employer to see it here.
             </p>
@@ -115,7 +115,7 @@ export function StaffJobs() {
               to="/staff/jobs/new"
               className="mt-4 inline-flex items-center gap-2 rounded-2xl bg-brand-600 px-4 py-2 text-xs font-semibold text-white transition hover:bg-brand-700"
             >
-              <Plus size={12} /> Post your first job
+              <Plus size={12} /> Post Your First Job
             </Link>
           </div>
         ) : (

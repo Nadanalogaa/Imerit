@@ -203,7 +203,7 @@ export function AdminEmployers() {
  {sub ? (
  <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-bold uppercase text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300">{sub.planId.replace("plan_", "")}</span>
  ) : (
- <span className="text-zinc-400">No plan</span>
+ <span className="text-zinc-400">No Plan</span>
  )}
  </td>
  <td className="px-4 py-3">
@@ -313,7 +313,7 @@ function EditEmployerModal({ target, onSaved, onClose }: EditEmployerModalProps)
  <div className="w-full max-w-md rounded-3xl border border-zinc-200 bg-white p-6 shadow-2xl dark:border-zinc-800 dark:bg-zinc-900">
  <div className="mb-4 flex items-start justify-between gap-3">
  <div>
- <h2 className="text-base font-semibold">Edit employer</h2>
+ <h2 className="text-base font-semibold">Edit Employer</h2>
  <p className="mt-0.5 text-xs text-zinc-500 dark:text-zinc-400">
  {target.email} — email is locked; change the label fields as needed.
  </p>
@@ -328,7 +328,7 @@ function EditEmployerModal({ target, onSaved, onClose }: EditEmployerModalProps)
  </button>
  </div>
  <div className="flex flex-col gap-3">
- <TextField label="Contact name" value={name} onChange={setName} placeholder="e.g. Priya Ramesh" />
+ <TextField label="Contact Name" value={name} onChange={setName} placeholder="e.g. Priya Ramesh" />
  <TextField label="Company" value={company} onChange={setCompany} placeholder="e.g. Zoho Corporation" />
  <TextField label="Mobile" value={mobile} onChange={setMobile} placeholder="9876543210" inputMode="tel" maxLength={10} />
  {error && (

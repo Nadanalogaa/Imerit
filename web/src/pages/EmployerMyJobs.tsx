@@ -78,8 +78,8 @@ export function EmployerMyJobs() {
 
  <div className="mb-6 flex flex-col items-start justify-between gap-3 md:flex-row md:items-center">
  <div>
- <p className="text-xs font-semibold uppercase tracking-widest text-sky-600 dark:text-sky-400">My posted jobs</p>
- <h1 className="mt-2 text-2xl font-semibold tracking-tight md:text-3xl">{myJobs.length} {myJobs.length === 1 ? "job" : "Jobs"}</h1>
+ <p className="text-xs font-semibold uppercase tracking-widest text-sky-600 dark:text-sky-400">My Posted Jobs</p>
+ <h1 className="mt-2 text-2xl font-semibold tracking-tight md:text-3xl">{myJobs.length} {myJobs.length === 1 ? "Job" : "Jobs"}</h1>
  </div>
  <Link to="/employer/jobs/new" className="inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-sky-500 to-sky-700 px-4 py-2 text-sm font-semibold text-white shadow-md shadow-sky-500/30">
  <Plus size={14} /> Post a New Job
@@ -89,7 +89,7 @@ export function EmployerMyJobs() {
  {myJobs.length === 0 ? (
  <div className="flex flex-col items-center rounded-3xl border border-dashed border-zinc-300 bg-white px-6 py-16 text-center dark:border-zinc-700 dark:bg-zinc-900">
  <Briefcase size={32} className="text-zinc-400" />
- <p className="mt-3 text-sm font-semibold">You haven't posted any jobs yet</p>
+ <p className="mt-3 text-sm font-semibold">You Haven't Posted Any Jobs Yet</p>
  <p className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">Job posting is always free.</p>
  <Link to="/employer/jobs/new" className="mt-5 inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-sky-500 to-sky-700 px-5 py-2 text-sm font-semibold text-white shadow-md shadow-sky-500/30">
  <Plus size={14} /> Post Your First Job
@@ -148,7 +148,7 @@ export function EmployerMyJobs() {
  </div>
  <div className="hidden items-center gap-2 sm:flex">
  <div className="flex items-center gap-1.5 rounded-full bg-emerald-100 px-3 py-1 text-xs font-bold text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300">
- <Users size={12} /> {n} {n === 1 ? "applicant" : "applicants"}
+ <Users size={12} /> {n} {n === 1 ? "Applicant" : "Applicants"}
  </div>
  {(expired || expiringSoon) && (
  <RepostButton jobId={job.id} onRepost={(updated) => {

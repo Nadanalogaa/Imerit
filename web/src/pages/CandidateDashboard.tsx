@@ -73,7 +73,7 @@ export function CandidateDashboard() {
  <div className="flex flex-wrap items-center gap-2">
  <span className="inline-flex items-center gap-1.5 rounded-full bg-gradient-to-r from-brand-500/10 to-amber-500/10 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-widest text-brand-700 dark:text-brand-300">
  <Sparkles size={11} />
- Welcome aboard
+ Welcome Aboard
  </span>
  </div>
 
@@ -86,14 +86,14 @@ export function CandidateDashboard() {
  <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-1.5 text-[13px]">
  <span className={["inline-flex items-center gap-1.5 font-semibold", user.emailVerified ? "text-emerald-600 dark:text-emerald-400" : "text-amber-600 dark:text-amber-400"].join(" ")}>
  {user.emailVerified ? <CheckCircle2 size={14} /> : <Clock size={14} />}
- Account {user.emailVerified ? "verified" : "pending"}
+ Account {user.emailVerified ? "Verified" : "Pending"}
  </span>
  {hasResume ? (
  <>
  <span className="text-zinc-300 dark:text-zinc-700">·</span>
  <span className="inline-flex items-center gap-1.5 font-semibold text-zinc-700 dark:text-zinc-200">
  <FileCheck2 size={14} className="text-emerald-500" />
- {templateMeta?.label ?? "Custom"} template
+ {templateMeta?.label ?? "Custom"} Template
  </span>
  <span className="text-zinc-300 dark:text-zinc-700">·</span>
  {/* Moderation status pill — tells the candidate whether their
@@ -113,7 +113,7 @@ export function CandidateDashboard() {
  className="inline-flex items-center gap-1.5 font-semibold text-brand-600 underline-offset-2 transition hover:underline dark:text-brand-400"
  >
  <ScrollText size={14} />
- Profile — start now
+ Profile — Start Now
  <ArrowRight size={13} />
  </Link>
  </>
@@ -149,13 +149,13 @@ export function CandidateDashboard() {
  to="/candidate/profile/preview"
  className="inline-flex items-center justify-center gap-1.5 rounded-lg bg-gradient-to-r from-brand-500 to-brand-600 px-4 py-2 text-[13px] font-semibold text-white shadow-sm shadow-brand-500/30 transition hover:shadow-md"
  >
- <Eye size={14} /> View profile
+ <Eye size={14} /> View Profile
  </Link>
  <Link
  to="/candidate/profile/build"
  className="inline-flex items-center justify-center gap-1.5 rounded-lg border border-zinc-200 bg-white px-4 py-2 text-[13px] font-semibold text-zinc-700 transition hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200 dark:hover:bg-zinc-800"
  >
- <Edit3 size={14} /> Edit profile
+ <Edit3 size={14} /> Edit Profile
  </Link>
  </div>
  ) : (
@@ -180,7 +180,7 @@ export function CandidateDashboard() {
  variants={itemVariants}
  icon={hasResume ? <Edit3 size={20} /> : <ScrollText size={20} />}
  gradient="from-brand-500 to-amber-500"
- title={hasResume ? "Update Your profile" : "Update your Profile"}
+ title={hasResume ? "Update Your Profile" : "Update Your Profile"}
  desc={hasResume
  ? "Keep your profile updated — we’ll highlight new jobs as employers post them."
  : "Edit your details, Add new experience, or switch templates"}
@@ -214,7 +214,7 @@ export function CandidateDashboard() {
  variants={itemVariants}
  icon={<CreditCard size={20} />}
  gradient="from-emerald-500 to-teal-500"
- title={activeSub ? "Manage subscription" : "Subscription"}
+ title={activeSub ? "Manage Subscription" : "Subscription"}
  desc={activeSub
  ? `Active plan · expires ${new Date(activeSub.expiresAt).toLocaleDateString()}`
  : "Apply for Jobs with a plan of Rs.333 / 45 days / Unlimited Access"}
@@ -264,7 +264,7 @@ function SubscriptionBadge({ activeLabel }: { activeLabel?: string }) {
  className="group inline-flex items-center gap-1.5 rounded-full border border-brand-200 bg-white px-3 py-1 text-[11px] font-bold uppercase tracking-wider text-brand-700 shadow-sm transition hover:border-brand-400 hover:bg-brand-50 dark:border-brand-500/30 dark:bg-zinc-900 dark:text-brand-300 dark:hover:bg-brand-500/10"
  >
  <CreditCard size={12} />
- Free tier
+ Free Tier
  <span className="text-zinc-300 dark:text-zinc-700">·</span>
  <span className="text-brand-600 dark:text-brand-400 group-hover:underline">Upgrade</span>
  <ArrowRight size={11} />
@@ -362,7 +362,7 @@ function ModerationPill({
  title="Employers can find you in searches."
  >
  <ShieldCheck size={12} />
- Approved · visible to employers
+ Approved · Visible to Employers
  </span>
  );
  }
@@ -373,7 +373,7 @@ function ModerationPill({
  title={notes ?? "Please review the feedback and resubmit."}
  >
  <AlertTriangle size={12} />
- Needs update — see email
+ Needs Update — See Email
  </span>
  );
  }
@@ -384,7 +384,7 @@ function ModerationPill({
  title="Our team is reviewing your profile. You'll be visible to employers once approved."
  >
  <Clock size={12} />
- Under review
+ Under Review
  </span>
  );
 }

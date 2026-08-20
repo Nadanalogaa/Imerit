@@ -164,7 +164,7 @@ export function SuperAdminTrash() {
  <div className="mb-6 flex flex-wrap items-end justify-between gap-4">
  <div>
  <p className="inline-flex items-center gap-1.5 rounded-full bg-gradient-to-r from-zinc-500/15 to-zinc-500/10 px-3 py-1 text-xs font-semibold uppercase tracking-widest text-zinc-700 dark:text-zinc-300">
- <Trash2 size={13} /> Recycle bin
+ <Trash2 size={13} /> Recycle Bin
  </p>
  <h1 className="mt-2 text-2xl font-semibold tracking-tight md:text-3xl">Trash</h1>
  <p className="mt-1 text-sm text-zinc-500 dark:text-zinc-400">
@@ -176,7 +176,7 @@ export function SuperAdminTrash() {
  to="/super-admin/users"
  className="inline-flex items-center gap-2 rounded-xl border border-zinc-300 bg-white px-4 py-2 text-sm font-semibold text-zinc-700 shadow-sm transition hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200 dark:hover:bg-zinc-800"
  >
- <Users2 size={15} /> Manage users
+ <Users2 size={15} /> Manage Users
  </Link>
  <button
  type="button"
@@ -184,7 +184,7 @@ export function SuperAdminTrash() {
  disabled={items.length === 0}
  className="inline-flex items-center gap-2 rounded-xl bg-rose-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-rose-700 disabled:cursor-not-allowed disabled:opacity-40"
  >
- <Flame size={15} /> Empty trash
+ <Flame size={15} /> Empty Trash
  </button>
  </div>
  </div>
@@ -241,7 +241,7 @@ export function SuperAdminTrash() {
  onClick={() => setModal("purge")}
  className="inline-flex items-center gap-1.5 rounded-lg bg-rose-600 px-3 py-1.5 text-xs font-semibold text-white shadow-sm transition hover:bg-rose-700"
  >
- <Trash size={13} /> Purge forever
+ <Trash size={13} /> Purge Forever
  </button>
  </div>
  </div>

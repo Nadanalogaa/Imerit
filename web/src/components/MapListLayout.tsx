@@ -28,6 +28,10 @@ interface Props {
  anchor?: { lat: number; lng: number; label?: string } | null;
  /** Optional radius circle around the anchor (km). */
  radiusKm?: number | null;
+ /** Optional footer rendered with the results column, e.g. pagination. */
+ footer?: React.ReactNode;
+ /** Changes here reset the internal list scroll to the top. */
+ scrollKey?: string | number;
  markerTone?: MarkerTone;
  /**
   * Number of columns to use in the list view when the layout is not split.
@@ -107,6 +111,8 @@ export function MapListLayout({
  items,
  anchor,
  radiusKm,
+ footer,
+ scrollKey,
  markerTone = "brand",
  listColumns = 2,
  defaultCenter = TN_CENTER,
@@ -135,6 +141,7 @@ export function MapListLayout({
  const highlight = selected ?? hovered;
  const listRef = useRef<HTMLDivElement>(null);
  const markerRefs = useRef<Record<string, LMarker>>({});
+ const lastScrollKey = useRef<string | number | undefined>(scrollKey);
 
  // Map-marker click → scroll the matching list card into view. Hover never
  // triggers scroll — selected is the only signal here.
@@ -144,6 +151,14 @@ export function MapListLayout({
  node?.scrollIntoView({ behavior: "smooth", block: "center" });
  markerRefs.current[selected]?.openPopup();
  }, [selected]);
+
+ // Page changes move the visible result window back to the top so the
+ // next chunk starts at a predictable position in both list and split view.
+ useEffect(() => {
+ if (scrollKey == null || lastScrollKey.current === scrollKey) return;
+ lastScrollKey.current = scrollKey;
+ listRef.current?.scrollTo({ top: 0, behavior: "smooth" });
+ }, [scrollKey]);
 
  // Clear `selected` if the user clicks the map background (any non-marker tile)
  // so the popup closes naturally and the next click starts fresh.
@@ -204,12 +219,12 @@ export function MapListLayout({
  {/* Layout */}
  <div
  className={[
- "gap-4",
- // Bump the split breakpoint to xl and give the list slightly more
- // room than the map (1.2fr vs 1fr) so cards read comfortably even at
- // the borderline width. Below xl we render list-only.
- view === "split" ? "grid grid-cols-1 xl:grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)] xl:items-start" : "block",
- ].join(" ")}
+     "gap-4",
+     // Bump the split breakpoint to xl and give the list slightly more
+     // room than the map (1.2fr vs 1fr) so cards read comfortably even at
+     // the borderline width. Below xl we render list-only.
+     view === "split" ? "grid grid-cols-1 xl:grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)] xl:items-start" : "block",
+     ].join(" ")}
  >
  {/* LIST — in split view the list column gets its own internal
      scroll and matches the map's fixed viewport height, so the
@@ -275,11 +290,12 @@ export function MapListLayout({
  ))}
  </div>
  )}
+ {footer}
  </div>
  )}
 
  {/* MAP */}
- {(view === "map" || view === "split") && (
+{(view === "map" || view === "split") && (
  <div
  className={[
  "relative overflow-hidden rounded-3xl bg-zinc-100 dark:bg-zinc-900 min-h-[22rem]",
@@ -370,8 +386,9 @@ export function MapListLayout({
  </div>
  </div>
  )}
- </div>
- )}
+ {footer && view === "map" && footer}
+  </div>
+  )}
  </div>
  </div>
  );

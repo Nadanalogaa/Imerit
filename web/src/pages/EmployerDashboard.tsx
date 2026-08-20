@@ -115,7 +115,7 @@ export function EmployerDashboard() {
  <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-1.5 text-[13px]">
  <span className={["inline-flex items-center gap-1.5 font-semibold", user.emailVerified ? "text-emerald-600 dark:text-emerald-400" : "text-amber-600 dark:text-amber-400"].join(" ")}>
  {user.emailVerified ? <CheckCircle2 size={14} /> : <Clock size={14} />}
- Account {user.emailVerified ? "verified" : "pending"}
+ Account {user.emailVerified ? "Verified" : "Pending"}
  </span>
  {companyLabel && (
  <>
@@ -133,14 +133,14 @@ export function EmployerDashboard() {
  className="inline-flex items-center gap-1.5 font-semibold text-sky-600 underline-offset-2 transition hover:underline dark:text-sky-400"
  >
  <Briefcase size={14} />
- Post your first Job
+ Post Your First Job
  <ArrowRight size={13} />
  </Link>
  ) : (
  <span className="inline-flex items-center gap-1.5 font-semibold text-zinc-700 dark:text-zinc-200">
  <Briefcase size={14} className="text-emerald-500" />
- {activeJobs.length} live {activeJobs.length === 1 ? "job" : "jobs"}
- {expiredJobs > 0 && <span className="text-zinc-400"> · {expiredJobs} expired</span>}
+ {activeJobs.length} Live {activeJobs.length === 1 ? "Job" : "Jobs"}
+ {expiredJobs > 0 && <span className="text-zinc-400"> · {expiredJobs} Expired</span>}
  </span>
  )}
  {soonest && soonest.days <= 7 && (
@@ -243,7 +243,7 @@ function EmployerSubscriptionBadge({ activeLabel, expiresAt }: { activeLabel?: s
  className="group inline-flex items-center gap-1.5 rounded-full border border-sky-200 bg-white px-3 py-1 text-[11px] font-bold uppercase tracking-wider text-sky-700 shadow-sm transition hover:border-sky-400 hover:bg-sky-50 dark:border-sky-500/30 dark:bg-zinc-900 dark:text-sky-300 dark:hover:bg-sky-500/10"
  >
  <CreditCard size={12} />
- Free tier
+ Free Tier
  <span className="text-zinc-300 dark:text-zinc-700">·</span>
  <span className="text-sky-600 dark:text-sky-400 group-hover:underline">Upgrade</span>
  <ArrowRight size={11} />

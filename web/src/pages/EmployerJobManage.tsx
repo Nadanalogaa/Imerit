@@ -145,7 +145,7 @@ export function EmployerJobManage({ role }: { role: "employer" | "staff" }) {
           onClick={(e) => { e.preventDefault(); setEditing(false); }}
           className="mb-5 inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-lg font-semibold text-zinc-700 transition hover:bg-zinc-100 dark:border-zinc-700 dark:text-zinc-200 dark:hover:bg-zinc-800"
         >
-          <ArrowLeft size={20} /> Back to job
+          <ArrowLeft size={20} /> Back to Job
         </Link>
 
         <JobFormWizard
@@ -207,7 +207,7 @@ export function EmployerJobManage({ role }: { role: "employer" | "staff" }) {
         to={listPath}
         className="mb-5 inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-lg font-semibold text-zinc-700 transition hover:bg-zinc-100 dark:border-zinc-700 dark:text-zinc-200 dark:hover:bg-zinc-800"
       >
-        <ArrowLeft size={20} /> {role === "staff" ? "My jobs" : "My Jobs"}
+        <ArrowLeft size={20} /> My Jobs
       </Link>
 
       {banner && (
@@ -220,7 +220,7 @@ export function EmployerJobManage({ role }: { role: "employer" | "staff" }) {
       <header className="mb-6 flex flex-wrap items-start justify-between gap-4">
         <div className="min-w-0 flex-1">
           <span className="text-xs font-bold uppercase tracking-widest text-brand-600 dark:text-brand-400">
-            {role === "staff" ? "Staff · manage job" : "My job"}
+            {role === "staff" ? "Staff · Manage Job" : "My Job"}
           </span>
           <h1 className="mt-1.5 break-words text-2xl font-semibold tracking-tight md:text-3xl">
             {job.title}
@@ -244,7 +244,7 @@ export function EmployerJobManage({ role }: { role: "employer" | "staff" }) {
             onClick={() => setEditing(true)}
             className="inline-flex items-center gap-1.5 rounded-full border border-brand-500 bg-gradient-to-r from-brand-500 to-brand-600 px-3 py-1.5 text-xs font-semibold text-white shadow-sm shadow-brand-500/30 transition hover:shadow-md"
           >
-            <Pencil size={13} /> Edit job
+            <Pencil size={13} /> Edit Job
           </button>
           <button
             type="button"
@@ -282,7 +282,7 @@ export function EmployerJobManage({ role }: { role: "employer" | "staff" }) {
         <FactCard
           icon={CalendarClock}
           tone={expired ? "rose" : (dLeft ?? 999) <= 5 ? "amber" : "emerald"}
-          label={expired ? "Expired" : "Live for"}
+          label={expired ? "Expired" : "Live For"}
           value={expired
             ? "Expired"
             : dLeft != null ? `${dLeft} day${dLeft === 1 ? "" : "s"}` : "—"}
@@ -295,9 +295,9 @@ export function EmployerJobManage({ role }: { role: "employer" | "staff" }) {
           value={job.salaryRange || "Not disclosed"}
           sub={
             job.experience === "fresher"
-              ? "Freshers only"
+              ? "Freshers Only"
               : job.experience === "any"
-                ? "Any experience"
+                ? "Any Experience"
                 : (job.yearsMin != null && job.yearsMax != null)
                   ? `${job.yearsMin}–${job.yearsMax} yrs`
                   : (job.yearsMin != null ? `${job.yearsMin}+ yrs` : "Experienced")
@@ -322,17 +322,17 @@ export function EmployerJobManage({ role }: { role: "employer" | "staff" }) {
             </p>
           </div>
           <div>
-            <p className="mb-1 text-[11px] font-bold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">Job type</p>
+            <p className="mb-1 text-[11px] font-bold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">Job Type</p>
             <p className="inline-flex items-center gap-1.5 text-sm font-semibold text-zinc-900 dark:text-zinc-100">
               <JobTypeIcon type={job.type} className="h-4 w-4 text-zinc-500" />
               {JOB_TYPE_LABEL[job.type]}
             </p>
           </div>
           <div>
-            <p className="mb-1 text-[11px] font-bold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">Applications to</p>
+            <p className="mb-1 text-[11px] font-bold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">Applications To</p>
             <p className="inline-flex items-center gap-1.5 text-sm font-semibold text-zinc-900 dark:text-zinc-100">
               <Mail size={14} className="text-zinc-500" />
-              {job.contactEmail || <span className="font-normal text-zinc-500">In-app only</span>}
+              {job.contactEmail || <span className="font-normal text-zinc-500">In-App Only</span>}
             </p>
           </div>
         </div>
@@ -341,7 +341,7 @@ export function EmployerJobManage({ role }: { role: "employer" | "staff" }) {
       {/* Description */}
       <section className="mb-6 rounded-3xl bg-white p-6 shadow-[0_4px_16px_rgba(15,23,42,0.06)] dark:shadow-[0_4px_16px_rgba(0,0,0,0.35)] dark:bg-zinc-900">
         <h2 className="mb-3 flex items-center gap-2 text-base font-semibold tracking-tight text-zinc-900 dark:text-zinc-100">
-          <Building2 size={16} className="text-zinc-400" /> Role description
+          <Building2 size={16} className="text-zinc-400" /> Role Description
         </h2>
         <p className="whitespace-pre-wrap text-sm leading-6 text-zinc-700 dark:text-zinc-300">
           {job.description}
@@ -351,7 +351,7 @@ export function EmployerJobManage({ role }: { role: "employer" | "staff" }) {
       {/* Skills */}
       <section className="mb-6 rounded-3xl bg-white p-6 shadow-[0_4px_16px_rgba(15,23,42,0.06)] dark:shadow-[0_4px_16px_rgba(0,0,0,0.35)] dark:bg-zinc-900">
         <h2 className="mb-3 flex items-center gap-2 text-base font-semibold tracking-tight text-zinc-900 dark:text-zinc-100">
-          <Sparkles size={16} className="text-brand-500" /> Required skills
+          <Sparkles size={16} className="text-brand-500" /> Required Skills
         </h2>
         {job.skills.length === 0 ? (
           <p className="text-sm text-zinc-500 dark:text-zinc-400">None specified.</p>
@@ -372,7 +372,7 @@ export function EmployerJobManage({ role }: { role: "employer" | "staff" }) {
       {/* Benefits */}
       <section className="mb-6 rounded-3xl bg-white p-6 shadow-[0_4px_16px_rgba(15,23,42,0.06)] dark:shadow-[0_4px_16px_rgba(0,0,0,0.35)] dark:bg-zinc-900">
         <h2 className="mb-3 flex items-center gap-2 text-base font-semibold tracking-tight text-zinc-900 dark:text-zinc-100">
-          <HeartPulse size={16} className="text-rose-500" /> Employee benefits
+          <HeartPulse size={16} className="text-rose-500" /> Employee Benefits
         </h2>
         {(!job.benefits || job.benefits.length === 0) ? (
           <p className="text-sm text-zinc-500 dark:text-zinc-400">None listed.</p>

@@ -401,13 +401,13 @@ export function EmployerCandidates() {
       <main className="mx-auto max-w-7xl px-5 py-6 md:py-10">
         <header className="mb-6">
           <p className="text-xs font-semibold uppercase tracking-widest text-sky-600 dark:text-sky-400">
-            Search candidates
+            Search Candidates
           </p>
           <h1 className="mt-2 text-2xl font-semibold tracking-tight md:text-3xl">
-            {filteredCount} Candidate{filteredCount === 1 ? "" : "s"} in View
+            {filteredCount} Candidate{filteredCount === 1 ? "" : "s"} In View
             {filtered.hasSignal && filtered.matched.length > 0 ? (
               <span className="ml-2 rounded-full bg-emerald-100 px-2.5 py-1 align-middle text-[13px] font-bold text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300">
-                {filtered.matched.length} relevant
+                {filtered.matched.length} Relevant
               </span>
             ) : null}
           </h1>
@@ -448,7 +448,7 @@ export function EmployerCandidates() {
               to="/employer/subscribe"
               className="inline-flex shrink-0 items-center gap-2 rounded-2xl bg-gradient-to-r from-sky-500 to-sky-700 px-4 py-2 text-sm font-semibold text-white shadow-md shadow-sky-500/30 transition hover:shadow-lg"
             >
-              See plans
+              See Plans
             </Link>
           </motion.div>
         )}
@@ -521,6 +521,7 @@ export function EmployerCandidates() {
               <MapListLayout
                 markerTone="sky"
                 listColumns={1}
+                scrollKey={page}
                 items={(() => {
                   const rowFor = (
                     { user, profile }: { user: User; profile: CandidateProfile },
@@ -572,7 +573,7 @@ export function EmployerCandidates() {
                       fullWidth: true,
                       listElement: (
                         <SectionSeparator
-                          label="Most relevant"
+                          label="Most Relevant"
                           count={filtered.matched.length}
                           tone="brand"
                         />
@@ -590,7 +591,7 @@ export function EmployerCandidates() {
                       fullWidth: true,
                       listElement: (
                         <SectionSeparator
-                          label="All candidates"
+                          label="All Candidates"
                           count={total}
                           tone="zinc"
                         />
@@ -604,17 +605,20 @@ export function EmployerCandidates() {
                   }
                   return rows;
                 })()}
+                footer={
+                  filteredCount > 0 && totalPages > 1 ? (
+                    <Pagination
+                      page={page}
+                      totalPages={totalPages}
+                      totalItems={filtered.others.length}
+                      pageSize={PAGE_SIZE}
+                      onChange={setPage}
+                    />
+                  ) : null
+                }
                 emptyState={<EmptyState />}
               />
             )}
-
-            <Pagination
-              page={page}
-              totalPages={totalPages}
-              totalItems={filtered.others.length}
-              pageSize={PAGE_SIZE}
-              onChange={setPage}
-            />
           </div>
         </div>
       </main>
@@ -870,11 +874,11 @@ function CandidateCard({
           )}
           {weeklyApps >= 3 ? (
             <Pill icon={<Flame size={10} />} color="rose">
-              Active · {weeklyApps} this week
+              Active · {weeklyApps} This Week
             </Pill>
           ) : weeklyApps > 0 ? (
             <Pill icon={<TrendingUp size={10} />} color="emerald">
-              Applied recently
+              Applied Recently
             </Pill>
           ) : null}
         </div>

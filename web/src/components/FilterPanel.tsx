@@ -50,9 +50,9 @@ const TYPE_LABELS: Record<JobType, string> = {
 };
 
 const POSTED_LABELS: Record<PostedBucket, string> = {
-  "24h": "Last 24 hours",
-  "7d": "Last 7 days",
-  "30d": "Last 30 days",
+  "24h": "Last 24 Hours",
+  "7d": "Last 7 Days",
+  "30d": "Last 30 Days",
   any: "Anytime",
 };
 
@@ -173,7 +173,7 @@ export function FilterPanel({ state, counts, onChange, onClose }: Props) {
         {taluksInPlay.length > 0 && (
           <FacetGroup
             icon={<MapPin size={14} className="text-rose-400" />}
-            title={`Taluk in ${state.districts.length === 1 ? districts.find((d) => d.id === state.districts[0])?.name : `${state.districts.length} districts`}`}
+            title={`Taluk in ${state.districts.length === 1 ? districts.find((d) => d.id === state.districts[0])?.name : `${state.districts.length} Districts`}`}
             open
             onToggle={() => {}}
           >
@@ -204,7 +204,7 @@ export function FilterPanel({ state, counts, onChange, onClose }: Props) {
         >
           <div className="space-y-1">
             <RadioRow
-              label="All fields"
+              label="All Fields"
               count={(counts.field.it ?? 0) + (counts.field.non_it ?? 0)}
               checked={state.field === "all"}
               onChange={() => onChange({ ...state, field: "all" })}
@@ -245,7 +245,7 @@ export function FilterPanel({ state, counts, onChange, onClose }: Props) {
             }}
             className="h-10 w-full rounded-lg border border-zinc-200 bg-white px-3 text-sm text-zinc-900 focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500/15 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-100"
           >
-            <option value="">All industries</option>
+            <option value="">All Industries</option>
             {industriesForField(state.field === "it" ? "IT" : state.field === "non_it" ? "NON_IT" : undefined).map((label) => (
               <option key={label} value={label}>{label}</option>
             ))}
@@ -263,7 +263,7 @@ export function FilterPanel({ state, counts, onChange, onClose }: Props) {
             onChange={(e) => onChange({ ...state, department: e.target.value })}
             className="h-10 w-full rounded-lg border border-zinc-200 bg-white px-3 text-sm text-zinc-900 focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500/15 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-100"
           >
-            <option value="">All departments</option>
+            <option value="">All Departments</option>
             {departmentsForIndustry(state.industry || undefined).map((label) => (
               <option key={label} value={label}>{label}</option>
             ))}
@@ -272,7 +272,7 @@ export function FilterPanel({ state, counts, onChange, onClose }: Props) {
 
         <FacetGroup
           icon={<Briefcase size={14} className="text-violet-500" />}
-          title="Job type"
+          title="Job Type"
           open={openSections.type}
           onToggle={() => toggleSection("type")}
         >

@@ -116,7 +116,7 @@ export function CandidateFilterPanel({
           </div>
           <div>
             <h2 className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">Filters</h2>
-            <p className="text-[11px] font-semibold text-sky-600 dark:text-sky-400">{matchCount} candidates Suitable</p>
+            <p className="text-[11px] font-semibold text-sky-600 dark:text-sky-400">{matchCount} Candidates Suitable</p>
           </div>
         </div>
         <div className="flex items-center gap-2">
@@ -145,7 +145,7 @@ export function CandidateFilterPanel({
       <div className="flex-1 space-y-1 overflow-y-auto px-4 py-3">
           <Facet
           icon={<Sparkles size={14} className="text-indigo-500" />}
-          title="Skills required"
+          title="Skills Required"
           open={openSections.skills}
           onToggle={() => toggleSection("skills")}
         >
@@ -159,7 +159,7 @@ export function CandidateFilterPanel({
         </Facet>
         <Facet
           icon={<ArrowDownWideNarrow size={14} className="text-sky-500" />}
-          title="Sort by"
+          title="Sort By"
           open={openSections.sort}
           onToggle={() => toggleSection("sort")}
         >
@@ -189,7 +189,7 @@ export function CandidateFilterPanel({
         {activeJobs.length > 0 && (
           <Facet
             icon={<MapPin size={14} className="text-emerald-500" />}
-            title="Near my job"
+            title="Near My Job"
             open={openSections.near}
             onToggle={() => toggleSection("near")}
           >
@@ -251,7 +251,7 @@ export function CandidateFilterPanel({
 
         <Facet
           icon={<MapPin size={14} className="text-rose-500" />}
-          title="Preferred district"
+          title="Preferred District"
           open={openSections.district}
           onToggle={() => toggleSection("district")}
         >
@@ -345,7 +345,7 @@ export function CandidateFilterPanel({
             }}
             className="h-10 w-full rounded-lg border border-zinc-200 bg-white px-3 text-sm text-zinc-900 focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500/15 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-100"
           >
-            <option value="">All industries</option>
+            <option value="">All Industries</option>
             {industriesForField(state.field === "it" ? "IT" : state.field === "non_it" ? "NON_IT" : undefined).map((label) => (
               <option key={label} value={label}>{label}</option>
             ))}
@@ -363,7 +363,7 @@ export function CandidateFilterPanel({
             onChange={(e) => onChange({ ...state, department: e.target.value || undefined })}
             className="h-10 w-full rounded-lg border border-zinc-200 bg-white px-3 text-sm text-zinc-900 focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500/15 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-100"
           >
-            <option value="">All departments</option>
+            <option value="">All Departments</option>
             {departmentsForIndustry(state.industry ?? undefined).map((label) => (
               <option key={label} value={label}>{label}</option>
             ))}
@@ -372,7 +372,7 @@ export function CandidateFilterPanel({
 
         <Facet
           icon={<Briefcase size={14} className="text-violet-500" />}
-          title="Candidate type"
+          title="Candidate Type"
           open={openSections.type}
           onToggle={() => toggleSection("type")}
         >
@@ -402,7 +402,7 @@ export function CandidateFilterPanel({
         {state.candidateType === "experienced" && (
           <Facet
             icon={<Briefcase size={14} className="text-violet-500" />}
-            title="Years of experience"
+            title="Years of Experience"
             open={openSections.years || true}
             onToggle={() => toggleSection("years")}
           >
@@ -423,7 +423,7 @@ export function CandidateFilterPanel({
 
         <Facet
           icon={<GraduationCap size={14} className="text-orange-500" />}
-          title="Education level"
+          title="Education Level"
           open={openSections.education}
           onToggle={() => toggleSection("education")}
         >
@@ -467,7 +467,7 @@ export function CandidateFilterPanel({
             className="inline-flex w-full items-center justify-center gap-2 rounded-full border border-brand-500 px-3 py-2 text-xs font-semibold text-brand-700 transition hover:bg-brand-50 dark:border-brand-400 dark:text-brand-300 dark:hover:bg-brand-500/10"
           >
             <Bookmark size={13} />
-            Save this search ({activeFacetCount(state)} facet{activeFacetCount(state) === 1 ? "" : "s"})
+            Save This Search ({activeFacetCount(state)} Facet{activeFacetCount(state) === 1 ? "" : "s"})
           </button>
         </div>
       )}

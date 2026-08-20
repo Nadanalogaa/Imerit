@@ -31,12 +31,12 @@ const PAGE_SIZE = 25;
 type RoleFilter = "ALL" | ApiUserRole | "STAFF";
 
 const ROLE_TABS: { key: RoleFilter; label: string; icon: React.ReactNode }[] = [
- { key: "ALL", label: "All users", icon: <Users2 size={14} /> },
+ { key: "ALL", label: "All Users", icon: <Users2 size={14} /> },
  { key: "CANDIDATE", label: "Candidates", icon: <UserRound size={14} /> },
  { key: "EMPLOYER", label: "Employers", icon: <Building2 size={14} /> },
  { key: "STAFF", label: "Staff", icon: <UserCog size={14} /> },
  { key: "ADMIN", label: "Admins", icon: <Shield size={14} /> },
- { key: "SUPER_ADMIN", label: "Super admins", icon: <Crown size={14} /> },
+ { key: "SUPER_ADMIN", label: "Super Admins", icon: <Crown size={14} /> },
 ];
 
 const ROLE_BADGE: Record<string, string> = {
@@ -161,10 +161,10 @@ export function SuperAdminUsers() {
  <div className="mb-6 flex flex-wrap items-end justify-between gap-4">
  <div>
  <p className="inline-flex items-center gap-1.5 rounded-full bg-gradient-to-r from-rose-500/15 to-amber-500/10 px-3 py-1 text-xs font-semibold uppercase tracking-widest text-rose-700 dark:text-rose-300">
- <Users2 size={13} /> User management
+ <Users2 size={13} /> User Management
  </p>
  <h1 className="mt-2 text-2xl font-semibold tracking-tight md:text-3xl">
- All users
+ All Users
  </h1>
  <p className="mt-1 text-sm text-zinc-500 dark:text-zinc-400">
  Delete → sends to trash (email stays locked). Purge from trash to free the email for re-registration.
@@ -175,7 +175,7 @@ export function SuperAdminUsers() {
  to="/super-admin/trash"
  className="inline-flex items-center gap-2 rounded-xl border border-zinc-300 bg-white px-4 py-2 text-sm font-semibold text-zinc-700 shadow-sm transition hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200 dark:hover:bg-zinc-800"
  >
- <Trash2 size={15} /> View trash
+ <Trash2 size={15} /> View Trash
  </Link>
  </div>
  </div>
@@ -233,14 +233,14 @@ export function SuperAdminUsers() {
  onClick={() => setSelected(new Set())}
  className="rounded-lg border border-rose-300 bg-white px-3 py-1.5 text-xs font-semibold text-rose-700 transition hover:bg-rose-50 dark:border-rose-500/40 dark:bg-transparent dark:text-rose-200 dark:hover:bg-rose-500/20"
  >
- Clear selection
+ Clear Selection
  </button>
  <button
  type="button"
  onClick={() => setConfirmOpen(true)}
  className="inline-flex items-center gap-1.5 rounded-lg bg-rose-600 px-3 py-1.5 text-xs font-semibold text-white shadow-sm transition hover:bg-rose-700"
  >
- <Trash2 size={13} /> Move to trash
+ <Trash2 size={13} /> Move to Trash
  </button>
  </div>
  </div>

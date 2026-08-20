@@ -198,7 +198,7 @@ export function SuperAdminAdmins() {
  </div>
 
  <div className="mb-6">
- <p className="text-xs font-semibold uppercase tracking-widest text-violet-600 dark:text-violet-400">Privileged accounts</p>
+ <p className="text-xs font-semibold uppercase tracking-widest text-violet-600 dark:text-violet-400">Privileged Accounts</p>
  <h1 className="mt-2 text-2xl font-semibold tracking-tight md:text-3xl">Admins & Super Admins</h1>
  <p className="mt-2 text-sm text-zinc-600 dark:text-zinc-400">
  Create new admin accounts here. They sign in via the same one-time email code flow as candidates — no separate password is set or shared.
@@ -229,7 +229,7 @@ export function SuperAdminAdmins() {
  <select value={newRole} onChange={(e) => setNewRole(e.target.value as InviteRole)} className="w-full rounded-lg bg-white px-3 py-2.5 text-sm focus:border-violet-500 focus:outline-none focus:ring-2 focus:ring-violet-500/20 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800">
  <option value="ADMIN">Admin</option>
  <option value="SUPER_ADMIN">Super Admin</option>
- <option value="STAFF">Staff (post jobs for employers)</option>
+ <option value="STAFF">Staff (Post Jobs for Employers)</option>
  </select>
  </div>
  <div className="flex items-end">

@@ -79,9 +79,9 @@ export function AdminSubscriptions() {
  </div>
 
  <div className="mb-6 grid gap-4 sm:grid-cols-3">
- <RevTile icon={<IndianRupee size={20} />} label="Total revenue" value={`₹${totalRevenue.toLocaleString("en-IN")}`} accent="from-emerald-500 to-teal-500" />
- <RevTile icon={<TrendingUp size={20} />} label="Active revenue" value={`₹${activeRevenue.toLocaleString("en-IN")}`} accent="from-brand-500 to-amber-500" />
- <RevTile icon={<IndianRupee size={20} />} label="Avg ticket" value={`₹${subs.length ? Math.round(totalRevenue / subs.length).toLocaleString("en-IN") : 0}`} accent="from-sky-500 to-cyan-500" />
+ <RevTile icon={<IndianRupee size={20} />} label="Total Revenue" value={`₹${totalRevenue.toLocaleString("en-IN")}`} accent="from-emerald-500 to-teal-500" />
+ <RevTile icon={<TrendingUp size={20} />} label="Active Revenue" value={`₹${activeRevenue.toLocaleString("en-IN")}`} accent="from-brand-500 to-amber-500" />
+ <RevTile icon={<IndianRupee size={20} />} label="Avg Ticket" value={`₹${subs.length ? Math.round(totalRevenue / subs.length).toLocaleString("en-IN") : 0}`} accent="from-sky-500 to-cyan-500" />
  </div>
 
  <div className="overflow-hidden rounded-3xl bg-white shadow-[0_4px_16px_rgba(15,23,42,0.06)] dark:shadow-[0_4px_16px_rgba(0,0,0,0.35)] dark:bg-zinc-900">
