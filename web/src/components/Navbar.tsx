@@ -122,6 +122,14 @@ export function Navbar() {
       setActiveAnchor("");
       return;
     }
+    // When the user arrives via an explicit hash link like `/#contact`,
+    // keep the clicked section highlighted instead of letting the
+    // scroll-spy briefly or permanently hand the active state to the
+    // next overlapping section.
+    if (location.hash) {
+      setActiveAnchor(location.hash);
+      return;
+    }
     const ids = ["home", "why", "about", "contact"];
     const nodes = ids
       .map((id) => document.getElementById(id))
