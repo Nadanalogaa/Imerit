@@ -193,6 +193,10 @@ export interface EmployerCandidateRow {
   preferredLocation: string | null;
   preferredLat: number | null;
   preferredLng: number | null;
+  /** Multi-select district IDs the candidate is open to working in. */
+  preferredDistricts: string[] | null;
+  preferredDistrictId: string | null;
+  currentDistrictId: string | null;
   currentLat: number | null;
   currentLng: number | null;
   selectedTemplateId: string | null;

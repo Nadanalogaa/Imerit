@@ -88,6 +88,12 @@ export async function searchCandidatesForEmployer(args: CandidateSearchFilters) 
         preferredLocation: true,
         preferredLat: true,
         preferredLng: true,
+        // District IDs power the CandidateFilterPanel's "Preferred
+        // district" facet — without these the panel thinks nobody has
+        // set a district even when every candidate has one.
+        preferredDistricts: true,
+        preferredDistrictId: true,
+        currentDistrictId: true,
         currentLat: true,
         currentLng: true,
         selectedTemplateId: true,
