@@ -15,7 +15,6 @@ import {
  ShieldCheck,
  X,
 } from "lucide-react";
-import { Navbar } from "../components/Navbar";
 import { useJobs, FIELD_LABEL, TYPE_LABEL, relativeTime } from "../store/jobs";
 import { useAuth } from "../store/auth";
 import { useApplications } from "../store/applications";
@@ -64,7 +63,6 @@ export function JobDetail() {
  if (!job) {
  return (
  <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950">
- <Navbar />
  <main className="mx-auto max-w-7xl px-5 py-6 md:py-10 text-center text-sm text-zinc-500 dark:text-zinc-400">Loading job…</main>
  </div>
  );
@@ -116,8 +114,6 @@ export function JobDetail() {
 
  return (
  <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950">
- <Navbar />
-
  <main className="mx-auto max-w-7xl px-5 py-6 md:py-6 md:py-10">
  <div className="mb-6 flex items-center justify-between">
  <Link

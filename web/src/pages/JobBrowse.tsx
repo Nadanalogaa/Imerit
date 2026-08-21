@@ -13,7 +13,6 @@ import {
  X,
  Bookmark,
 } from "lucide-react";
-import { Navbar } from "../components/Navbar";
 import {
  useJobs,
  type Job,
@@ -332,8 +331,6 @@ export function JobBrowse() {
 
  return (
  <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950">
- <Navbar />
-
  <main className="mx-auto max-w-7xl px-5 py-6 md:py-6 md:py-10">
  {/* Header — title/count on the left, anchor toggle inline on the right */}
  <header className="mb-5 flex flex-col gap-3 md:flex-row md:items-end md:justify-between md:gap-4">

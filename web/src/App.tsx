@@ -57,6 +57,7 @@ import { LegalPrivacy } from "./pages/LegalPrivacy";
 import { RequireAuth, RedirectIfAuthed } from "./components/RequireAuth";
 import { ToastHost } from "./components/ToastHost";
 import { LegalDisclaimer } from "./pages/LegalDisclaimer";
+import { PublicLayout } from "./components/PublicLayout";
 export default function App() {
   // Restore the session on first paint when VITE_API_URL is set — pings
   // /auth/me, swaps any stale localStorage user for the canonical record.
@@ -92,13 +93,15 @@ export default function App() {
       <ScrollToTop />
       <ToastHost />
       <Routes>
-        <Route path="/" element={<LandingOrDashboard />} />
+        <Route element={<PublicLayout />}>
+          <Route path="/" element={<LandingOrDashboard />} />
 
-        {/* Public jobs — visitors can browse and read job detail without
-            signing in. Apply / Save gate to /candidate/register when
-            they're not authenticated. */}
-        <Route path="/jobs" element={<JobBrowse />} />
-        <Route path="/jobs/:id" element={<JobDetail />} />
+          {/* Public jobs — visitors can browse and read job detail without
+              signing in. Apply / Save gate to /candidate/register when
+              they're not authenticated. */}
+          <Route path="/jobs" element={<JobBrowse />} />
+          <Route path="/jobs/:id" element={<JobDetail />} />
+        </Route>
 
         <Route path="/candidate" element={<Navigate to="/candidate/register" replace />} />
         <Route
