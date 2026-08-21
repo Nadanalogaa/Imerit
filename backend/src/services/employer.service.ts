@@ -99,6 +99,35 @@ export async function searchCandidatesForEmployer(args: CandidateSearchFilters) 
         selectedTemplateId: true,
         moderationStatus: true,
         updatedAt: true,
+        // Education rows drive the "Education Level" facet on the
+        // employer filter panel. Without them the client-side
+        // `matchesFilter` predicate sees an empty array and any
+        // selection zeros the visible pool. Cheap read — most
+        // candidates have ≤8 education rows.
+        education: {
+          select: {
+            level: true,
+            enabled: true,
+            passedOutYear: true,
+            percentage: true,
+            institution: true,
+            degreeName: true,
+            specialization: true,
+          },
+        },
+        // Experiences let the "Search name, skill, company,
+        // specialization…" text search actually hit company + role
+        // strings — the placeholder promises it, so we need the data.
+        experiences: {
+          select: {
+            id: true,
+            company: true,
+            role: true,
+            fromDate: true,
+            toDate: true,
+          },
+          orderBy: { fromDate: "desc" },
+        },
         user: {
           select: { id: true, name: true, email: true, mobile: true, createdAt: true },
         },

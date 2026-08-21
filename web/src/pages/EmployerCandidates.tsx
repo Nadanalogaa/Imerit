@@ -20,7 +20,7 @@ import {
 } from "lucide-react";
 import { Navbar } from "../components/Navbar";
 import { useAuth, allUsers, type User } from "../store/auth";
-import { useProfile, type CandidateProfile } from "../store/profile";
+import { useProfile, type CandidateProfile, type EducationLevel } from "../store/profile";
 import { useSubscriptions } from "../store/subscriptions";
 import { useApplications } from "../store/applications";
 import { useJobs, isExpired } from "../store/jobs";
@@ -47,6 +47,23 @@ import { matchScore as candidateJobScore } from "../lib/matcher";
 /** Frozen empty fallback for the shortlist selector — see the note on the
  *  Zustand snapshot cache in RecentlyViewedStrip. */
 const EMPTY_SHORTLIST: string[] = [];
+
+/** API's UPPERCASE `EducationLevel` enum → the frontend's lowercase
+ *  string. Kept local to the page (rather than importing the store's
+ *  private map) so this file's mapping stays self-contained. */
+const EDU_LEVEL_FROM_API: Record<
+  "TENTH" | "TWELFTH" | "DIPLOMA" | "UG" | "PG" | "MPHIL" | "PHD" | "OTHER",
+  EducationLevel
+> = {
+  TENTH: "10th",
+  TWELFTH: "12th",
+  DIPLOMA: "diploma",
+  UG: "ug",
+  PG: "pg",
+  MPHIL: "mphil",
+  PHD: "phd",
+  OTHER: "other",
+};
 
 export function EmployerCandidates() {
   const employer = useAuth((s) => s.currentUser)!;
@@ -89,6 +106,15 @@ export function EmployerCandidates() {
           : filters.candidateType === "fresher"
             ? "FRESHER"
             : "EXPERIENCED",
+        // Server-side narrowing for the three facets whose predicates
+        // live in the DB. District is a multi-select on the client;
+        // we send the first ID when exactly one is picked so the
+        // narrow-server-then-refine-client pattern still works, then
+        // the client-side `matchesFilter` handles multi-district
+        // intersection over the returned page.
+        districtId: filters.districtIds.length === 1 ? filters.districtIds[0] : undefined,
+        industry: filters.industry || undefined,
+        department: filters.department || undefined,
         search: searchDebounced || undefined,
         page: 1,
         pageSize: 60,
@@ -107,7 +133,7 @@ export function EmployerCandidates() {
       alive = false;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [searchDebounced, filters.field, filters.candidateType]);
+  }, [searchDebounced, filters.field, filters.candidateType, filters.districtIds, filters.industry, filters.department]);
 
   /* --------------------- source pool ---------------------- */
 
@@ -145,8 +171,30 @@ export function EmployerCandidates() {
           currentDistrictId: r.currentDistrictId ?? undefined,
           currentLat: r.currentLat ?? undefined,
           currentLng: r.currentLng ?? undefined,
+          // Industry / Department drive the two facets that were
+          // silently zeroing the matchCount when picked.
+          industry: r.industry ?? undefined,
+          department: r.department ?? undefined,
           selectedTemplateId: (r.selectedTemplateId?.toLowerCase() ?? undefined) as CandidateProfile["selectedTemplateId"],
-          education: [],
+          // Education rows — map the API's UPPERCASE enum to the
+          // frontend's lowercase EducationLevel so `hardPass` can
+          // compare them against the picked education-level facets.
+          education: (r.education ?? []).map((e) => ({
+            level: EDU_LEVEL_FROM_API[e.level],
+            enabled: e.enabled,
+            passedOutYear: e.passedOutYear ?? undefined,
+            percentage: e.percentage ?? undefined,
+            institution: e.institution ?? undefined,
+            degreeName: e.degreeName ?? undefined,
+            specialization: e.specialization ?? undefined,
+          })),
+          // Experiences let the free-text search hit company + role.
+          experiences: (r.experiences ?? []).map((x) => ({
+            company: x.company,
+            role: x.role,
+            fromDate: x.fromDate,
+            toDate: x.toDate ?? null,
+          })),
           updatedAt: r.updatedAt,
         },
       }));
@@ -208,6 +256,13 @@ export function EmployerCandidates() {
     const hardPass = (profile: CandidateProfile): boolean => {
       if (filters.field && profile.field !== filters.field) return false;
       if (filters.candidateType && profile.type !== filters.candidateType) return false;
+      // Industry + Department are hard filters too — earlier they only
+      // lived in `matchesFilter`, which was called for the final list
+      // but not for `hardPass` (which builds the ranking pool). That
+      // mismatch meant the matchCount pill and the visible list could
+      // silently disagree.
+      if (filters.industry && (profile.industry ?? "") !== filters.industry) return false;
+      if (filters.department && (profile.department ?? "") !== filters.department) return false;
       if (filters.yearsMin != null || filters.yearsMax != null) {
         const y = profile.yearsOfExperience ?? -1;
         if (filters.yearsMin != null && y < filters.yearsMin) return false;

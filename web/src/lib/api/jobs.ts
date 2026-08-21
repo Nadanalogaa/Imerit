@@ -199,6 +199,27 @@ export interface EmployerCandidateRow {
   currentDistrictId: string | null;
   currentLat: number | null;
   currentLng: number | null;
+  /** Naukri-style taxonomy — drives the Industry / Department facets. */
+  industry: string | null;
+  department: string | null;
+  /** Education rows the "Education Level" facet checks against. */
+  education: Array<{
+    level: "TENTH" | "TWELFTH" | "DIPLOMA" | "UG" | "PG" | "MPHIL" | "PHD" | "OTHER";
+    enabled: boolean;
+    passedOutYear: number | null;
+    percentage: number | null;
+    institution: string | null;
+    degreeName?: string | null;
+    specialization?: string | null;
+  }>;
+  /** Work history rows — powers company/role hits in the free-text search. */
+  experiences: Array<{
+    id: string;
+    company: string;
+    role: string;
+    fromDate: string;
+    toDate: string | null;
+  }>;
   selectedTemplateId: string | null;
   moderationStatus: "PENDING" | "APPROVED" | "REJECTED";
   updatedAt: string;
