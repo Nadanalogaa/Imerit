@@ -347,11 +347,16 @@ export default function App() {
 }
 
 function ScrollToTop() {
-  const { pathname } = useLocation();
+  // `key` changes on EVERY navigation — including clicks that don't
+  // change the pathname (e.g. hitting "Browse Jobs" while already on
+  // /candidate/jobs). Depending on it alongside pathname makes the
+  // scroll-to-top fire on those repeat clicks too, which matches
+  // what visitors expect from a nav bar.
+  const { pathname, key } = useLocation();
 
   useEffect(() => {
     window.scrollTo(0, 0);
-  }, [pathname]);
+  }, [pathname, key]);
 
   return null;
 }

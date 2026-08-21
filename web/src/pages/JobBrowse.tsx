@@ -332,29 +332,27 @@ export function JobBrowse() {
  return (
  <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950">
  <main className="mx-auto max-w-7xl px-5 py-6 md:py-6 md:py-10">
- {/* Header — title/count on the left, anchor toggle inline on the right */}
- <header className="mb-5 flex flex-col gap-3 md:flex-row md:items-end md:justify-between md:gap-4">
- <div>
- <p className="text-xs font-semibold uppercase tracking-widest text-brand-600 dark:text-brand-400">
+ {/* Compact header — eyebrow + count all on one line, anchor toggle
+     inline on the right when the candidate has two anchors to pick
+     between. Kills the old two-row stack + separate anchor block. */}
+ <header className="mb-3 flex flex-wrap items-center gap-x-3 gap-y-2">
+ <span className="inline-flex items-center gap-2 text-[11px] font-bold uppercase tracking-widest text-brand-600 dark:text-brand-400">
  Browse Jobs
- </p>
- <h1 className="mt-1 text-2xl font-semibold tracking-tight md:text-3xl">
- Openings Across Tamil Nadu
- </h1>
- <p className="mt-1 text-[13px] text-zinc-600 dark:text-zinc-400">
+ </span>
+ <span className="text-zinc-300 dark:text-zinc-700">·</span>
+ <span className="text-[13px] font-semibold text-zinc-700 dark:text-zinc-200">
  {filteredCount} {filteredCount === 1 ? "Job" : "Jobs"} In View
- {filtered.hasSignal && filtered.matched.length > 0 ? (
+ </span>
+ {filtered.hasSignal && filtered.matched.length > 0 && (
  <>
-   <span className="mx-2 text-zinc-400 dark:text-zinc-600">·</span>
-   <span className="rounded-full bg-emerald-100 px-2 py-0.5 align-middle text-[11.5px] font-bold text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300">
-     {filtered.matched.length} Relevant
-   </span>
+ <span className="text-zinc-300 dark:text-zinc-700">·</span>
+ <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-[11.5px] font-bold text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300">
+ {filtered.matched.length} Relevant
+ </span>
  </>
- ) : null}
- </p>
- </div>
+ )}
  {hasDistinctPreferred && (
- <div className="inline-flex shrink-0 items-center gap-0.5 self-start rounded-full border border-zinc-200 bg-white p-0.5 text-[11px] font-semibold dark:border-zinc-700 dark:bg-zinc-900 md:self-end">
+ <div className="ml-auto inline-flex shrink-0 items-center gap-0.5 rounded-full border border-zinc-200 bg-white p-0.5 text-[11px] font-semibold dark:border-zinc-700 dark:bg-zinc-900">
  <button
  onClick={() => setAnchor("current")}
  className={[
@@ -381,9 +379,12 @@ export function JobBrowse() {
  )}
  </header>
 
- {/* Top control bar — search + sort + mobile Filters button. */}
- <div className="mb-3 grid gap-3 md:grid-cols-[1fr_auto_auto]">
- <div className="relative">
+ {/* Search row — search box + anchor context (Near X · Within N km)
+     folded in inline + sort + Filters. Hides the sort dropdown for
+     anonymous visitors (public /jobs) where the only option would
+     be "Newest" — that's not really a choice, so we drop the noise. */}
+ <div className="mb-3 flex flex-wrap items-center gap-2">
+ <div className="relative min-w-[220px] flex-1">
  <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-zinc-400" />
  <input
  value={search}
@@ -392,18 +393,36 @@ export function JobBrowse() {
  className="h-10 w-full rounded-lg border border-zinc-200 bg-white pl-10 pr-3 text-sm placeholder:text-zinc-400 focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500/15 dark:border-zinc-700 dark:bg-zinc-900"
  />
  </div>
+ {anchorCoords && (
+ <div className="inline-flex items-center gap-1.5 rounded-lg border border-emerald-200/70 bg-emerald-50/60 px-2.5 py-1.5 text-[12px] dark:border-emerald-500/30 dark:bg-emerald-500/10">
+ <Sparkles size={13} className="text-emerald-600 dark:text-emerald-400" />
+ <span className="font-semibold text-emerald-700 dark:text-emerald-400">
+ Near Your {anchor === "current" ? "Home" : "Preferred"}
+ </span>
+ <span className="text-emerald-400">·</span>
+ <span className="font-semibold text-zinc-700 dark:text-zinc-300">Within</span>
+ <select
+ value={radiusKm}
+ onChange={(e) => setRadiusKm(Number(e.target.value))}
+ className="rounded-md border border-emerald-300 bg-white px-1.5 py-0.5 text-[11px] font-bold text-emerald-700 focus:outline-none dark:border-emerald-500/30 dark:bg-zinc-900 dark:text-emerald-400"
+ >
+ {radiusOptions.map((o) => (
+ <option key={o.value} value={o.value}>{o.label}</option>
+ ))}
+ </select>
+ </div>
+ )}
+ {user && (
  <Select
  value={sortBy}
  onChange={(v) => setSortBy(v as typeof sortBy)}
- // Drop the "smart" option for anonymous/no-profile visitors —
- // it degenerates to plain Newest and would double up with the
- // explicit "Newest" entry below.
  options={[
  ...(profile ? [{ id: "smart", label: "Most Relevant" }] : []),
  ...(anchorCoords ? [{ id: "nearest", label: "Nearest First" }] : []),
  { id: "newest", label: "Newest" },
  ]}
  />
+ )}
  <button
  type="button"
  onClick={() => setFiltersOpen(true)}
@@ -473,40 +492,21 @@ export function JobBrowse() {
  </div>
  )}
 
- {/* Anchor controls — kept inline above the split when an anchor exists */}
+ {/* "Most Relevant Only" toggle — only shown when there's actually
+     something to rank against (profile OR search query). The old
+     anchor + Within strip lives inline in the search row above. */}
  {(profile || anchorCoords) && (
- <div className="mb-3 flex flex-wrap items-center gap-3 rounded-lg border border-emerald-200/70 bg-emerald-50/60 px-3 py-2 text-[12px] dark:border-emerald-500/30 dark:bg-emerald-500/10">
- <span className="inline-flex items-center gap-1.5 text-emerald-700 dark:text-emerald-400">
- <Sparkles size={13} />
- {anchorCoords ? `Near Your ${anchor === "current" ? "Home" : "Preferred Location"}` : "Sorted by Relevance"}
- </span>
- {anchorCoords && (
- <div className="inline-flex items-center gap-1.5">
- <Navigation size={11} className="text-emerald-600 dark:text-emerald-400" />
- <span className="font-semibold text-zinc-700 dark:text-zinc-300">Within</span>
- <select
- value={radiusKm}
- onChange={(e) => setRadiusKm(Number(e.target.value))}
- className="rounded-md border border-emerald-300 bg-white px-2 py-0.5 text-[11px] font-bold text-emerald-700 focus:outline-none dark:border-emerald-500/30 dark:bg-zinc-900 dark:text-emerald-400"
- >
- {radiusOptions.map((o) => (
- <option key={o.value} value={o.value}>{o.label}</option>
- ))}
- </select>
- </div>
- )}
- <div className="ml-auto">
+ <div className="mb-3 flex justify-end">
  <Checkbox checked={bestOnly} onChange={setBestOnly} label="Most Relevant Only" tone="emerald" size="sm" />
- </div>
  </div>
  )}
 
  {/* Split: filter panel (lg+) | results */}
  <div className="grid gap-4 lg:grid-cols-[280px_1fr]">
- {/* Desktop sticky filter panel — height-capped so tall facet
-     stacks scroll internally instead of overflowing below the fold. */}
+ {/* Desktop filter panel — it grows with all facets so the page can scroll
+     naturally instead of trapping the user in a nested filter scrollbar. */}
  <div className="hidden lg:block">
- <div className="sticky top-24 max-h-[calc(100vh-8rem)] overflow-y-auto rounded-2xl">
+ <div className="rounded-2xl">
  <FilterPanel state={filters} counts={counts} onChange={setFilters} />
  </div>
  </div>
@@ -514,7 +514,7 @@ export function JobBrowse() {
  <div className="min-w-0">
             <MapListLayout
               markerTone="brand"
-              initialView="list"
+              initialView="split"
               listColumns={1}
               scrollKey={page}
               anchor={
