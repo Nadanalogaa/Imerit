@@ -514,6 +514,8 @@ export function JobBrowse() {
  <div className="min-w-0">
             <MapListLayout
               markerTone="brand"
+              initialView="list"
+              listColumns={1}
               scrollKey={page}
               anchor={
                 anchorCoords
