@@ -250,9 +250,13 @@ export function CandidateProfileForm() {
  if (step === 3) {
  const errs: Record<string, string> = {};
  if (!type) errs.type = "Pick Fresher or Experienced";
+ // Field applies to BOTH types now (shared IT/Non-IT selector).
+ // Without this validator, experienced candidates could save with
+ // field=NULL and then never surface for employers who filter by
+ // IT or Non-IT — silent invisibility.
+ if (type && !field) errs.field = "Pick IT or Non-IT";
  if (type === "fresher") {
  if (!internOrJob) errs.internOrJob = "Pick one";
- if (!field) errs.field = "Pick IT or Non-IT";
  if (field === "it") {
  if (!itSpecialization) errs.itSpecialization = "Pick a specialization";
  if (itLanguages.length === 0) errs.itLanguages = "Add at least one";
