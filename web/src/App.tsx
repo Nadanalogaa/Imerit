@@ -101,6 +101,28 @@ export default function App() {
               they're not authenticated. */}
           <Route path="/jobs" element={<JobBrowse />} />
           <Route path="/jobs/:id" element={<JobDetail />} />
+
+          {/* Authenticated candidate flows share the same shell — the
+              JobBrowse / JobDetail components stopped rendering their
+              own <Navbar /> when we moved chrome into PublicLayout, so
+              nesting these two routes here restores the navbar for
+              signed-in candidates too. RequireAuth still gates entry. */}
+          <Route
+            path="/candidate/jobs"
+            element={
+              <RequireAuth role="candidate">
+                <JobBrowse />
+              </RequireAuth>
+            }
+          />
+          <Route
+            path="/candidate/jobs/:id"
+            element={
+              <RequireAuth role="candidate">
+                <JobDetail />
+              </RequireAuth>
+            }
+          />
         </Route>
 
         <Route path="/candidate" element={<Navigate to="/candidate/register" replace />} />
@@ -134,22 +156,6 @@ export default function App() {
           element={
             <RequireAuth role="candidate">
               <CandidateProfilePreview />
-            </RequireAuth>
-          }
-        />
-        <Route
-          path="/candidate/jobs"
-          element={
-            <RequireAuth role="candidate">
-              <JobBrowse />
-            </RequireAuth>
-          }
-        />
-        <Route
-          path="/candidate/jobs/:id"
-          element={
-            <RequireAuth role="candidate">
-              <JobDetail />
             </RequireAuth>
           }
         />
