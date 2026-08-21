@@ -230,6 +230,8 @@ interface CandidateSearchQuery {
   field?: ApiFieldKind;
   type?: ApiCandidateType;
   districtId?: string;
+  industry?: string;
+  department?: string;
   search?: string;
   page?: number;
   pageSize?: number;
