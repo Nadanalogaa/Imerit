@@ -151,7 +151,7 @@ export function Navbar() {
     );
     nodes.forEach((n) => observer.observe(n));
     return () => observer.disconnect();
-  }, [appLinks, location.pathname]);
+  }, [appLinks, location.hash, location.pathname]);
 
   const isPublicLinkActive = (l: PublicLink): boolean => {
     if ("to" in l) return location.pathname === l.to || location.pathname.startsWith(l.to + "/");
