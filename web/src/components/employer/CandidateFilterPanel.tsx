@@ -255,41 +255,47 @@ export function CandidateFilterPanel({
           open={openSections.district}
           onToggle={() => toggleSection("district")}
         >
-          {availableDistrictIds.length === 0 ? (
-            <p className="text-[11px] text-zinc-500 dark:text-zinc-400">
-              No candidates have set a preferred district yet.
-            </p>
-          ) : (
-            <div className="flex flex-wrap gap-1.5 pr-1">
-              {availableDistrictIds.map((id) => {
-                const d = districts.find((x) => x.id === id);
-                if (!d) return null;
-                const selected = state.districtIds.includes(id);
-                return (
-                  <button
-                    key={id}
-                    type="button"
-                    onClick={() =>
-                      onChange({
-                        ...state,
-                        districtIds: selected
-                          ? state.districtIds.filter((x) => x !== id)
-                          : [...state.districtIds, id],
-                      })
-                    }
-                    className={[
-                      "rounded-full border px-2.5 py-1 text-[11px] font-semibold transition",
-                      selected
-                        ? "border-rose-500 bg-gradient-to-r from-rose-500 to-rose-600 text-white shadow-sm shadow-rose-500/30"
-                        : "border-rose-200 bg-rose-50 text-rose-700 hover:border-rose-400 dark:border-rose-500/25 dark:bg-rose-500/10 dark:text-rose-300",
-                    ].join(" ")}
-                  >
-                    {d.name}
-                  </button>
-                );
-              })}
-            </div>
-          )}
+          {/* Show EVERY Tamil Nadu district as a chip, not just the
+              districts represented in the currently-visible pool.
+              Previously this pulled from `availableDistrictIds` (derived
+              from `candidates`), which meant picking any narrowing
+              filter — or a district with zero candidates — collapsed
+              the entire chip strip and left the employer stranded. */}
+          <div className="flex flex-wrap gap-1.5 pr-1">
+            {districts.map((d) => {
+              const selected = state.districtIds.includes(d.id);
+              // Grey out districts nobody in the current pool is open
+              // to, so employers still get a hint of where the talent
+              // lives — but the chip stays clickable so the filter can
+              // still be applied (useful when the employer is scouting
+              // ahead of demand or the current pool is temporarily 0).
+              const hasCandidate = availableDistrictIds.includes(d.id);
+              return (
+                <button
+                  key={d.id}
+                  type="button"
+                  onClick={() =>
+                    onChange({
+                      ...state,
+                      districtIds: selected
+                        ? state.districtIds.filter((x) => x !== d.id)
+                        : [...state.districtIds, d.id],
+                    })
+                  }
+                  className={[
+                    "rounded-full border px-2.5 py-1 text-[11px] font-semibold transition",
+                    selected
+                      ? "border-rose-500 bg-gradient-to-r from-rose-500 to-rose-600 text-white shadow-sm shadow-rose-500/30"
+                      : hasCandidate
+                        ? "border-rose-200 bg-rose-50 text-rose-700 hover:border-rose-400 dark:border-rose-500/25 dark:bg-rose-500/10 dark:text-rose-300"
+                        : "border-zinc-200 bg-white text-zinc-400 hover:border-rose-300 hover:text-rose-500 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-500",
+                  ].join(" ")}
+                >
+                  {d.name}
+                </button>
+              );
+            })}
+          </div>
         </Facet>
 
         <Facet

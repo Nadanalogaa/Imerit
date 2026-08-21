@@ -106,13 +106,13 @@ export function EmployerCandidates() {
           : filters.candidateType === "fresher"
             ? "FRESHER"
             : "EXPERIENCED",
-        // Server-side narrowing for the three facets whose predicates
-        // live in the DB. District is a multi-select on the client;
-        // we send the first ID when exactly one is picked so the
-        // narrow-server-then-refine-client pattern still works, then
-        // the client-side `matchesFilter` handles multi-district
-        // intersection over the returned page.
-        districtId: filters.districtIds.length === 1 ? filters.districtIds[0] : undefined,
+        // District is intentionally NOT sent to the API — the filter
+        // panel's district chip pool is derived from the currently-
+        // returned candidates, so narrowing the server response by
+        // district would collapse the entire district facet to zero
+        // chips whenever the picked district happens to have no
+        // candidates. Client-side `matchesFilter` handles district
+        // narrowing over the returned pool.
         industry: filters.industry || undefined,
         department: filters.department || undefined,
         search: searchDebounced || undefined,
