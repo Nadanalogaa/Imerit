@@ -142,7 +142,7 @@ export function CandidateFilterPanel({
         </div>
       </header>
 
-      <div className="flex-1 space-y-1 overflow-y-auto px-4 py-3">
+      <div className="space-y-1 px-4 py-3">
           <Facet
           icon={<Sparkles size={14} className="text-indigo-500" />}
           title="Skills Required"
@@ -260,7 +260,7 @@ export function CandidateFilterPanel({
               No candidates have set a preferred district yet.
             </p>
           ) : (
-            <div className="flex max-h-52 flex-wrap gap-1.5 overflow-y-auto pr-1">
+            <div className="flex flex-wrap gap-1.5 pr-1">
               {availableDistrictIds.map((id) => {
                 const d = districts.find((x) => x.id === id);
                 if (!d) return null;

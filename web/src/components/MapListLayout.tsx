@@ -120,10 +120,8 @@ export function MapListLayout({
  emptyState,
  initialView,
 }: Props) {
- // Default: split on xl+ only. At <1280px the list column gets pinched
- // by the surrounding sidebar (EmployerCandidates has a 280px filter
- // panel) which was making cards render awkwardly narrow. Users can
- // still switch to split from the toolbar.
+ // Default to split on xl+ when no explicit mode is provided. Search pages
+ // can opt into split explicitly while retaining list/map controls.
  const [view, setView] = useState<ViewMode>(() => {
  if (initialView) return initialView;
  if (typeof window === "undefined") return "list";
@@ -226,20 +224,15 @@ export function MapListLayout({
      view === "split" ? "grid grid-cols-1 xl:grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)] xl:items-start" : "block",
      ].join(" ")}
  >
- {/* LIST — in split view the list column gets its own internal
-     scroll and matches the map's fixed viewport height, so the
-     document itself never grows. Filters stay fully visible on
-     the left, map stays visible on the right, and only the list
-     scrolls inside its own column. Below xl (mobile / tablet)
-     the list falls back to natural document flow. */}
+ {/* LIST — the results grow with the document in every view. This keeps
+     pagination and the complete result set reachable with normal page
+     scrolling instead of a short nested list scrollbar. */}
  {(view === "list" || view === "split") && (
  <div
  ref={listRef}
  className={[
  "min-w-0",
- view === "split"
-   ? "xl:sticky xl:top-24 xl:h-[calc(100vh-12rem)] xl:overflow-y-auto xl:pr-2"
-   : "",
+ view === "split" ? "xl:pr-2" : "",
  ].join(" ")}
  >
  {!hasItems ? (

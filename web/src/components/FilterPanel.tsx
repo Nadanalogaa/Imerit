@@ -144,14 +144,14 @@ export function FilterPanel({ state, counts, onChange, onClose }: Props) {
         )}
       </header>
 
-      <div className="flex-1 overflow-y-auto px-4 py-3">
+      <div className="px-4 py-3">
         <FacetGroup
           icon={<MapPin size={14} className="text-rose-500" />}
           title="District"
           open={openSections.location}
           onToggle={() => toggleSection("location")}
         >
-          <div className="max-h-64 space-y-1 overflow-y-auto pr-1">
+          <div className="space-y-1 pr-1">
             {sortedDistricts.map((d) => {
               const n = counts.district[d.id] ?? 0;
               const checked = state.districts.includes(d.id);
@@ -177,7 +177,7 @@ export function FilterPanel({ state, counts, onChange, onClose }: Props) {
             open
             onToggle={() => {}}
           >
-            <div className="max-h-56 space-y-1 overflow-y-auto pr-1">
+            <div className="space-y-1 pr-1">
               {taluksInPlay.map((t) => {
                 const n = counts.taluk[t.id] ?? 0;
                 const checked = state.taluks.includes(t.id);

@@ -399,31 +399,33 @@ export function EmployerCandidates() {
     <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950">
       <Navbar />
       <main className="mx-auto max-w-7xl px-5 py-6 md:py-10">
-        <header className="mb-6">
-          <p className="text-xs font-semibold uppercase tracking-widest text-sky-600 dark:text-sky-400">
+        <header className="mb-3 flex flex-wrap items-center gap-x-3 gap-y-2">
+          <span className="inline-flex items-center gap-2 text-[11px] font-bold uppercase tracking-widest text-sky-600 dark:text-sky-400">
             Search Candidates
-          </p>
-          <h1 className="mt-2 text-2xl font-semibold tracking-tight md:text-3xl">
+          </span>
+          <span className="text-zinc-300 dark:text-zinc-700">·</span>
+          <span className="text-[13px] font-semibold text-zinc-700 dark:text-zinc-200">
             {filteredCount} Candidate{filteredCount === 1 ? "" : "s"} In View
-            {filtered.hasSignal && filtered.matched.length > 0 ? (
-              <span className="ml-2 rounded-full bg-emerald-100 px-2.5 py-1 align-middle text-[13px] font-bold text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300">
+          </span>
+          {filtered.hasSignal && filtered.matched.length > 0 && (
+            <>
+              <span className="text-zinc-300 dark:text-zinc-700">·</span>
+              <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-[11.5px] font-bold text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300">
                 {filtered.matched.length} Relevant
               </span>
-            ) : null}
-          </h1>
-          <p className="mt-2 text-sm text-zinc-600 dark:text-zinc-400">
-            {filters.sort === "skill_match" && filters.skills.length > 0
-              ? `Sorted by skill-match against ${filters.skills.length} required skill${filters.skills.length === 1 ? "" : "s"}.`
-              : hasSub
-                ? "Click any card to view their full CV. Right-click to shortlist."
-                : "Subscribe to Unlock Full Candidate Profiles and their Contact Details"}
-          </p>
-          {apiError && (
-            <p className="mt-3 rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-xs text-rose-700 dark:border-rose-500/30 dark:bg-rose-500/10 dark:text-rose-400">
-              {apiError}
-            </p>
+            </>
           )}
+          <span className="ml-auto text-[12px] text-zinc-600 dark:text-zinc-400">
+            {hasSub
+              ? "Click any card to view their full CV. Right-click to shortlist."
+              : "Subscribe to unlock full profiles + contact details."}
+          </span>
         </header>
+        {apiError && (
+          <p className="mb-3 rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-xs text-rose-700 dark:border-rose-500/30 dark:bg-rose-500/10 dark:text-rose-400">
+            {apiError}
+          </p>
+        )}
 
         {!hasSub && (
           <motion.div
@@ -455,10 +457,9 @@ export function EmployerCandidates() {
 
         <div className="grid gap-6 lg:grid-cols-[280px_1fr]">
           <div className="hidden lg:block">
-            {/* Height-capped sticky panel — scrolls internally when the
-                facet stack is taller than the viewport, otherwise stays
-                pinned as before. */}
-            <div className="sticky top-4 max-h-[calc(100vh-6rem)] overflow-y-auto rounded-2xl">
+            {/* Let the complete filter stack participate in normal page
+                scrolling instead of trapping it in a nested scrollbar. */}
+            <div className="rounded-2xl">
               <CandidateFilterPanel
                 state={filters}
                 onChange={setFilters}
@@ -520,6 +521,7 @@ export function EmployerCandidates() {
             ) : (
               <MapListLayout
                 markerTone="sky"
+                initialView="split"
                 listColumns={1}
                 scrollKey={page}
                 items={(() => {
